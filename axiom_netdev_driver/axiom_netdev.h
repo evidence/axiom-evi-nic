@@ -10,6 +10,22 @@
 
 #define AXIOMNET_MAX_OPEN       1
 
+struct axiomnet_buffer {
+    void *addr;
+    dma_addr_t dma;
+};
+
+struct axiomnet_ring {
+    struct axiom_netdev_bufdesc *bufdesc;
+    dma_addr_t dma;
+    unsigned int size;
+    unsigned int count;
+    unsigned int next_to_use;
+    unsigned int next_to_clean;
+    struct axiomnet_buffer *buffer;
+
+};
+
 
 struct axiomnet_drvdata {
     struct device *dev;
@@ -33,22 +49,6 @@ struct axiomnet_drvdata {
     //spinlock_t lock;
     struct mutex lock;
     int used;
-
-};
-
-struct axiomnet_buffer {
-    void *addr;
-    dma_addr_t dma;
-};
-
-struct axiomnet_ring {
-    struct axiom_netdev_bufdesc *bufdesc;
-    dma_addr_t dma;
-    unsigned int size;
-    unsigned int count;
-    unsigned int next_to_use;
-    unsigned int next_to_clean;
-    struct axiomnet_buffer *buffer;
 
 };
 
