@@ -1,11 +1,11 @@
 
 obj-m := axiom_netdev.o
 
-BUILDROOT := /home/stefano/git/buildroot-xilinx
+PWD := $(shell pwd)
+BUILDROOT := ${PWD}/../../axiom-buildroot
 KERNELDIR := ${BUILDROOT}/output/build/linux-custom
 DESTDIR := ${BUILDROOT}/output/target
 CCPREFIX := ${BUILDROOT}/output/host/usr/bin/arm-linux-
-PWD := $(shell pwd)
 
 default:
 	$(MAKE) ARCH=arm CROSS_COMPILE=${CCPREFIX} -C $(KERNELDIR) M=$(PWD) modules
