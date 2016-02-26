@@ -1,6 +1,7 @@
 #ifndef AXIOM_NETDEV_H
 #define AXIOM_NETDEV_H
 
+#include "ForthAPI.h"
 #include "axiom_netdev_hw.h"
 
 #define AXIOMNET_DEV_MINOR      0
@@ -10,20 +11,15 @@
 
 #define AXIOMNET_MAX_OPEN       1
 
-struct axiomnet_buffer {
-    void *addr;
-    dma_addr_t dma;
-};
-
 struct axiomnet_ring {
-    struct axiom_netdev_bufdesc *bufdesc;
-    dma_addr_t dma;
-    unsigned int size;
-    unsigned int count;
+    void *desc_addr;
+    dma_addr_t desc_dma;
+
+    unsigned int total_size;
+    unsigned int desc_size;
+    unsigned int desc_count;
     unsigned int next_to_use;
     unsigned int next_to_clean;
-    struct axiomnet_buffer *buffer;
-
 };
 
 
@@ -37,11 +33,11 @@ struct axiomnet_drvdata {
     /* IRQ */
     int irq;
 
-    /* TX Rings TODO: */
-    struct axiomnet_ring tx_ring;
+    /* RAW TX Rings TODO */
+    struct axiomnet_ring raw_tx_ring;
 
     /* RX Rings */
-    struct axiomnet_ring rx_ring;
+    //struct axiomnet_ring rx_ring;
 
 
     /* char dev */

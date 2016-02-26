@@ -2,6 +2,7 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/device.h>
+#include <linux/dma-mapping.h>
 #include <linux/of.h>
 #include <linux/of_device.h>
 #include <linux/slab.h>
@@ -56,16 +57,59 @@ static inline void axiomnet_disable_irq(struct axiomnet_drvdata *drvdata)
     iowrite32(~AXIOMNET_IRQ_ALL, drvdata->vregs + AXIOMNET_IO_SETIRQ);
 }
 
-static int axiomenet_setup_ring(struct axiomnet_drvdata *drvdata,
-                                struct axiomnet_ring *ring)
+static int axiomnet_setup_ring(struct axiomnet_drvdata *drvdata,
+                                struct axiomnet_ring *ring,
+                                unsigned int size, unsigned int count)
 {
+    ring->total_size = ALIGN(size * count, PAGE_SIZE);
+
+    ring->desc_addr = dma_alloc_coherent(drvdata->dev, ring->total_size,
+            &ring->desc_dma, GFP_KERNEL);
+
+    if (!ring->desc_addr) {
+        ring->total_size = 0;
+        return -ENOMEM;
+    }
+
+    ring->desc_size = size;
+    ring->desc_count = count;
+    ring->next_to_use = 0;
+    ring->next_to_clean = 0;
 
     return 0;
+}
+
+static void axiomnet_destroy_ring(struct axiomnet_drvdata *drvdata,
+                              struct axiomnet_ring *ring)
+{
+    if (!ring->desc_addr)
+        return;
+
+    dma_free_coherent(drvdata->dev, ring->total_size, ring->desc_addr,
+            ring->desc_dma);
+
+    ring->desc_addr = NULL;
+    ring->total_size = 0;
+
+
 }
 
 static int axiomnet_alloc_rings(struct axiomnet_drvdata *drvdata)
 
 {
+    int err = 0;
+
+    /* setup RAW TX queue */
+    err = axiomnet_setup_ring(drvdata, &drvdata->raw_tx_ring,
+            sizeof(struct axiomRawMsg), AXIOMNET_DEF_RING_LEN);
+
+    return err;
+}
+
+static int axiomnet_free_rings(struct axiomnet_drvdata *drvdata)
+
+{
+    axiomnet_destroy_ring(drvdata, &drvdata->raw_tx_ring);
 
     return 0;
 }
@@ -140,11 +184,21 @@ static int axiomnet_probe(struct platform_device *pdev)
         goto free_irq;
     }
 
+    /* setup rings */
+    err = axiomnet_alloc_rings(drvdata);
+    if (err) {
+        goto free_cdev;
+    }
+
+
+
     axiomnet_enable_irq(drvdata);
 
     dprintk("end");
 
     return 0;
+free_cdev:
+    axiomnet_destroy_chrdev(drvdata, &chrdev);
 free_irq:
     free_irq(drvdata->irq, drvdata);
 free_local:
@@ -158,6 +212,7 @@ static int axiomnet_remove(struct platform_device *pdev)
     struct axiomnet_drvdata *drvdata = platform_get_drvdata(pdev);
     dprintk("start");
 
+    axiomnet_free_rings(drvdata);
     axiomnet_destroy_chrdev(drvdata, &chrdev);
     free_irq(drvdata->irq, drvdata);
     kfree(drvdata);
