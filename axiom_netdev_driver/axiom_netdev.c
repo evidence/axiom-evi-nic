@@ -101,7 +101,7 @@ static int axiomnet_alloc_rings(struct axiomnet_drvdata *drvdata)
 
     /* setup RAW TX queue */
     err = axiomnet_setup_ring(drvdata, &drvdata->raw_tx_ring,
-            sizeof(struct axiomRawMsg), AXIOMNET_DEF_RING_LEN);
+            AXIOMNET_RAW_DESC_SIZE, AXIOMNET_DEF_RING_LEN);
 
     return err;
 }

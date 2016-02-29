@@ -11,6 +11,8 @@
 
 #define AXIOMNET_MAX_OPEN       1
 
+#define AXIOMNET_RAW_DESC_SIZE  sizeof(struct axiomRawMsg)
+
 struct axiomnet_ring {
     void *desc_addr;
     dma_addr_t desc_dma;
