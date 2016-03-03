@@ -74,6 +74,80 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
     return serviced;
 }
 
+static void
+axiomnet_print_status_reg(struct axiomnet_drvdata *drvdata)
+{
+    uint8_t buf8;
+    uint32_t buf32;
+
+    printk("axiomnet --- STATUS REGISTERS start ---\n");
+    buf32 = ioread32(drvdata->vregs + AXIOMREG_IO_VERSION);
+    printk("axiomnet - version: 0x%08x\n", buf32);
+
+    buf32 = ioread32(drvdata->vregs + AXIOMREG_IO_STATUS);
+    printk("axiomnet - status: 0x%08x\n", buf32);
+
+    buf32 = ioread32(drvdata->vregs + AXIOMREG_IO_IFNUMBER);
+    printk("axiomnet - ifnumber: 0x%08x\n", buf32);
+
+    buf8 = ioread8(drvdata->vregs + AXIOMREG_IO_IFINFO_BASE);
+    printk("axiomnet - ifinfo[0]: 0x%02x\n", buf8);
+    buf8 = ioread8(drvdata->vregs + AXIOMREG_IO_IFINFO_BASE + 1);
+    printk("axiomnet - ifinfo[1]: 0x%02x\n", buf8);
+    buf8 = ioread8(drvdata->vregs + AXIOMREG_IO_IFINFO_BASE + 2);
+    printk("axiomnet - ifinfo[2]: 0x%02x\n", buf8);
+    buf8 = ioread8(drvdata->vregs + AXIOMREG_IO_IFINFO_BASE + 3);
+    printk("axiomnet - ifinfo[3]: 0x%02x\n", buf8);
+
+    printk("axiomnet --- STATUS REGISTERS end ---\n");
+}
+
+static void
+axiomnet_print_control_reg(struct axiomnet_drvdata *drvdata)
+{
+    uint32_t buf32;
+
+    printk("axiomnet --- CONTROL REGISTERS start ---\n");
+    buf32 = ioread32(drvdata->vregs + AXIOMREG_IO_CONTROL);
+    printk("axiomnet - control: 0x%08x\n", buf32);
+
+    buf32 = ioread32(drvdata->vregs + AXIOMREG_IO_NODEID);
+    printk("axiomnet - nodeid: 0x%08x\n", buf32);
+
+    printk("axiomnet --- CONTROL REGISTERS end ---\n");
+}
+
+static int
+axiomnet_printbinary(char *buf, unsigned long x, int nbits)
+{
+    unsigned long mask = 1UL << (nbits - 1);
+    while (mask != 0) {
+	*buf++ = (mask & x ? '1' : '0');
+	mask >>= 1;
+    }
+    *buf = '\0';
+
+    return nbits;
+}
+
+static void
+axiomnet_print_routing_reg(struct axiomnet_drvdata *drvdata)
+{
+    char bufS[64];
+    int i;
+    uint8_t buf8;
+
+    printk("axiomnet --- ROUTING REGISTERS start ---\n");
+
+    for (i = 0; i < 256; i++) {
+        buf8 = ioread8(drvdata->vregs + AXIOMREG_IO_ROUTING_BASE + i);
+        axiomnet_printbinary(bufS, buf8, 8);
+        printk("axiomnet - routing[%d]: %s\n", i, bufS);
+    }
+
+    printk("axiomnet --- ROUTING REGISTERS end ---\n");
+}
+
 static int axiomnet_probe(struct platform_device *pdev)
 {
     struct axiomnet_drvdata *drvdata;
@@ -122,6 +196,10 @@ static int axiomnet_probe(struct platform_device *pdev)
     /* TODO: check version */
     version = ioread32(drvdata->vregs + AXIOMREG_IO_VERSION);
     sprintk("version: 0x%08x", version);
+
+    axiomnet_print_status_reg(drvdata);
+    axiomnet_print_control_reg(drvdata);
+    axiomnet_print_routing_reg(drvdata);
 
     /* alloc char device */
     err = axiomnet_alloc_chrdev(drvdata, &chrdev);
