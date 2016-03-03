@@ -1,5 +1,5 @@
 
-obj-m := axiom_netdev.o
+obj-m := axiom_netdev.o axiom_kernel_api.o
 
 PWD := $(shell pwd)
 MKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
@@ -8,7 +8,7 @@ KERNELDIR := ${BUILDROOT}/output/build/linux-custom
 DESTDIR := ${BUILDROOT}/output/target
 CCPREFIX := ${BUILDROOT}/output/host/usr/bin/arm-linux-
 
-CFLAGS_axiom_netdev.o := -I${MKFILE_DIR}/../../axiom-docs/ForthAPI/
+ccflags-y += -I${MKFILE_DIR}/../../axiom-docs/ForthAPI/
 
 default:
 	$(MAKE) ARCH=arm CROSS_COMPILE=${CCPREFIX} -C $(KERNELDIR) M=$(PWD) modules

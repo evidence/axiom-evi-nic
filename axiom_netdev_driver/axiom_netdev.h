@@ -1,7 +1,6 @@
 #ifndef AXIOM_NETDEV_H
 #define AXIOM_NETDEV_H
 
-#include "ForthAPI.h"
 #include "axiom_netdev_hw.h"
 
 #define AXIOMNET_DEV_MINOR      0

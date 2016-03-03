@@ -15,6 +15,7 @@
 #include <linux/types.h>
 
 #include "axiom_netdev.h"
+#include "axiom_kernel_api.h"
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Evidence S.R.L. - Stefano Garzarella");
@@ -43,76 +44,20 @@ static void axiomnet_destroy_chrdev(struct axiomnet_drvdata *drvdata,
 
 /* Match table for of_platform binding */
 static const struct of_device_id axiomnet_of_match[] = {
-    { .compatible = AXIOMNET_COMPATIBLE, },
+    { .compatible = AXIOMREG_COMPATIBLE, },
     {},
 };
 
 static inline void axiomnet_enable_irq(struct axiomnet_drvdata *drvdata)
 {
-    iowrite32(AXIOMNET_IRQ_ALL, drvdata->vregs + AXIOMNET_IO_SETIRQ);
+    iowrite32(AXIOMREG_IRQ_ALL, drvdata->vregs + AXIOMREG_IO_SETIRQ);
 }
 
 static inline void axiomnet_disable_irq(struct axiomnet_drvdata *drvdata)
 {
-    iowrite32(~AXIOMNET_IRQ_ALL, drvdata->vregs + AXIOMNET_IO_SETIRQ);
+    iowrite32(~AXIOMREG_IRQ_ALL, drvdata->vregs + AXIOMREG_IO_SETIRQ);
 }
 
-static int axiomnet_setup_ring(struct axiomnet_drvdata *drvdata,
-                                struct axiomnet_ring *ring,
-                                unsigned int size, unsigned int count)
-{
-    ring->total_size = ALIGN(size * count, PAGE_SIZE);
-
-    ring->desc_addr = dma_alloc_coherent(drvdata->dev, ring->total_size,
-            &ring->desc_dma, GFP_KERNEL);
-
-    if (!ring->desc_addr) {
-        ring->total_size = 0;
-        return -ENOMEM;
-    }
-
-    ring->desc_size = size;
-    ring->desc_count = count;
-    ring->next_to_use = 0;
-    ring->next_to_clean = 0;
-
-    return 0;
-}
-
-static void axiomnet_destroy_ring(struct axiomnet_drvdata *drvdata,
-                              struct axiomnet_ring *ring)
-{
-    if (!ring->desc_addr)
-        return;
-
-    dma_free_coherent(drvdata->dev, ring->total_size, ring->desc_addr,
-            ring->desc_dma);
-
-    ring->desc_addr = NULL;
-    ring->total_size = 0;
-
-
-}
-
-static int axiomnet_alloc_rings(struct axiomnet_drvdata *drvdata)
-
-{
-    int err = 0;
-
-    /* setup RAW TX queue */
-    err = axiomnet_setup_ring(drvdata, &drvdata->raw_tx_ring,
-            AXIOMNET_RAW_DESC_SIZE, AXIOMNET_DEF_RING_LEN);
-
-    return err;
-}
-
-static int axiomnet_free_rings(struct axiomnet_drvdata *drvdata)
-
-{
-    axiomnet_destroy_ring(drvdata, &drvdata->raw_tx_ring);
-
-    return 0;
-}
 
 static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
 {
@@ -121,8 +66,8 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
     uint32_t irq_pending;
 
     dprintk("start");
-    irq_pending = ioread32(drvdata->vregs + AXIOMNET_IO_PNDIRQ);
-    iowrite32(irq_pending, drvdata->vregs + AXIOMNET_IO_ACKIRQ);
+    irq_pending = ioread32(drvdata->vregs + AXIOMREG_IO_PNDIRQ);
+    iowrite32(irq_pending, drvdata->vregs + AXIOMREG_IO_ACKIRQ);
     serviced = IRQ_HANDLED;
     dprintk("end");
 
@@ -132,7 +77,7 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
 static int axiomnet_probe(struct platform_device *pdev)
 {
     struct axiomnet_drvdata *drvdata;
-    uint32_t features;
+    uint32_t version;
     unsigned int off;
     unsigned long regs_pfn, regs_phys;
     int err = 0;
@@ -174,9 +119,9 @@ static int axiomnet_probe(struct platform_device *pdev)
     drvdata->irq = platform_get_irq(pdev, 0);
     err = request_irq(drvdata->irq, axiomnet_irqhandler, IRQF_SHARED, pdev->name, drvdata);
 
-    /* TODO: check features */
-    features = ioread32(drvdata->vregs + AXIOMNET_IO_FEATURES);
-    sprintk("features: %zu", features);
+    /* TODO: check version */
+    version = ioread32(drvdata->vregs + AXIOMREG_IO_VERSION);
+    sprintk("version: 0x%08x", version);
 
     /* alloc char device */
     err = axiomnet_alloc_chrdev(drvdata, &chrdev);
@@ -184,20 +129,13 @@ static int axiomnet_probe(struct platform_device *pdev)
         goto free_irq;
     }
 
-    /* setup rings */
-    err = axiomnet_alloc_rings(drvdata);
-    if (err) {
-        goto free_cdev;
-    }
-
-
 
     axiomnet_enable_irq(drvdata);
 
     dprintk("end");
 
     return 0;
-free_cdev:
+//free_cdev:
     axiomnet_destroy_chrdev(drvdata, &chrdev);
 free_irq:
     free_irq(drvdata->irq, drvdata);
@@ -212,7 +150,6 @@ static int axiomnet_remove(struct platform_device *pdev)
     struct axiomnet_drvdata *drvdata = platform_get_drvdata(pdev);
     dprintk("start");
 
-    axiomnet_free_rings(drvdata);
     axiomnet_destroy_chrdev(drvdata, &chrdev);
     free_irq(drvdata->irq, drvdata);
     kfree(drvdata);
@@ -295,9 +232,30 @@ static ssize_t axiomnet_write(struct file *filep, const char __user *buffer,
 static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         unsigned long arg)
 {
+    struct axiomnet_drvdata *drvdata = filep->private_data;
+    void __user* argp = (void __user*)arg;
+    long ret = 0;
+
     dprintk("start");
+
+    if (!drvdata)
+        return -EINVAL;
+
+    switch (cmd) {
+
+    AXNET_SETID:
+        break;
+
+    AXNET_GETID:
+        break;
+
+    default:
+        ret = -EINVAL;
+    }
+
+
     dprintk("end");
-    return 0;
+    return ret;
 }
 
 static int axiomnet_mmap(struct file *filep, struct vm_area_struct *vma)
@@ -307,8 +265,11 @@ static int axiomnet_mmap(struct file *filep, struct vm_area_struct *vma)
     int err = 0;
     dprintk("start");
 
+    if (!drvdata)
+        return -EINVAL;
+
     mutex_lock(&drvdata->lock);
-    if (size != AXIOMNET_IO_SIZE) {
+    if (size != AXIOMREG_IO_SIZE) {
         err= -EINVAL;
         goto err;
     }
