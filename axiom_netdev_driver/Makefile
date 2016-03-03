@@ -8,7 +8,7 @@ KERNELDIR := ${BUILDROOT}/output/build/linux-custom
 DESTDIR := ${BUILDROOT}/output/target
 CCPREFIX := ${BUILDROOT}/output/host/usr/bin/arm-linux-
 
-ccflags-y += -I${MKFILE_DIR}/../../axiom-docs/ForthAPI/
+ccflags-y += -I${MKFILE_DIR}/../../axiom-docs/axiom_nic/
 
 default:
 	$(MAKE) ARCH=arm CROSS_COMPILE=${CCPREFIX} -C $(KERNELDIR) M=$(PWD) modules

@@ -1,7 +1,7 @@
 #ifndef AXIOM_NETDEV_H
 #define AXIOM_NETDEV_H
 
-#include "axiom_netdev_hw.h"
+#include "axiom_nic_regs.h"
 
 #define AXIOMNET_DEV_MINOR      0
 #define AXIOMNET_DEV_MAX        8
