@@ -2,6 +2,7 @@
 #define AXIOM_NETDEV_H
 
 #include "axiom_nic_regs.h"
+#include "axiom_kernel_api.h"
 
 #define AXIOMNET_DEV_MINOR      0
 #define AXIOMNET_DEV_MAX        8
@@ -26,6 +27,9 @@ struct axiomnet_ring {
 
 struct axiomnet_drvdata {
     struct device *dev;
+
+    /* Axiom Dev API */
+    axiom_dev_t *dev_api;
 
     /* IO registers */
     void __iomem *vregs;                /* kernel virtual address (vmalloc)*/

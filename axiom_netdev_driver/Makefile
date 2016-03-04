@@ -1,5 +1,6 @@
 
-obj-m := axiom_netdev.o axiom_kernel_api.o
+obj-m := axiom_netdev.o
+axiom_netdev-objs := axiom_kernel_api.o axiom_netdev_module.o
 
 PWD := $(shell pwd)
 MKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
