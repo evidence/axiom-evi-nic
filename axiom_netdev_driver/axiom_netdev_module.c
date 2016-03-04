@@ -1,3 +1,4 @@
+#include <asm/uaccess.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -7,6 +8,7 @@
 #include <linux/of_device.h>
 #include <linux/slab.h>
 #include <linux/irq.h>
+#include <linux/ioctl.h>
 #include <linux/interrupt.h>
 #include <linux/fs.h>
 #include <linux/mm.h>
@@ -15,6 +17,7 @@
 #include <linux/types.h>
 
 #include "axiom_netdev_module.h"
+#include "axiom_netdev_user.h"
 #include "axiom_nic_packets.h"
 
 MODULE_LICENSE("GPL");
@@ -263,6 +266,7 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
     struct axiomnet_drvdata *drvdata = filep->private_data;
     void __user* argp = (void __user*)arg;
     long ret = 0;
+    int buf_int;
 
     dprintk("start");
 
@@ -270,13 +274,22 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         return -EINVAL;
 
     switch (cmd) {
-
-    AXNET_SETID:
+    case AXNET_SET_NODEID:
+        get_user(buf_int, (int __user*)arg);
+        axiom_set_node_id(drvdata->dev_api, buf_int);
         break;
-
-    AXNET_GETID:
+    case AXNET_GET_NODEID:
+        buf_int = axiom_get_node_id(drvdata->dev_api);
+        put_user(buf_int, (int __user*)argp);
         break;
-
+    case AXNET_SET_ROUTING:
+        break;
+    case AXNET_GET_ROUTING:
+        break;
+    case AXNET_GET_IFNUMBER:
+        break;
+    case AXNET_GET_IFINFO:
+        break;
     default:
         ret = -EINVAL;
     }

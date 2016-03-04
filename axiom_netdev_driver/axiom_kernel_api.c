@@ -17,7 +17,8 @@ struct axiom_dev {
     void __iomem *vregs;
 };
 
-axiom_dev_t *axiom_init_dev(void *vregs)
+axiom_dev_t *
+axiom_init_dev(void *vregs)
 {
     axiom_dev_t *dev;
 
@@ -27,17 +28,28 @@ axiom_dev_t *axiom_init_dev(void *vregs)
     return dev;
 }
 
-void axiom_free_dev(axiom_dev_t *dev)
+void
+axiom_free_dev(axiom_dev_t *dev)
 {
     vfree(dev);
 }
 
-void axiom_set_node_id(axiom_dev_t *dev, axiom_node_id_t node_id)
+axiom_msg_id_t
+axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t src_node,
+        axiom_node_id_t dst_node, axiom_data_t data);
+
+axiom_msg_id_t
+axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_node,
+        axiom_node_id_t *dst_node, axiom_data_t *data);
+
+void
+axiom_set_node_id(axiom_dev_t *dev, axiom_node_id_t node_id)
 {
     iowrite32(node_id, dev->vregs + AXIOMREG_IO_NODEID);
 }
 
-axiom_node_id_t axiom_get_node_id(axiom_dev_t *dev)
+axiom_node_id_t
+axiom_get_node_id(axiom_dev_t *dev)
 {
     uint32_t ret;
 
@@ -45,6 +57,52 @@ axiom_node_id_t axiom_get_node_id(axiom_dev_t *dev)
 
     return ret;
 }
+
+axiom_err_t
+axiom_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
+        uint8_t enabled_mask)
+{
+    iowrite8(enabled_mask, dev->vregs + AXIOMREG_IO_ROUTING_BASE + node_id);
+
+    return 0;
+}
+
+axiom_err_t
+axiom_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
+        uint8_t *enabled_mask)
+{
+    *enabled_mask = ioread8(dev->vregs + AXIOMREG_IO_ROUTING_BASE + node_id);
+
+    return 0;
+}
+
+axiom_err_t
+axiom_get_if_number(axiom_dev_t *dev, axiom_if_id_t *if_number)
+{
+    *if_number = ioread8(dev->vregs + AXIOMREG_IO_IFNUMBER);
+
+    return 0;
+}
+
+axiom_err_t
+axiom_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
+        uint8_t *if_features)
+{
+    *if_features = ioread8(dev->vregs + AXIOMREG_IO_IFINFO_BASE + if_number);
+
+    return 0;
+}
+
+axiom_msg_id_t
+axiom_send_raw_neighbour(axiom_dev_t *dev, uint8_t type,
+        axiom_node_id_t src_node_id, axiom_node_id_t dst_node_id,
+        axiom_if_id_t src_interface, axiom_if_id_t dst_interface, uint8_t data);
+
+axiom_msg_id_t
+axiom_recv_raw_neighbour (axiom_dev_t *dev, uint8_t* type,
+        axiom_node_id_t* src_node_id, axiom_node_id_t* dst_node_id,
+        axiom_if_id_t* src_interface, axiom_if_id_t* dst_interface,
+        uint8_t* data);
 
 void
 axiom_print_status_reg(axiom_dev_t *dev)
