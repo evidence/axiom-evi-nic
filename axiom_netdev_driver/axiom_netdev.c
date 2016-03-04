@@ -16,6 +16,7 @@
 
 #include "axiom_netdev.h"
 #include "axiom_kernel_api.h"
+#include "axiom_nic_packets.h"
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Evidence S.R.L. - Stefano Garzarella");
@@ -148,6 +149,57 @@ axiomnet_print_routing_reg(struct axiomnet_drvdata *drvdata)
     printk("axiomnet --- ROUTING REGISTERS end ---\n");
 }
 
+static void
+axiomnet_print_raw_queue_reg(struct axiomnet_drvdata *drvdata)
+{
+    int i;
+    uint32_t buf32;
+
+    printk("axiomnet --- RAW QUEUE REGISTERS start ---\n");
+
+    buf32 = ioread32(drvdata->vregs + AXIOMREG_IO_RAW_TX_HEAD);
+    printk("axiomnet - raw_tx_head: 0x%08x\n", buf32);
+    buf32 = ioread32(drvdata->vregs + AXIOMREG_IO_RAW_TX_TAIL);
+    printk("axiomnet - raw_tx_tail: 0x%08x\n", buf32);
+    buf32 = ioread32(drvdata->vregs + AXIOMREG_IO_RAW_TX_INFO);
+    printk("axiomnet - raw_tx_info: 0x%08x\n", buf32);
+
+    buf32 = ioread32(drvdata->vregs + AXIOMREG_IO_RAW_RX_HEAD);
+    printk("axiomnet - raw_rx_head: 0x%08x\n", buf32);
+    buf32 = ioread32(drvdata->vregs + AXIOMREG_IO_RAW_RX_TAIL);
+    printk("axiomnet - raw_rx_tail: 0x%08x\n", buf32);
+    buf32 = ioread32(drvdata->vregs + AXIOMREG_IO_RAW_RX_INFO);
+    printk("axiomnet - raw_rx_info: 0x%08x\n", buf32);
+
+#if 0
+    for (i = 55; i < 57; i++) {
+        axiom_raw_msg_t raw_msg;
+        buf32 = ioread32(drvdata->vregs + AXIOMREG_IO_RAW_RX_BASE + 8*i);
+        printk("axiomnet - raw_rx[%d]: %x\n", i, buf32);
+        memcpy(&raw_msg, &buf32, 4);
+        buf32 = ioread32(drvdata->vregs + AXIOMREG_IO_RAW_RX_BASE + 8*i + 4);
+        printk("axiomnet - raw_rx[%d]: %x\n", i, buf32);
+        memcpy(((uint8_t*)(&raw_msg) + 4) , &buf32, 4);
+
+        printk("axiomnet - raw_rx[%d]: src_node=%d dst_node=%d type=%d data=%x\n",
+                i, raw_msg.header.src_node, raw_msg.header.dst_node,
+                raw_msg.header.type, raw_msg.data.raw);
+        raw_msg.header.src_node += 1;
+        raw_msg.header.dst_node -= 1;
+        raw_msg.header.type = 33;
+
+        iowrite32(*((uint32_t*)(&raw_msg)), drvdata->vregs +
+                AXIOMREG_IO_RAW_TX_BASE + 8*(i+1));
+        iowrite32(*((uint32_t*)(&raw_msg) + 1), drvdata->vregs +
+                AXIOMREG_IO_RAW_TX_BASE + 8*(i+1) + 4);
+    }
+    iowrite32(1, drvdata->vregs + AXIOMREG_IO_RAW_RX_START);
+    iowrite32(1, drvdata->vregs + AXIOMREG_IO_RAW_TX_START);
+#endif
+
+    printk("axiomnet --- RAW QUEUE REGISTERS end ---\n");
+}
+
 static int axiomnet_probe(struct platform_device *pdev)
 {
     struct axiomnet_drvdata *drvdata;
@@ -200,6 +252,7 @@ static int axiomnet_probe(struct platform_device *pdev)
     axiomnet_print_status_reg(drvdata);
     axiomnet_print_control_reg(drvdata);
     axiomnet_print_routing_reg(drvdata);
+    axiomnet_print_raw_queue_reg(drvdata);
 
     /* alloc char device */
     err = axiomnet_alloc_chrdev(drvdata, &chrdev);
