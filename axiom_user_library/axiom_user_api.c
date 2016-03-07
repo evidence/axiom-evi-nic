@@ -4,9 +4,11 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <fcntl.h>
 
 #include "axiom_user_api.h"
+#include "axiom_netdev_user.h"
 
 #define PDEBUG
 #include "dprintf.h"
@@ -73,47 +75,94 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
 void
 axiom_set_node_id(axiom_dev_t *dev, axiom_node_id_t node_id)
 {
+    int ret;
 
+    if (!dev || dev->fd <= 0)
+        return;
+
+    ret = ioctl(dev->fd, AXNET_SET_NODEID, &node_id);
 }
 
 axiom_node_id_t
 axiom_get_node_id(axiom_dev_t *dev)
 {
-    uint32_t ret;
+    int ret;
+    axiom_node_id_t node_id;
 
+    if (!dev || dev->fd <= 0)
+        return -1;
 
-    return ret;
+    ret = ioctl(dev->fd, AXNET_GET_NODEID, &node_id);
+
+    return node_id;
 }
 
 axiom_err_t
 axiom_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
         uint8_t enabled_mask)
 {
+    int ret;
+    axiom_ioctl_routing_t routing;
 
-    return 0;
+    if (!dev || dev->fd <= 0)
+        return -1;
+
+    routing.node_id = node_id;
+    routing.enabled_mask = enabled_mask;
+
+    ret = ioctl(dev->fd, AXNET_SET_ROUTING, &routing);
+
+    return ret;
 }
 
 axiom_err_t
 axiom_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
         uint8_t *enabled_mask)
 {
+    int ret;
+    axiom_ioctl_routing_t routing;
 
-    return 0;
+    if (!dev || dev->fd <= 0)
+        return -1;
+
+    routing.node_id = node_id;
+    routing.enabled_mask = 0;
+
+    ret = ioctl(dev->fd, AXNET_GET_ROUTING, &routing);
+
+    *enabled_mask = routing.enabled_mask;
+
+    return ret;
 }
 
 axiom_err_t
 axiom_get_if_number(axiom_dev_t *dev, axiom_if_id_t *if_number)
 {
+    int ret;
 
-    return 0;
+    if (!dev || dev->fd <= 0)
+        return -1;
+
+    ret = ioctl(dev->fd, AXNET_GET_IFNUMBER, if_number);
+
+    return ret;
 }
 
 axiom_err_t
 axiom_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
         uint8_t *if_features)
 {
+    int ret;
+    uint8_t buf_if = if_number;
 
-    return 0;
+    if (!dev || dev->fd <= 0)
+        return -1;
+
+    ret = ioctl(dev->fd, AXNET_GET_IFINFO, &buf_if);
+
+    *if_features = buf_if;
+
+    return ret;
 }
 
 axiom_msg_id_t

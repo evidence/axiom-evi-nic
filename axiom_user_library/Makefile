@@ -1,7 +1,7 @@
 
 APPS := axiom_user_test
 CLEANFILES = $(APPS) *.o
-CFLAGS += -g -I../../axiom-docs/axiom_nic/
+CFLAGS += -g -I../../axiom-docs/axiom_nic/ -I../axiom_netdev_driver/
 #LDFLAGS += -pthread
 
 PWD := $(shell pwd)
