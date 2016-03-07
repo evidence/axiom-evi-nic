@@ -17,6 +17,7 @@ int main (int argc, char *argv[])
     axiom_node_id_t node_id;
     axiom_if_id_t if_number;
     uint8_t if_features, enabled_mask;
+    uint32_t status, control;
     axiom_err_t err;
 
     dev = axiom_open();
@@ -24,6 +25,18 @@ int main (int argc, char *argv[])
         EPRINTF("axiom_open failed! - errno = %d", errno);
         return -1;
     }
+
+    status = axiom_read_ni_status(dev);
+    IPRINTF("read status = 0x%x", status);
+
+    control = axiom_read_ni_control(dev);
+    IPRINTF("read control = 0x%x", control);
+
+    axiom_set_ni_control(dev, 0x00000001);
+    IPRINTF("set control = 0x%x", 0x00000001);
+
+    control = axiom_read_ni_control(dev);
+    IPRINTF("read control = 0x%x", control);
 
     node_id = axiom_get_node_id(dev);
     IPRINTF("startup node_id = 0x%x", node_id);

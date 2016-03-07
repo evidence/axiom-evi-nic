@@ -266,7 +266,7 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
     struct axiomnet_drvdata *drvdata = filep->private_data;
     void __user* argp = (void __user*)arg;
     long ret = 0;
-    int buf_int;
+    uint32_t buf_uint32;
     uint8_t buf_uint8;
     uint8_t buf_uint8_2;
     axiom_ioctl_routing_t buf_routing;
@@ -310,6 +310,18 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         get_user(buf_uint8, (uint8_t __user*)arg);
         ret = axiom_get_if_info(drvdata->dev_api, buf_uint8, &buf_uint8_2);
         put_user(buf_uint8_2, (uint8_t __user*)arg);
+        break;
+    case AXNET_GET_STATUS:
+        buf_uint32 = axiom_read_ni_status(drvdata->dev_api);
+        put_user(buf_uint32, (uint32_t __user*)arg);
+        break;
+    case AXNET_GET_CONTROL:
+        buf_uint32 = axiom_read_ni_control(drvdata->dev_api);
+        put_user(buf_uint32, (uint32_t __user*)arg);
+        break;
+    case AXNET_SET_CONTROL:
+        get_user(buf_uint32, (uint32_t __user*)arg);
+        axiom_set_ni_control(drvdata->dev_api, buf_uint32);
         break;
     default:
         ret = -EINVAL;

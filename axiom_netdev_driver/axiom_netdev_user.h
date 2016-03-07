@@ -27,6 +27,9 @@ typedef struct axiom_ioctl_routing {
 #define AXNET_GET_ROUTING       _IOR(AXNET_MAGIC, 103, axiom_ioctl_routing_t)
 #define AXNET_GET_IFNUMBER      _IOR(AXNET_MAGIC, 104, uint8_t)
 #define AXNET_GET_IFINFO        _IOWR(AXNET_MAGIC, 105, uint8_t)
+#define AXNET_GET_STATUS        _IOR(AXNET_MAGIC, 106, uint32_t)
+#define AXNET_SET_CONTROL       _IOW(AXNET_MAGIC, 107, uint32_t)
+#define AXNET_GET_CONTROL       _IOR(AXNET_MAGIC, 108, uint32_t)
 
 
 #endif /* !AXIOM_NETDEV_USER_h */

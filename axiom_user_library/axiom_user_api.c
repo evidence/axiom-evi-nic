@@ -72,6 +72,46 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
     return 0;
 }
 
+uint32_t
+axiom_read_ni_status(axiom_dev_t *dev)
+{
+    int ret;
+    uint32_t status;
+
+    if (!dev || dev->fd <= 0)
+        return -1;
+
+    ret = ioctl(dev->fd, AXNET_GET_STATUS, &status);
+
+    return status;
+}
+
+void
+axiom_set_ni_control(axiom_dev_t *dev, uint32_t reg_mask)
+{
+    int ret;
+
+    if (!dev || dev->fd <= 0)
+        return;
+
+    ret = ioctl(dev->fd, AXNET_SET_CONTROL, &reg_mask);
+}
+
+uint32_t
+axiom_read_ni_control(axiom_dev_t *dev)
+{
+    int ret;
+    uint32_t control;
+
+    if (!dev || dev->fd <= 0)
+        return -1;
+
+    ret = ioctl(dev->fd, AXNET_GET_CONTROL, &control);
+
+    return control;
+}
+
+
 void
 axiom_set_node_id(axiom_dev_t *dev, axiom_node_id_t node_id)
 {

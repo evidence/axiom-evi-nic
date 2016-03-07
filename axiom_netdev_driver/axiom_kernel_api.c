@@ -34,6 +34,9 @@ axiom_free_dev(axiom_dev_t *dev)
     vfree(dev);
 }
 
+
+
+
 axiom_msg_id_t
 axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t src_node_id,
         axiom_node_id_t dst_node_id, axiom_raw_type_t type, axiom_data_t data)
@@ -48,6 +51,32 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
 {
 
     return 0;
+}
+
+uint32_t
+axiom_read_ni_status(axiom_dev_t *dev)
+{
+    uint32_t ret;
+
+    ret = ioread32(dev->vregs + AXIOMREG_IO_STATUS);
+
+    return ret;
+}
+
+void
+axiom_set_ni_control(axiom_dev_t *dev, uint32_t reg_mask)
+{
+    iowrite32(reg_mask, dev->vregs + AXIOMREG_IO_CONTROL);
+}
+
+uint32_t
+axiom_read_ni_control(axiom_dev_t *dev)
+{
+    uint32_t ret;
+
+    ret = ioread32(dev->vregs + AXIOMREG_IO_CONTROL);
+
+    return ret;
 }
 
 void
