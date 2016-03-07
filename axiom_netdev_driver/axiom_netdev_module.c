@@ -278,38 +278,38 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
 
     switch (cmd) {
     case AXNET_SET_NODEID:
-        get_user(buf_int, (int __user*)arg);
-        axiom_set_node_id(drvdata->dev_api, buf_int);
+        get_user(buf_uint8, (uint8_t __user*)arg);
+        axiom_set_node_id(drvdata->dev_api, buf_uint8);
         break;
     case AXNET_GET_NODEID:
-        buf_int = axiom_get_node_id(drvdata->dev_api);
-        put_user(buf_int, (int __user*)arg);
+        buf_uint8 = axiom_get_node_id(drvdata->dev_api);
+        put_user(buf_uint8, (uint8_t __user*)arg);
         break;
     case AXNET_SET_ROUTING:
         ret = copy_from_user(&buf_routing, argp, sizeof(buf_routing));
         if (ret)
-            return -ENOMEM;
+            return -EFAULT;
         ret = axiom_set_routing(drvdata->dev_api, buf_routing.node_id,
                 buf_routing.enabled_mask);
         break;
     case AXNET_GET_ROUTING:
         ret = copy_from_user(&buf_routing, argp, sizeof(buf_routing));
         if (ret)
-            return -ENOMEM;
+            return -EFAULT;
         ret = axiom_get_routing(drvdata->dev_api, buf_routing.node_id,
                 &buf_routing.enabled_mask);
         ret = copy_to_user(argp, &buf_routing, sizeof(buf_routing));
         if (ret)
-            return -ENOMEM;
+            return -EFAULT;
         break;
     case AXNET_GET_IFNUMBER:
         ret = axiom_get_if_number(drvdata->dev_api, &buf_uint8);
-        put_user(buf_uint8, (int __user*)arg);
+        put_user(buf_uint8, (uint8_t __user*)arg);
         break;
     case AXNET_GET_IFINFO:
-        get_user(buf_uint8, (int __user*)arg);
+        get_user(buf_uint8, (uint8_t __user*)arg);
         ret = axiom_get_if_info(drvdata->dev_api, buf_uint8, &buf_uint8_2);
-        put_user(buf_uint8_2, (int __user*)arg);
+        put_user(buf_uint8_2, (uint8_t __user*)arg);
         break;
     default:
         ret = -EINVAL;
