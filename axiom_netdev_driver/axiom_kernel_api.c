@@ -18,7 +18,7 @@ typedef struct axiom_dev {
 } axiom_dev_t;
 
 axiom_dev_t *
-axiom_init_dev(void *vregs)
+axiom_hw_dev_alloc(void *vregs)
 {
     axiom_dev_t *dev;
 
@@ -29,7 +29,7 @@ axiom_init_dev(void *vregs)
 }
 
 void
-axiom_free_dev(axiom_dev_t *dev)
+axiom_hw_dev_free(axiom_dev_t *dev)
 {
     vfree(dev);
 }
@@ -38,7 +38,7 @@ axiom_free_dev(axiom_dev_t *dev)
 
 
 axiom_msg_id_t
-axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t src_node_id,
+axiom_hw_send_raw(axiom_dev_t *dev, axiom_node_id_t src_node_id,
         axiom_node_id_t dst_node_id, axiom_raw_type_t type, axiom_data_t data)
 {
 
@@ -46,7 +46,7 @@ axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t src_node_id,
 }
 
 axiom_msg_id_t
-axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
+axiom_hw_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
         axiom_node_id_t *dst_node_id, axiom_raw_type_t *type, axiom_data_t *data)
 {
 
@@ -54,7 +54,7 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
 }
 
 uint32_t
-axiom_read_ni_status(axiom_dev_t *dev)
+axiom_hw_read_ni_status(axiom_dev_t *dev)
 {
     uint32_t ret;
 
@@ -64,13 +64,13 @@ axiom_read_ni_status(axiom_dev_t *dev)
 }
 
 void
-axiom_set_ni_control(axiom_dev_t *dev, uint32_t reg_mask)
+axiom_hw_set_ni_control(axiom_dev_t *dev, uint32_t reg_mask)
 {
     iowrite32(reg_mask, dev->vregs + AXIOMREG_IO_CONTROL);
 }
 
 uint32_t
-axiom_read_ni_control(axiom_dev_t *dev)
+axiom_hw_read_ni_control(axiom_dev_t *dev)
 {
     uint32_t ret;
 
@@ -80,13 +80,13 @@ axiom_read_ni_control(axiom_dev_t *dev)
 }
 
 void
-axiom_set_node_id(axiom_dev_t *dev, axiom_node_id_t node_id)
+axiom_hw_set_node_id(axiom_dev_t *dev, axiom_node_id_t node_id)
 {
     iowrite32(node_id, dev->vregs + AXIOMREG_IO_NODEID);
 }
 
 axiom_node_id_t
-axiom_get_node_id(axiom_dev_t *dev)
+axiom_hw_get_node_id(axiom_dev_t *dev)
 {
     uint32_t ret;
 
@@ -96,7 +96,7 @@ axiom_get_node_id(axiom_dev_t *dev)
 }
 
 axiom_err_t
-axiom_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
+axiom_hw_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
         uint8_t enabled_mask)
 {
     iowrite8(enabled_mask, dev->vregs + AXIOMREG_IO_ROUTING_BASE + node_id);
@@ -105,7 +105,7 @@ axiom_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
 }
 
 axiom_err_t
-axiom_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
+axiom_hw_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
         uint8_t *enabled_mask)
 {
     *enabled_mask = ioread8(dev->vregs + AXIOMREG_IO_ROUTING_BASE + node_id);
@@ -114,7 +114,7 @@ axiom_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
 }
 
 axiom_err_t
-axiom_get_if_number(axiom_dev_t *dev, axiom_if_id_t *if_number)
+axiom_hw_get_if_number(axiom_dev_t *dev, axiom_if_id_t *if_number)
 {
     *if_number = ioread8(dev->vregs + AXIOMREG_IO_IFNUMBER);
 
@@ -122,29 +122,10 @@ axiom_get_if_number(axiom_dev_t *dev, axiom_if_id_t *if_number)
 }
 
 axiom_err_t
-axiom_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
+axiom_hw_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
         uint8_t *if_features)
 {
     *if_features = ioread8(dev->vregs + AXIOMREG_IO_IFINFO_BASE + if_number);
-
-    return 0;
-}
-
-axiom_msg_id_t
-axiom_send_raw_neighbour(axiom_dev_t *dev, axiom_raw_sub_type_t sub_type,
-        axiom_node_id_t src_node_id, axiom_node_id_t dst_node_id,
-        axiom_if_id_t src_interface, axiom_if_id_t dst_interface, uint8_t data)
-{
-
-    return 0;
-}
-
-axiom_msg_id_t
-axiom_recv_raw_neighbour (axiom_dev_t *dev, axiom_raw_sub_type_t *sub_type,
-        axiom_node_id_t* src_node_id, axiom_node_id_t* dst_node_id,
-        axiom_if_id_t* src_interface, axiom_if_id_t* dst_interface,
-        uint8_t* data)
-{
 
     return 0;
 }

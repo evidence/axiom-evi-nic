@@ -1,10 +1,10 @@
 #ifndef AXIOM_KERNEL_API_H
 #define AXIOM_KERNEL_API_H
 
-#include "axiom_nic_api.h"
+#include "axiom_nic_api_hw.h"
 
-axiom_dev_t *axiom_init_dev(void *vregs);
-void axiom_free_dev(axiom_dev_t *dev);
+axiom_dev_t *axiom_hw_dev_alloc(void *vregs);
+void axiom_hw_dev_free(axiom_dev_t *dev);
 
 
 /* debug functions */

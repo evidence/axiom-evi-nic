@@ -206,19 +206,17 @@ axiom_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
 }
 
 axiom_msg_id_t
-axiom_send_raw_neighbour(axiom_dev_t *dev, axiom_raw_sub_type_t sub_type,
-        axiom_node_id_t src_node_id, axiom_node_id_t dst_node_id,
-        axiom_if_id_t src_interface, axiom_if_id_t dst_interface, uint8_t data)
+axiom_send_raw_neighbour(axiom_dev_t *dev, axiom_if_id_t src_interface,
+        axiom_raw_type_t type, axiom_data_t data)
 {
 
     return 0;
 }
 
 axiom_msg_id_t
-axiom_recv_raw_neighbour (axiom_dev_t *dev, axiom_raw_sub_type_t *sub_type,
-        axiom_node_id_t* src_node_id, axiom_node_id_t* dst_node_id,
-        axiom_if_id_t* src_interface, axiom_if_id_t* dst_interface,
-        uint8_t* data)
+axiom_recv_raw_neighbour(axiom_dev_t *dev, axiom_if_id_t *src_interface,
+        axiom_if_id_t *dst_interface, axiom_raw_type_t *type,
+        axiom_data_t *data)
 {
 
     return 0;

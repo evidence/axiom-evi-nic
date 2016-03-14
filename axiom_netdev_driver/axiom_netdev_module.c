@@ -108,7 +108,7 @@ static int axiomnet_probe(struct platform_device *pdev)
     }
 
     /* allocate axiom api */
-    drvdata->dev_api = axiom_init_dev(drvdata->vregs);
+    drvdata->dev_api = axiom_hw_dev_alloc(drvdata->vregs);
     if (drvdata->dev_api == NULL) {
         err = -ENOMEM;
         goto free_local;
@@ -150,9 +150,9 @@ static int axiomnet_probe(struct platform_device *pdev)
     do {
     //    iowrite32(AXIOMREG_CONTROL_LOOPBACK, drvdata->vregs + AXIOMREG_IO_CONTROL);
         axiom_raw_msg_t raw_msg;
-        raw_msg.header.src_node = 3;
-        raw_msg.header.dst_node = 134;
-        raw_msg.header.type = 33;
+        raw_msg.header.raw.src_node = 3;
+        raw_msg.header.raw.dst_node = 134;
+        raw_msg.header.raw.type = 33;
         iowrite32(*((uint32_t*)(&raw_msg)), drvdata->vregs +
                 AXIOMREG_IO_RAW_TX_BASE + 8*(0));
         iowrite32(*((uint32_t*)(&raw_msg) + 1), drvdata->vregs +
@@ -168,7 +168,7 @@ static int axiomnet_probe(struct platform_device *pdev)
     axiomnet_destroy_chrdev(drvdata, &chrdev);
 free_irq:
     free_irq(drvdata->irq, drvdata);
-    axiom_free_dev(drvdata->dev_api);
+    axiom_hw_dev_free(drvdata->dev_api);
 free_local:
     kfree(drvdata);
     dprintk("error: %d", err);
@@ -182,7 +182,7 @@ static int axiomnet_remove(struct platform_device *pdev)
 
     axiomnet_destroy_chrdev(drvdata, &chrdev);
     free_irq(drvdata->irq, drvdata);
-    axiom_free_dev(drvdata->dev_api);
+    axiom_hw_dev_free(drvdata->dev_api);
     kfree(drvdata);
 
     dprintk("end");
@@ -279,49 +279,49 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
     switch (cmd) {
     case AXNET_SET_NODEID:
         get_user(buf_uint8, (uint8_t __user*)arg);
-        axiom_set_node_id(drvdata->dev_api, buf_uint8);
+        axiom_hw_set_node_id(drvdata->dev_api, buf_uint8);
         break;
     case AXNET_GET_NODEID:
-        buf_uint8 = axiom_get_node_id(drvdata->dev_api);
+        buf_uint8 = axiom_hw_get_node_id(drvdata->dev_api);
         put_user(buf_uint8, (uint8_t __user*)arg);
         break;
     case AXNET_SET_ROUTING:
         ret = copy_from_user(&buf_routing, argp, sizeof(buf_routing));
         if (ret)
             return -EFAULT;
-        ret = axiom_set_routing(drvdata->dev_api, buf_routing.node_id,
+        ret = axiom_hw_set_routing(drvdata->dev_api, buf_routing.node_id,
                 buf_routing.enabled_mask);
         break;
     case AXNET_GET_ROUTING:
         ret = copy_from_user(&buf_routing, argp, sizeof(buf_routing));
         if (ret)
             return -EFAULT;
-        ret = axiom_get_routing(drvdata->dev_api, buf_routing.node_id,
+        ret = axiom_hw_get_routing(drvdata->dev_api, buf_routing.node_id,
                 &buf_routing.enabled_mask);
         ret = copy_to_user(argp, &buf_routing, sizeof(buf_routing));
         if (ret)
             return -EFAULT;
         break;
     case AXNET_GET_IFNUMBER:
-        ret = axiom_get_if_number(drvdata->dev_api, &buf_uint8);
+        ret = axiom_hw_get_if_number(drvdata->dev_api, &buf_uint8);
         put_user(buf_uint8, (uint8_t __user*)arg);
         break;
     case AXNET_GET_IFINFO:
         get_user(buf_uint8, (uint8_t __user*)arg);
-        ret = axiom_get_if_info(drvdata->dev_api, buf_uint8, &buf_uint8_2);
+        ret = axiom_hw_get_if_info(drvdata->dev_api, buf_uint8, &buf_uint8_2);
         put_user(buf_uint8_2, (uint8_t __user*)arg);
         break;
     case AXNET_GET_STATUS:
-        buf_uint32 = axiom_read_ni_status(drvdata->dev_api);
+        buf_uint32 = axiom_hw_read_ni_status(drvdata->dev_api);
         put_user(buf_uint32, (uint32_t __user*)arg);
         break;
     case AXNET_GET_CONTROL:
-        buf_uint32 = axiom_read_ni_control(drvdata->dev_api);
+        buf_uint32 = axiom_hw_read_ni_control(drvdata->dev_api);
         put_user(buf_uint32, (uint32_t __user*)arg);
         break;
     case AXNET_SET_CONTROL:
         get_user(buf_uint32, (uint32_t __user*)arg);
-        axiom_set_ni_control(drvdata->dev_api, buf_uint32);
+        axiom_hw_set_ni_control(drvdata->dev_api, buf_uint32);
         break;
     default:
         ret = -EINVAL;

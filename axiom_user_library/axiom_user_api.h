@@ -8,7 +8,7 @@
  * 20160229 - v0.1 - Initial version
  */
 
-#include "axiom_nic_api.h"
+#include "axiom_nic_api_user.h"
 
 
 axiom_dev_t *axiom_open(void);
