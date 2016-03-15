@@ -284,7 +284,7 @@ int main (int argc, char *argv[])
 
         if (compress_array)
         {
-            compress_array = FALSE;
+            compress_array = 0;
             for (i = 0; i < nfds; i++)
             {
                 if (fds[i].fd == -1)
