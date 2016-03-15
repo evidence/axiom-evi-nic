@@ -10,31 +10,38 @@
 
 #include "axiom_switch_logic.h"
 
-#define AXSW_PORT_START         33300
-#define AXSW_NUM_NODES          16
+#define AXSW_PORT_START         33300   /* first port to listen */
+#define AXSW_PORT_MAX           16      /* max port supported */
+
+#define AXSW_BUF_SIZE           1024
 
 
 int main (int argc, char *argv[])
 {
     int    ret, on = 1;
-    int    listen_sd[AXSW_NUM_NODES], new_sd = -1;
+    int    listen_sd[AXSW_PORT_MAX], new_sd = -1;
     int    end_server = 0, compress_array = 0;
     int    close_conn;
-    char   buffer[1024];
+    char   buffer[AXSW_BUF_SIZE];
     struct sockaddr_in addr;
     int    timeout;
-    struct pollfd fds[AXSW_NUM_NODES*2];
+    struct pollfd fds[AXSW_PORT_MAX*2];
     int    nfds = 0, current_size = 0, i, j;
     int    port_index, num_ports = 0;
 
-    /* get the number of nodes */
+    /* first parameter: number of ports */
     if (argc < 2) {
         perror("Please, insert the number of node");
         exit(-1);
     }
 
-    if (sscanf (argv[1], "%i", &num_ports) != 1) {
+    if (sscanf(argv[1], "%i", &num_ports) != 1) {
         perror("parameter is not an integer");
+        exit(-1);
+    }
+
+    if (num_ports > AXSW_PORT_MAX) {
+        printf("Max ports supported is %d\n", AXSW_PORT_MAX);
         exit(-1);
     }
 
@@ -66,7 +73,7 @@ int main (int argc, char *argv[])
             exit(-1);
         }
 
-        /* Bind to an incremental address */
+        /* Bind to an incremental ports */
         memset(&addr, 0, sizeof(addr));
         addr.sin_family      = AF_INET;
         addr.sin_addr.s_addr = INADDR_ANY;
@@ -196,4 +203,6 @@ int main (int argc, char *argv[])
             close(fds[i].fd);
         }
     }
+
+    return 0;
 }
