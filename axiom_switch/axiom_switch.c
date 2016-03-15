@@ -6,6 +6,7 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <errno.h>
+#include <string.h>
 
 #define AXSW_PORT_START         33300
 
