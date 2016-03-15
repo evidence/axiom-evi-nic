@@ -28,7 +28,7 @@ int main (int argc, char *argv[])
     int    port_index, num_ports = 0;
 
     /* get the number of nodes */
-    if (argc < 1)
+    if (argc < 2)
     {
         perror("Please, insert the number of node");
         exit(-1);
