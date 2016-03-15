@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <string.h>
 
-#include "swithc_msg_management.h"
+#include "axiom_switch_logic.h"
 
 #define AXSW_PORT_START         33300
 #define AXSW_NUM_NODES          16
