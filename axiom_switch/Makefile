@@ -11,11 +11,11 @@ DESTDIR := $(PWD)
 
 all: $(APPS)
 
-axiom_switch: axiom_switch.o axiom_switch_logic.o
+axiom_switch: axiom_switch.o axiom_switch_logic_default.o
 
 axiom_switch.o: axiom_switch.c axiom_switch_logic.h
 
-axiom_switch_logic.o: axiom_switch_logic.c axiom_switch_logic.h
+axiom_switch_logic_default.o: axiom_switch_logic_default.c axiom_switch_logic.h
 
 install: $(APPS)
 	cp $(APPS) $(DESTDIR)/usr/bin/
