@@ -78,7 +78,7 @@ inline static int
 compute_vm_index_from_listen_sd(int sd, uint8_t *vm_index)
 {
     struct sockaddr_in sin;
-    int addrlen = sizeof(sin);
+    socklen_t addrlen = sizeof(sin);
     int local_port;
 
     if ((getsockname(sd, (struct sockaddr *)&sin, &addrlen) == 0) &&

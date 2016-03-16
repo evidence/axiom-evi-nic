@@ -12,6 +12,8 @@
 #include "axiom_switch_packets.h"
 #include "axiom_nic_packets.h"
 
+#include "dprintf.h"
+
 #ifdef AXTP_EXAMPLE1
 axiom_topology_t start_topology = {
     .topology = {
@@ -97,7 +99,7 @@ static int manage_neighbour_msg(axiom_raw_eth_t *neighbour_msg,
 {
     uint8_t dst_if;
     uint8_t my_vm_index, dest_vm_index;
-    int i, ret = 0;
+    int ret = 0;
 
     /* get the index of my virtual machine */
     ret = find_vm_index(my_sd, vm_sd, &my_vm_index);
@@ -106,7 +108,7 @@ static int manage_neighbour_msg(axiom_raw_eth_t *neighbour_msg,
         return ret;
     }
 
-    /* find the recipient virtual machine */
+    /* find the receiver virtual machine */
     dst_if = neighbour_msg->raw_msg.header.neighbour.dst_if;
     dest_vm_index = start_topology.topology[my_vm_index][dst_if];
 
@@ -144,8 +146,9 @@ static int manage_raw_msg(axiom_raw_eth_t *raw_msg, int *dest_sd,
 }
 
 
-int manage_axiom_msg (char *buffer, uint32_t length,
-                      int my_sd, int* vm_sd, int* node_sd)
+int
+axsw_logic_forward(axsw_logic_t *logic, char *buffer, uint32_t length,
+        int my_sd)
 {
     axiom_raw_eth_t *axiom_packet;
     int ret, dest_sd;
@@ -167,14 +170,16 @@ int manage_axiom_msg (char *buffer, uint32_t length,
     if (axiom_packet->raw_msg.header.raw.flags & AXIOM_RAW_FLAG_NEIGHBOUR)
     {
         /* neighbour message */
-        ret = manage_neighbour_msg(axiom_packet, vm_sd, my_sd,
-                                   &dest_sd, node_sd);
+        ret = manage_neighbour_msg(axiom_packet, logic->vm_sd, my_sd,
+                                   &dest_sd, logic->node_sd);
     }
     else
     {
         /* raw message */
-        ret = manage_raw_msg(axiom_packet, &dest_sd, node_sd);
+        ret = manage_raw_msg(axiom_packet, &dest_sd, logic->node_sd);
     }
+
+    /* TODO: if dest_sd is -1 or 0? */
 
     if (ret != 0)
     {
@@ -185,15 +190,15 @@ int manage_axiom_msg (char *buffer, uint32_t length,
     ret = send(dest_sd, &length, sizeof(length), 0);
     if (ret != sizeof(length))
     {
-        printf("length send error\n");
+        DPRINTF("length send error");
         return -1;
     }
 
-    // send message to the recipient
+    /* send message to the receiver */
     ret = send(dest_sd, buffer, length, 0);
     if (ret != length)
     {
-        printf("message send error\n");
+        DPRINTF("message send error");
         return -1;
     }
 

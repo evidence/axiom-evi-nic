@@ -1,12 +1,14 @@
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <netinet/in.h>
 #include <sys/ioctl.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/time.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <string.h>
 
 #define PDEBUG
 #include "dprintf.h"
@@ -16,23 +18,68 @@
 
 #define AXSW_BUF_SIZE           1024
 
+static int
+listen_socket_init(int *listen_sd, uint16_t port) {
+    struct sockaddr_in addr;
+    int ret, on = 1;
+
+    *listen_sd = socket(AF_INET, SOCK_STREAM, 0);
+    if (*listen_sd < 0) {
+        perror("socket() failed");
+        return -1;
+    }
+
+    ret = setsockopt(*listen_sd, SOL_SOCKET,  SO_REUSEADDR, (char *)&on,
+            sizeof(on));
+    if (ret < 0) {
+        perror("setsockopt() failed");
+        goto err;
+    }
+
+    ret = ioctl(*listen_sd, FIONBIO, (char *)&on);
+    if (ret < 0)
+    {
+        perror("ioctl() failed");
+        goto err;
+    }
+
+    /* Bind to an incremental ports */
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family      = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port        = htons(port);
+
+    ret = bind(*listen_sd, (struct sockaddr *)&addr, sizeof(addr));
+    if (ret < 0) {
+        perror("bind() failed");
+        goto err;
+    }
+
+    ret = listen(*listen_sd, 32);
+    if (ret < 0) {
+        perror("listen() failed");
+        goto err;
+    }
+
+    return 0;
+
+err:
+    close(*listen_sd);
+    return ret;
+}
+
 
 int main (int argc, char *argv[])
 {
-    int    ret, on = 1;
-    int    listen_sd[AXSW_PORT_MAX], new_sd = -1;
-    int    end_server = 0, compress_array = 0;
-    int    close_conn;
-    char   buffer[AXSW_BUF_SIZE];
-    struct sockaddr_in addr;
-    int    timeout;
+    int ret, timeout, end_server = 0, compress_array = 0;
+    int nfds = 0, current_size = 0, i, j;
+    int num_ports = 0;
+    char buffer[AXSW_BUF_SIZE];
     struct pollfd fds[AXSW_PORT_MAX*2];
-    int    vm_sd[AXSW_PORT_MAX];
-    int    node_sd[AXSW_PORT_MAX];
-    int    nfds = 0, current_size = 0, i, j;
-    int    port_index, num_ports = 0;
-    uint8_t     vm_index;
-    uint32_t    axiom_msg_length;
+    int listen_sd[AXSW_PORT_MAX];
+    axsw_logic_t logic_status;
+    uint8_t vm_index;
+    uint32_t axiom_msg_length;
 
 
     /* first parameter: number of ports */
@@ -52,57 +99,17 @@ int main (int argc, char *argv[])
     }
 
     memset(fds, 0 , sizeof(fds));
-    memset(vm_sd, -1, sizeof(vm_sd));
-    memset(node_sd, -1, sizeof(node_sd));
 
+    axsw_logic_init(&logic_status);
 
     /* listening sockets creation */
     for (i = 0; i < num_ports; i++) {
-
-        listen_sd[i] = socket(AF_INET, SOCK_STREAM, 0);
-        if (listen_sd[i] < 0) {
-            perror("socket() failed");
+        ret = listen_socket_init(&listen_sd[i], AXSW_PORT_START + i);
+        if (ret) {
+            EPRINTF("listen_socket_init error");
             exit(-1);
         }
 
-        ret = setsockopt(listen_sd[i], SOL_SOCKET,  SO_REUSEADDR, (char *)&on,
-                sizeof(on));
-
-        if (ret < 0) {
-            perror("setsockopt() failed");
-            close(listen_sd[i]);
-            exit(-1);
-        }
-
-        ret = ioctl(listen_sd[i], FIONBIO, (char *)&on);
-        if (ret < 0)
-        {
-            perror("ioctl() failed");
-            close(listen_sd[i]);
-            exit(-1);
-        }
-
-        /* Bind to an incremental ports */
-        memset(&addr, 0, sizeof(addr));
-        addr.sin_family      = AF_INET;
-        addr.sin_addr.s_addr = INADDR_ANY;
-        addr.sin_port        = htons(AXSW_PORT_START + i);
-
-        ret = bind(listen_sd[i], (struct sockaddr *)&addr, sizeof(addr));
-        if (ret < 0) {
-            perror("bind() failed");
-            close(listen_sd[i]);
-            exit(-1);
-        }
-
-        ret = listen(listen_sd[i], 32);
-        if (ret < 0) {
-            perror("listen() failed");
-            close(listen_sd[i]);
-            exit(-1);
-        }
-
-        /* Set up the initial listening socket */
         fds[i].fd = listen_sd[i];
         fds[i].events = POLLIN;
         nfds++;
@@ -111,12 +118,9 @@ int main (int argc, char *argv[])
     /* Initialize the timeout to 3 minutes. */
     timeout = (3 * 60 * 1000);
 
-    /*************************************************************/
-    /* Loop waiting for incoming connects or for incoming data   */
-    /* on any of the connected sockets.                          */
-    /*************************************************************/
+    /* main event loop */
     do {
-        printf("Waiting on poll()...\n");
+        DPRINTF("Waiting on poll()...\n");
         ret = poll(fds, nfds, timeout);
         if (ret < 0) {
             perror("  poll() failed");
@@ -139,6 +143,8 @@ int main (int argc, char *argv[])
             }
 
             if (fds[i].fd == listen_sd[i]) {
+                int new_sd = -1;
+
                 /* Listening descriptor */
                 do {
                     /* Accept each incoming connection */
@@ -169,13 +175,13 @@ int main (int argc, char *argv[])
                     {
                         /* memorize socket associated with the
                          * virtual machine number vm_index */
-                        vm_sd[vm_index] = new_sd;
+                        logic_status.vm_sd[vm_index] = new_sd;
                     }
 
                 } while (new_sd != -1);
             } else {
                 /* an existing connection must be readable */
-                close_conn = 0;
+                int close_conn = 0;
 
                 do {
                     /* receive the length of the ethernet packet */
@@ -218,14 +224,12 @@ int main (int argc, char *argv[])
                             break;
                         }
 
-                        if (ret != axiom_msg_length)
-                        {
-                            printf("Received a ethernet packet with unexpected length\n");
-                        }
-                        else
-                        {
+                        if (ret != axiom_msg_length) {
+                            EPRINTF("Received a ethernet packet with unexpected length");
+                        } else {
                             /* Manage the received message */
-                            manage_axiom_msg(buffer, axiom_msg_length, fds[i].fd, vm_sd, node_sd);
+                            axsw_logic_forward(&logic_status, buffer, axiom_msg_length,
+                                    fds[i].fd);
                         }
                     }
 
