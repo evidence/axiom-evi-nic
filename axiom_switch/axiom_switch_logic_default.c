@@ -158,7 +158,7 @@ int manage_axiom_msg (char *buffer, uint32_t length,
 
     axiom_packet = (axiom_raw_eth_t *)buffer;
 
-    if (axiom_packet->eth_hdr.type != MY_TYPE)
+    if (axiom_packet->eth_hdr.type != AXIOM_ETH_TYPE_RAW)
     {
         printf("Received a ethernet packet with wrong type");
         return -1;
