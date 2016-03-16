@@ -1,7 +1,7 @@
 
 APPS := axiom_switch
 CLEANFILES = $(APPS) *.o
-CFLAGS += -g -I../../axiom-docs/include/
+CFLAGS += -g -I../../axiom-docs/include/ -Wall
 #LDFLAGS += -pthread
 
 PWD := $(shell pwd)
