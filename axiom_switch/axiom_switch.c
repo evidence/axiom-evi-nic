@@ -37,7 +37,7 @@ int main (int argc, char *argv[])
 
     /* first parameter: number of ports */
     if (argc < 2) {
-        perror("Please, insert the number of node");
+        printf("Parameter required: number of ports\n");
         exit(-1);
     }
 
@@ -123,7 +123,7 @@ int main (int argc, char *argv[])
             break;
         }
         if (ret == 0) {
-            printf("  poll() timed out. End program.\n");
+            IPRINTF("  poll() timed out\n");
             break;
         }
 
