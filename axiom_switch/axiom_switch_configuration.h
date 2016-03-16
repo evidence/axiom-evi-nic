@@ -4,43 +4,40 @@
 #include <stdint.h>
 #include <netinet/in.h>
 
-//#define EXAMPLE1
-//#define EXAMPLE2
-//#define EXAMPLE3
-//#define EXAMPLE4
-#define EXAMPLE5
+//#define AXTP_EXAMPLE1
+//#define AXTP_EXAMPLE2
+//#define AXTP_EXAMPLE3
+//#define AXTP_EXAMPLE4
+#define AXTP_EXAMPLE5
 
-#ifdef EXAMPLE1
-#define NUM_NODES               8
+#ifdef AXTP_EXAMPLE1
+#define AXTP_NUM_NODES               8
 #endif
-#ifdef EXAMPLE2
-#define NUM_NODES               10
+#ifdef AXTP_EXAMPLE2
+#define AXTP_NUM_NODES               10
 #endif
-#ifdef EXAMPLE3
-#define NUM_NODES               6
+#ifdef AXTP_EXAMPLE3
+#define AXTP_NUM_NODES               6
 #endif
-#ifdef EXAMPLE4
-#define NUM_NODES               6
+#ifdef AXTP_EXAMPLE4
+#define AXTP_NUM_NODES               6
 #endif
-#ifdef EXAMPLE5
-#define NUM_NODES               6
+#ifdef AXTP_EXAMPLE5
+#define AXTP_NUM_NODES               6
 #endif
 
-#define NUM_INTERFACES          4       /* Max number of connected
-                                            node interfaces */
-#define NULL_NODE               255     /* Virtual machine (node)
-                                            not connected */
+#define AXTP_NUM_INTERFACES          4   /* Max number of connected node interfaces */
+#define AXTP_NULL_NODE               255 /* Virtual machine (node) not connected */
 
-typedef struct topology {
-    uint8_t topology[NUM_NODES][NUM_INTERFACES];
+typedef struct axiom_topology {
+    uint8_t topology[AXTP_NUM_NODES][AXTP_NUM_INTERFACES];
     int num_nodes;
     int num_interfaces;
-} topology_t;
+} axiom_topology_t;
 
 
 
-/* find the socket descriptor, given its associated
-   node id */
+/* find the socket descriptor, given its associated node id */
 inline static void
 find_raw_sd(int dst_node, int *node_sd, int *dest_sd)
 {
@@ -48,10 +45,7 @@ find_raw_sd(int dst_node, int *node_sd, int *dest_sd)
     return;
 }
 
-/* find the socket descriptor, given its associated
-   virtual machine */
-/* find the socket descriptor, given its associated
-   virtual machine */
+/* find the socket descriptor, given its associated virtual machine */
 inline static void
 find_neighbour_sd(int dest_vm_index, int *vm_sd, int *dest_sd)
 {
@@ -59,8 +53,7 @@ find_neighbour_sd(int dest_vm_index, int *vm_sd, int *dest_sd)
     return;
 }
 
-/* find the index of virtual machine, given its associated
-   socket descriptor */
+/* find the index of virtual machine, given its associated socket descriptor */
 inline static int
 find_vm_index(int sd, int *vm_sd, uint8_t *vm_index)
 {

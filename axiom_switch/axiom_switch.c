@@ -8,87 +8,14 @@
 #include <errno.h>
 #include <string.h>
 
+#define PDEBUG
+#include "dprintf.h"
+
 #include "axiom_switch_logic.h"
 #include "axiom_switch_configuration.h"
 
 #define AXSW_BUF_SIZE           1024
 
-#ifdef EXAMPLE1
-topology_t start_topology = {
-    .topology = {
-        { 1, 2, 3, NULL_NODE},
-        { 0, 6, NULL_NODE, NULL_NODE},
-        { 0, 3, NULL_NODE, NULL_NODE},
-        { 0, 4, 2, NULL_NODE},
-        { 3, 5, NULL_NODE, NULL_NODE},
-        { 6, 4, NULL_NODE, NULL_NODE},
-        { 1, 5, 7, NULL_NODE},
-        { 6, NULL_NODE, NULL_NODE, NULL_NODE},
-    },
-    .num_nodes = NUM_NODES,
-    .num_interfaces = NUM_INTERFACES
-};
-#endif
-#ifdef EXAMPLE2
-topology_t start_topology = {
-    .topology = {
-        { 1, 2, 3, NULL_NODE},
-        { 0, 4, 8, NULL_NODE},
-        { 5, 0, 4, NULL_NODE},
-        { 0, NULL_NODE, NULL_NODE, NULL_NODE},
-        { 2, 1, 5, NULL_NODE},
-        { 2, 4, 6, 7},
-        { 8, 5, NULL_NODE, NULL_NODE},
-        { 5, 9, NULL_NODE, NULL_NODE},
-        { 6, 1, NULL_NODE, NULL_NODE},
-        { 7, NULL_NODE, NULL_NODE, NULL_NODE},
-    },
-    .num_nodes = NUM_NODES,
-    .num_interfaces = NUM_INTERFACES
-};
-#endif
-#ifdef EXAMPLE3
-topology_t start_topology = {
-    .topology = {
-        { 1, 2, NULL_NODE, NULL_NODE},
-        { 0, 3, 3, 4},
-        { 0, 4, NULL_NODE, NULL_NODE},
-        { 1, 1, 4, 5},
-        { 3, 1, 2, NULL_NODE},
-        { 3, NULL_NODE, NULL_NODE, NULL_NODE},
-    },
-    .num_nodes = NUM_NODES,
-    .num_interfaces = NUM_INTERFACES
-};
-#endif
-#ifdef EXAMPLE4
-topology_t start_topology = {
-    .topology = {
-        { 1, 2, NULL_NODE, NULL_NODE},
-        { 0, 4, 3, 3},
-        { 4, 0, NULL_NODE, NULL_NODE},
-        { 4, 1, 1, 5},
-        { 3, 1, 2, NULL_NODE},
-        { 3, NULL_NODE, NULL_NODE, NULL_NODE},
-    },
-    .num_nodes = NUM_NODES,
-    .num_interfaces = NUM_INTERFACES
-};
-#endif
-#ifdef EXAMPLE5
-topology_t start_topology = {
-    .topology = {
-        { 1, 5, NULL_NODE, NULL_NODE},
-        { 0, 2, NULL_NODE, NULL_NODE},
-        { 1, 3, 4, NULL_NODE},
-        { 2, NULL_NODE, NULL_NODE, NULL_NODE},
-        { 2, 5, NULL_NODE, NULL_NODE},
-        { 4, 0, NULL_NODE, NULL_NODE},
-    },
-    .num_nodes = NUM_NODES,
-    .num_interfaces = NUM_INTERFACES
-};
-#endif
 
 int main (int argc, char *argv[])
 {

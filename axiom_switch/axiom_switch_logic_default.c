@@ -5,15 +5,89 @@
  */
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "axiom_switch_logic.h"
 #include "axiom_switch_configuration.h"
 #include "axiom_switch_packets.h"
 #include "axiom_nic_packets.h"
 
-#define MY_TYPE         0x8333          // XXX
-
-extern topology_t start_topology;
+#ifdef AXTP_EXAMPLE1
+axiom_topology_t start_topology = {
+    .topology = {
+        { 1, 2, 3, AXTP_NULL_NODE},
+        { 0, 6, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 0, 3, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 0, 4, 2, AXTP_NULL_NODE},
+        { 3, 5, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 6, 4, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 1, 5, 7, AXTP_NULL_NODE},
+        { 6, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE},
+    },
+    .num_nodes = AXTP_NUM_NODES,
+    .num_interfaces = AXTP_NUM_INTERFACES
+};
+#endif
+#ifdef AXTP_EXAMPLE2
+axiom_topology_t start_topology = {
+    .topology = {
+        { 1, 2, 3, AXTP_NULL_NODE},
+        { 0, 4, 8, AXTP_NULL_NODE},
+        { 5, 0, 4, AXTP_NULL_NODE},
+        { 0, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 2, 1, 5, AXTP_NULL_NODE},
+        { 2, 4, 6, 7},
+        { 8, 5, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 5, 9, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 6, 1, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 7, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE},
+    },
+    .num_nodes = AXTP_NUM_NODES,
+    .num_interfaces = AXTP_NUM_INTERFACES
+};
+#endif
+#ifdef AXTP_EXAMPLE3
+axiom_topology_t start_topology = {
+    .topology = {
+        { 1, 2, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 0, 3, 3, 4},
+        { 0, 4, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 1, 1, 4, 5},
+        { 3, 1, 2, AXTP_NULL_NODE},
+        { 3, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE},
+    },
+    .num_nodes = AXTP_NUM_NODES,
+    .num_interfaces = AXTP_NUM_INTERFACES
+};
+#endif
+#ifdef AXTP_EXAMPLE4
+axiom_topology_t start_topology = {
+    .topology = {
+        { 1, 2, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 0, 4, 3, 3},
+        { 4, 0, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 4, 1, 1, 5},
+        { 3, 1, 2, AXTP_NULL_NODE},
+        { 3, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE},
+    },
+    .num_nodes = AXTP_NUM_NODES,
+    .num_interfaces = AXTP_NUM_INTERFACES
+};
+#endif
+#ifdef AXTP_EXAMPLE5
+axiom_topology_t start_topology = {
+    .topology = {
+        { 1, 5, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 0, 2, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 1, 3, 4, AXTP_NULL_NODE},
+        { 2, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 2, 5, AXTP_NULL_NODE, AXTP_NULL_NODE},
+        { 4, 0, AXTP_NULL_NODE, AXTP_NULL_NODE},
+    },
+    .num_nodes = AXTP_NUM_NODES,
+    .num_interfaces = AXTP_NUM_INTERFACES
+};
+#endif
 
 /* given the received socket and messages, return the recipient
    socket of the neighbour message */
