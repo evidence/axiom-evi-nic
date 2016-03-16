@@ -298,7 +298,7 @@ int main (int argc, char *argv[])
                         else
                         {
                             /* Manage the received message */
-                            manage_axiom_msg(buffer, ret, fds[i].fd, vm_sd, node_sd);
+                            manage_axiom_msg(buffer, axiom_msg_length, fds[i].fd, vm_sd, node_sd);
                         }
                     }
 

@@ -70,7 +70,7 @@ static int manage_raw_msg(axiom_raw_eth_t *raw_msg, int *dest_sd,
 }
 
 
-int manage_axiom_msg (char *buffer, unsigned int length,
+int manage_axiom_msg (char *buffer, uint32_t length,
                       int my_sd, int* vm_sd, int* node_sd)
 {
     axiom_raw_eth_t *axiom_packet;
