@@ -9,12 +9,86 @@
 #include <string.h>
 
 #include "axiom_switch_logic.h"
-
-#define AXSW_PORT_START         33300   /* first port to listen */
-#define AXSW_PORT_MAX           16      /* max port supported */
+#include "axiom_switch_configuration.h"
 
 #define AXSW_BUF_SIZE           1024
 
+#ifdef EXAMPLE1
+topology_t start_topology = {
+    .topology = {
+        { 1, 2, 3, NULL_NODE},
+        { 0, 6, NULL_NODE, NULL_NODE},
+        { 0, 3, NULL_NODE, NULL_NODE},
+        { 0, 4, 2, NULL_NODE},
+        { 3, 5, NULL_NODE, NULL_NODE},
+        { 6, 4, NULL_NODE, NULL_NODE},
+        { 1, 5, 7, NULL_NODE},
+        { 6, NULL_NODE, NULL_NODE, NULL_NODE},
+    },
+    .num_nodes = NUM_NODES,
+    .num_interfaces = NUM_INTERFACES
+};
+#endif
+#ifdef EXAMPLE2
+topology_t start_topology = {
+    .topology = {
+        { 1, 2, 3, NULL_NODE},
+        { 0, 4, 8, NULL_NODE},
+        { 5, 0, 4, NULL_NODE},
+        { 0, NULL_NODE, NULL_NODE, NULL_NODE},
+        { 2, 1, 5, NULL_NODE},
+        { 2, 4, 6, 7},
+        { 8, 5, NULL_NODE, NULL_NODE},
+        { 5, 9, NULL_NODE, NULL_NODE},
+        { 6, 1, NULL_NODE, NULL_NODE},
+        { 7, NULL_NODE, NULL_NODE, NULL_NODE},
+    },
+    .num_nodes = NUM_NODES,
+    .num_interfaces = NUM_INTERFACES
+};
+#endif
+#ifdef EXAMPLE3
+topology_t start_topology = {
+    .topology = {
+        { 1, 2, NULL_NODE, NULL_NODE},
+        { 0, 3, 3, 4},
+        { 0, 4, NULL_NODE, NULL_NODE},
+        { 1, 1, 4, 5},
+        { 3, 1, 2, NULL_NODE},
+        { 3, NULL_NODE, NULL_NODE, NULL_NODE},
+    },
+    .num_nodes = NUM_NODES,
+    .num_interfaces = NUM_INTERFACES
+};
+#endif
+#ifdef EXAMPLE4
+topology_t start_topology = {
+    .topology = {
+        { 1, 2, NULL_NODE, NULL_NODE},
+        { 0, 4, 3, 3},
+        { 4, 0, NULL_NODE, NULL_NODE},
+        { 4, 1, 1, 5},
+        { 3, 1, 2, NULL_NODE},
+        { 3, NULL_NODE, NULL_NODE, NULL_NODE},
+    },
+    .num_nodes = NUM_NODES,
+    .num_interfaces = NUM_INTERFACES
+};
+#endif
+#ifdef EXAMPLE5
+topology_t start_topology = {
+    .topology = {
+        { 1, 5, NULL_NODE, NULL_NODE},
+        { 0, 2, NULL_NODE, NULL_NODE},
+        { 1, 3, 4, NULL_NODE},
+        { 2, NULL_NODE, NULL_NODE, NULL_NODE},
+        { 2, 5, NULL_NODE, NULL_NODE},
+        { 4, 0, NULL_NODE, NULL_NODE},
+    },
+    .num_nodes = NUM_NODES,
+    .num_interfaces = NUM_INTERFACES
+};
+#endif
 
 int main (int argc, char *argv[])
 {
@@ -26,8 +100,13 @@ int main (int argc, char *argv[])
     struct sockaddr_in addr;
     int    timeout;
     struct pollfd fds[AXSW_PORT_MAX*2];
+    int    vm_sd[AXSW_PORT_MAX];
+    int    node_sd[AXSW_PORT_MAX];
     int    nfds = 0, current_size = 0, i, j;
     int    port_index, num_ports = 0;
+    uint8_t     vm_index;
+    uint32_t    axiom_msg_length;
+
 
     /* first parameter: number of ports */
     if (argc < 2) {
@@ -46,6 +125,9 @@ int main (int argc, char *argv[])
     }
 
     memset(fds, 0 , sizeof(fds));
+    memset(vm_sd, -1, sizeof(vm_sd));
+    memset(node_sd, -1, sizeof(node_sd));
+
 
     /* listening sockets creation */
     for (i = 0; i < num_ports; i++) {
@@ -148,13 +230,29 @@ int main (int argc, char *argv[])
                     fds[nfds].fd = new_sd;
                     fds[nfds].events = POLLIN;
                     nfds++;
+
+                    /* get index of the virtual machine associated with
+                        the connected socket (new_sd)*/
+                    if (compute_vm_index_from_listen_sd(listen_sd[i], &vm_index) == -1)
+                    {
+                        printf("Error getting socket port \n");
+                        end_server = 1;
+                    }
+                    else
+                    {
+                        /* memorize socket associated with the
+                         * virtual machine number vm_index */
+                        vm_sd[vm_index] = new_sd;
+                    }
+
                 } while (new_sd != -1);
             } else {
                 /* an existing connection must be readable */
                 close_conn = 0;
 
                 do {
-                    ret = recv(fds[i].fd, buffer, sizeof(buffer), 0);
+                    /* receive the length of the ethernet packet */
+                    ret = recv(fds[i].fd, &axiom_msg_length, sizeof(int), MSG_WAITALL);
                     if (ret < 0) {
                         if (errno != EWOULDBLOCK) {
                             perror("  recv() failed");
@@ -169,8 +267,40 @@ int main (int argc, char *argv[])
                         break;
                     }
 
-                    /* Data was received */
-                    receive_axiom_msg(buffer, ret);
+                    axiom_msg_length = ntohl(axiom_msg_length);
+                    if (axiom_msg_length > sizeof(buffer))
+                    {
+                        printf("Can't receive this too long message\n");
+                    }
+                    else
+                    {
+                        /* receive ethernet packet */
+                        ret = recv(fds[i].fd, buffer, axiom_msg_length, MSG_WAITALL);
+
+                        if (ret < 0) {
+                            if (errno != EWOULDBLOCK) {
+                                perror("  recv() failed");
+                                close_conn = 1;
+                            }
+                            break;
+                        }
+
+                        if (ret == 0) {
+                            printf("  Connection closed\n");
+                            close_conn = 1;
+                            break;
+                        }
+
+                        if (ret != axiom_msg_length)
+                        {
+                            printf("Received a ethernet packet with unexpected length\n");
+                        }
+                        else
+                        {
+                            /* Manage the received message */
+                            manage_axiom_msg(buffer, ret, fds[i].fd, vm_sd, node_sd);
+                        }
+                    }
 
                 } while(1);
 
