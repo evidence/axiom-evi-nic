@@ -14,9 +14,11 @@
 #include "dprintf.h"
 
 #include "axiom_switch_logic.h"
-#include "axiom_switch_configuration.h"
+#include "axiom_switch_topology.h"
 
 #define AXSW_BUF_SIZE           1024
+#define AXSW_FDS_SIZE           AXSW_PORT_MAX*2
+
 
 static int
 listen_socket_init(int *listen_sd, uint16_t port) {
@@ -73,6 +75,7 @@ listen_socket_find(int *listen_sd, int fds_index, int sd, int *vm_index)
 {
     int i;
 
+    /* listener socket is added in the first slot of fds */
     if (fds_index < AXSW_PORT_MAX && listen_sd[fds_index] == sd) {
         *vm_index = fds_index;
         return 1;
@@ -89,17 +92,54 @@ listen_socket_find(int *listen_sd, int fds_index, int sd, int *vm_index)
     return 0;
 }
 
+typedef struct axsw_event_loop {
+    int timeout;
+    int end_server;
+    int compress_array;
+    int fds_tail;
+    int fds_size;
+    char buffer[AXSW_BUF_SIZE];
+    struct pollfd fds[AXSW_FDS_SIZE];
+} axsw_event_loop_t;
+
+static void
+axsw_event_loop_init(axsw_event_loop_t *el_status)
+{
+    /* Initialize the timeout to 3 minutes. */
+    el_status->timeout = (3 * 60 * 1000);
+    el_status->end_server = 0;
+    el_status->compress_array = 0;
+    el_status->fds_tail = 0;
+    el_status->fds_size = AXSW_FDS_SIZE;
+
+    memset(el_status->fds, 0 , sizeof(el_status->fds));
+}
+
+static int
+axsw_event_loop_add_sd(axsw_event_loop_t *el_status, int new_sd, int events)
+{
+    int cur_tail = el_status->fds_tail;
+
+    if (cur_tail >= el_status->fds_size)
+        return -1;
+
+    el_status->fds[cur_tail].fd = new_sd;
+    el_status->fds[cur_tail].events = events;
+    el_status->fds_tail++;
+
+    return cur_tail;
+}
+
+
 
 int main (int argc, char *argv[])
 {
-    int ret, timeout, end_server = 0, compress_array = 0;
-    int fds_tail = 0, fds_tail_max_listen, i, j;
+    int ret, fds_tail_max_listen, i, j;
     int num_ports = 0;
-    char buffer[AXSW_BUF_SIZE];
-    struct pollfd fds[AXSW_PORT_MAX*2];
     int listen_sd[AXSW_PORT_MAX];
-    axsw_logic_t logic_status;
     uint32_t axiom_msg_length;
+    axsw_logic_t logic_status;
+    axsw_event_loop_t el_status;
 
 
     /* first parameter: number of ports */
@@ -118,9 +158,8 @@ int main (int argc, char *argv[])
         exit(-1);
     }
 
-    memset(fds, 0 , sizeof(fds));
-
     axsw_logic_init(&logic_status);
+    axsw_event_loop_init(&el_status);
 
     /* listening sockets creation */
     for (i = 0; i < num_ports; i++) {
@@ -130,21 +169,21 @@ int main (int argc, char *argv[])
             exit(-1);
         }
 
-        fds[fds_tail].fd = listen_sd[i];
-        fds[fds_tail].events = POLLIN;
-        fds_tail++;
+        ret = axsw_event_loop_add_sd(&el_status, listen_sd[i], POLLIN);
+        if (ret < 0) {
+            EPRINTF("no space in fds array");
+            exit(-1);
+        }
+        fds_tail_max_listen = ret;
     }
-    fds_tail_max_listen = fds_tail;
 
-    /* Initialize the timeout to 3 minutes. */
-    timeout = (3 * 60 * 1000);
 
     /* main event loop */
     do {
-        int current_size = fds_tail;
+        int current_size = el_status.fds_tail;
 
         DPRINTF("Waiting on poll()...\n");
-        ret = poll(fds, fds_tail, timeout);
+        ret = poll(el_status.fds, el_status.fds_tail, el_status.timeout);
         if (ret < 0) {
             perror("  poll() failed");
             break;
@@ -157,49 +196,47 @@ int main (int argc, char *argv[])
         for (i = 0; i < current_size; i++) {
             int vm_index;
 
-            if (fds[i].revents == 0)
+            if (el_status.fds[i].revents == 0)
                 continue;
 
-            if(fds[i].revents != POLLIN) {
-                printf("  Error! revents = %d\n", fds[i].revents);
-                end_server = 1;
+            if(el_status.fds[i].revents != POLLIN) {
+                printf("  Error! revents = %d\n", el_status.fds[i].revents);
+                el_status.end_server = 1;
                 break;
             }
 
             /* check listener socket */
             if (i < fds_tail_max_listen &&
-                    listen_socket_find(listen_sd, i, fds[i].fd, &vm_index)) {
-                int new_sd = -1;
+                    listen_socket_find(listen_sd, i, el_status.fds[i].fd, &vm_index)) {
+                int new_sd;
 
-                do {
-                    /* Accept each incoming connection */
-                    new_sd = accept(listen_sd[i], NULL, NULL);
-                    if (new_sd < 0) {
-                        if (errno != EWOULDBLOCK) {
-                            perror("  accept() failed");
-                            end_server = 1;
-                        }
-                        break;
+                /* Accept each incoming connection */
+                new_sd = accept(listen_sd[i], NULL, NULL);
+                if (new_sd < 0) {
+                    if (errno != EWOULDBLOCK) {
+                        perror("  accept() failed");
+                        el_status.end_server = 1;
                     }
+                    break;
+                }
 
-                    /* Add the new incoming connection to the fds structure */
-                    printf("  New incoming connection - %d\n", new_sd);
-                    fds[fds_tail].fd = new_sd;
-                    fds[fds_tail].events = POLLIN;
-                    fds_tail++;
+                /* Add the new incoming connection to the fds structure */
+                printf("  New incoming connection - %d\n", new_sd);
+                ret = axsw_event_loop_add_sd(&el_status, new_sd, POLLIN);
+                if (ret < 0) {
+                    EPRINTF("no space in fds array");
+                    break;
+                }
 
-                    /* memorize socket associated with the virtual machine
-                     * number vm_index */
-                    logic_status.vm_sd[vm_index] = new_sd;
+                axsw_logic_set_vm_sd(&logic_status, vm_index, new_sd);
 
-                } while (new_sd != -1);
             } else {
                 /* an existing connection must be readable */
                 int close_conn = 0;
 
                 do {
                     /* receive the length of the ethernet packet */
-                    ret = recv(fds[i].fd, &axiom_msg_length, sizeof(int), MSG_WAITALL);
+                    ret = recv(el_status.fds[i].fd, &axiom_msg_length, sizeof(int), MSG_WAITALL);
                     if (ret < 0) {
                         if (errno != EWOULDBLOCK) {
                             perror("  recv() failed");
@@ -215,14 +252,14 @@ int main (int argc, char *argv[])
                     }
 
                     axiom_msg_length = ntohl(axiom_msg_length);
-                    if (axiom_msg_length > sizeof(buffer))
+                    if (axiom_msg_length > sizeof(el_status.buffer))
                     {
                         printf("Can't receive this too long message\n");
                     }
                     else
                     {
                         /* receive ethernet packet */
-                        ret = recv(fds[i].fd, buffer, axiom_msg_length, MSG_WAITALL);
+                        ret = recv(el_status.fds[i].fd, el_status.buffer, axiom_msg_length, MSG_WAITALL);
 
                         if (ret < 0) {
                             if (errno != EWOULDBLOCK) {
@@ -242,40 +279,40 @@ int main (int argc, char *argv[])
                             EPRINTF("Received a ethernet packet with unexpected length");
                         } else {
                             /* Manage the received message */
-                            axsw_logic_forward(&logic_status, buffer, axiom_msg_length,
-                                    fds[i].fd);
+                            axsw_logic_forward(&logic_status, el_status.buffer,
+                                    axiom_msg_length, el_status.fds[i].fd);
                         }
                     }
 
                 } while(1);
 
                 if (close_conn == 1) {
-                    close(fds[i].fd);
-                    fds[i].fd = -1;
-                    compress_array = 1;
+                    close(el_status.fds[i].fd);
+                    el_status.fds[i].fd = -1;
+                    el_status.compress_array = 1;
                 }
             }
         }
 
-        if (compress_array) {
-            compress_array = 0;
-            for (i = 0; i < fds_tail; i++) {
-                if (fds[i].fd == -1) {
-                    for(j = i; j < fds_tail; j++) {
-                        fds[j].fd = fds[j+1].fd;
+        if (el_status.compress_array) {
+            el_status.compress_array = 0;
+            for (i = 0; i < el_status.fds_tail; i++) {
+                if (el_status.fds[i].fd == -1) {
+                    for(j = i; j < el_status.fds_tail; j++) {
+                        el_status.fds[j].fd = el_status.fds[j+1].fd;
                     }
                     i--;
-                    fds_tail--;
+                    el_status.fds_tail--;
                 }
             }
         }
 
-    } while (end_server == 0); /* End of serving running.    */
+    } while (el_status.end_server == 0); /* End of serving running.    */
 
     /* Clean up all of the sockets that are open */
-    for (i = 0; i < fds_tail; i++) {
-        if(fds[i].fd >= 0) {
-            close(fds[i].fd);
+    for (i = 0; i < el_status.fds_tail; i++) {
+        if(el_status.fds[i].fd >= 0) {
+            close(el_status.fds[i].fd);
         }
     }
 

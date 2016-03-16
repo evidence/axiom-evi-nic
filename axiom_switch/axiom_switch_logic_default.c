@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 #include "axiom_switch_logic.h"
-#include "axiom_switch_configuration.h"
+#include "axiom_switch_topology.h"
 #include "axiom_switch_packets.h"
 #include "axiom_nic_packets.h"
 
@@ -93,27 +93,29 @@ axiom_topology_t start_topology = {
 
 /* given the received socket and messages, return the recipient
    socket of the neighbour message */
-static int manage_neighbour_msg(axiom_raw_eth_t *neighbour_msg,
-                                int *vm_sd, int my_sd, int *dest_sd,
-                                int *node_sd)
+static int
+axsw_forward_neighbour(axsw_logic_t *logic, axiom_raw_eth_t *neighbour_msg,
+        int my_sd, int *dest_sd)
 {
+    int my_vm_index, dest_vm;
     uint8_t dst_if;
-    uint8_t my_vm_index, dest_vm_index;
-    int ret = 0;
 
     /* get the index of my virtual machine */
-    ret = find_vm_index(my_sd, vm_sd, &my_vm_index);
-    if (ret != 0)
+    my_vm_index = axsw_logic_find_vm_index(logic, my_sd);
+    if (my_vm_index < 0)
     {
-        return ret;
+        return -1;
     }
 
     /* find the receiver virtual machine */
     dst_if = neighbour_msg->raw_msg.header.neighbour.dst_if;
-    dest_vm_index = start_topology.topology[my_vm_index][dst_if];
+    dest_vm = start_topology.topology[my_vm_index][dst_if];
 
-    /* recipient socket */
-    find_neighbour_sd(dest_vm_index, vm_sd, dest_sd);
+    /* receiver socket */
+    *dest_sd = axsw_logic_find_neighbour_sd(logic, dest_vm);
+    if (*dest_sd < 0) {
+        return -1;
+    }
 
     /* capture AXIOM_DSCV_TYPE_REQ_ID messages in order to
        memorize socket descriptor associated to each node id
@@ -124,25 +126,27 @@ static int manage_neighbour_msg(axiom_raw_eth_t *neighbour_msg,
 
         disc_msg = (axiom_discovery_msg_t *)
                     (&(neighbour_msg->raw_msg));
-        node_sd[disc_msg->data.disc.src_node] = my_sd;
+        logic->node_sd[disc_msg->data.disc.src_node] = my_sd;
     }
 
-    return ret;
+    return 0;
 }
 
 /* given the received messages, return the recipient
    socket of the raw message */
-static int manage_raw_msg(axiom_raw_eth_t *raw_msg, int *dest_sd,
-                          int *node_sd)
+static int
+axsw_forward_raw(axsw_logic_t *logic, axiom_raw_eth_t *raw_msg, int *dest_sd)
 {
-    int ret = 0;
     uint8_t dst_node;
 
     dst_node = raw_msg->raw_msg.header.raw.dst_node;
 
-    find_raw_sd(dst_node, node_sd, dest_sd);
+    *dest_sd = axsw_logic_find_raw_sd(logic, dst_node);
+    if (*dest_sd < 0) {
+        return -1;
+    }
 
-    return ret;
+    return 0;
 }
 
 
@@ -170,13 +174,12 @@ axsw_logic_forward(axsw_logic_t *logic, char *buffer, uint32_t length,
     if (axiom_packet->raw_msg.header.raw.flags & AXIOM_RAW_FLAG_NEIGHBOUR)
     {
         /* neighbour message */
-        ret = manage_neighbour_msg(axiom_packet, logic->vm_sd, my_sd,
-                                   &dest_sd, logic->node_sd);
+        ret = axsw_forward_neighbour(logic, axiom_packet, my_sd, &dest_sd);
     }
     else
     {
         /* raw message */
-        ret = manage_raw_msg(axiom_packet, &dest_sd, logic->node_sd);
+        ret = axsw_forward_raw(logic, axiom_packet, &dest_sd);
     }
 
     /* TODO: if dest_sd is -1 or 0? */
