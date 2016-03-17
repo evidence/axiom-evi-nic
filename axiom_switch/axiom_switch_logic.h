@@ -19,24 +19,29 @@ axsw_logic_init(axsw_logic_t *logic) {
         logic->node_sd[i] = -1;
     }
 }
-/* This function manages the axiom messages*/
-int
-axsw_logic_forward(axsw_logic_t *logic, char *buffer, uint32_t length,
-        int my_sd);
+/* This function return the destination socket to forward the message */
+int axsw_logic_forward(axsw_logic_t *logic, int src_sd,
+        axiom_raw_eth_t *axiom_packet);
 
 
 /* find the socket descriptor, given its associated node id */
 inline static int
 axsw_logic_find_raw_sd(axsw_logic_t *logic, int dst_node)
 {
+    if (dst_node >= AXSW_PORT_MAX)
+        return -1;
+
     return logic->node_sd[dst_node];
 }
 
 /* find the socket descriptor, given its associated virtual machine */
 inline static int
-axsw_logic_find_neighbour_sd(axsw_logic_t *logic, int dest_vm)
+axsw_logic_find_neighbour_sd(axsw_logic_t *logic, int dst_vm)
 {
-    return logic->vm_sd[dest_vm];
+    if (dst_vm >= AXSW_PORT_MAX)
+        return -1;
+
+    return logic->vm_sd[dst_vm];
 }
 
 /* find the index of virtual machine, given its associated socket descriptor */

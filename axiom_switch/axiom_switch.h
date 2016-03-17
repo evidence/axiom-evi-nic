@@ -1,5 +1,15 @@
-#ifndef AXIOM_SWITCH_TOPOLOGY_h
-#define AXIOM_SWITCH_TOPOLOGY_h
+#ifndef AXIOM_SWITCH_h
+#define AXIOM_SWITCH_h
+
+#define PDEBUG
+#include "dprintf.h"
+
+#define AXSW_PORT_MAX           16      /* max port supported */
+#define AXSW_PORT_START         33300   /* first port to listen */
+
+#define AXSW_BUF_SIZE           1024
+#define AXSW_FDS_SIZE           AXSW_PORT_MAX*2
+
 
 //#define AXTP_EXAMPLE1
 //#define AXTP_EXAMPLE2
@@ -32,5 +42,4 @@ typedef struct axiom_topology {
     int num_interfaces;
 } axiom_topology_t;
 
-
-#endif  /* !AXIOM_SWITCH_TOPOLOGY_H */
+#endif /* AXIOM_SWITCH_LOGIC_h */

@@ -7,12 +7,12 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "axiom_switch_logic.h"
-#include "axiom_switch_topology.h"
-#include "axiom_switch_packets.h"
-#include "axiom_nic_packets.h"
+#include <netinet/in.h>
 
-#include "dprintf.h"
+#include "axiom_switch.h"
+#include "axiom_switch_packets.h"
+#include "axiom_switch_logic.h"
+#include "axiom_nic_packets.h"
 
 #ifdef AXTP_EXAMPLE1
 axiom_topology_t start_topology = {
@@ -91,119 +91,92 @@ axiom_topology_t start_topology = {
 };
 #endif
 
-/* given the received socket and messages, return the recipient
-   socket of the neighbour message */
+/* given the received socket and messages, return the receiver socket of the
+ * neighbour message */
 static int
 axsw_forward_neighbour(axsw_logic_t *logic, axiom_raw_eth_t *neighbour_msg,
-        int my_sd, int *dest_sd)
+        int src_sd)
 {
-    int my_vm_index, dest_vm;
+    int src_vm, dst_vm, dst_sd;
     uint8_t dst_if;
 
-    /* get the index of my virtual machine */
-    my_vm_index = axsw_logic_find_vm_index(logic, my_sd);
-    if (my_vm_index < 0)
-    {
+    /* get the index of src virtual machine */
+    src_vm = axsw_logic_find_vm_index(logic, src_sd);
+    if (src_vm < 0) {
         return -1;
     }
 
     /* find the receiver virtual machine */
     dst_if = neighbour_msg->raw_msg.header.neighbour.dst_if;
-    dest_vm = start_topology.topology[my_vm_index][dst_if];
+    dst_vm = start_topology.topology[src_vm][dst_if];
 
-    /* receiver socket */
-    *dest_sd = axsw_logic_find_neighbour_sd(logic, dest_vm);
-    if (*dest_sd < 0) {
+    DPRINTF("src_vm_index: %d dst_if: %d dst_vm: %d", src_vm, dst_if, dst_vm);
+
+    /* find receiver socket */
+    dst_sd = axsw_logic_find_neighbour_sd(logic, dst_vm);
+    if (dst_sd < 0) {
         return -1;
     }
 
-    /* capture AXIOM_DSCV_TYPE_REQ_ID messages in order to
-       memorize socket descriptor associated to each node id
-       (for raw messages management!) */
-    if (neighbour_msg->raw_msg.header.neighbour.type == AXIOM_DSCV_TYPE_REQ_ID)
-    {
+    /* capture AXIOM_DSCV_TYPE_SETID messages in order to memorize socket
+     * descriptor associated to each node id for raw messages forwarding */
+    if (neighbour_msg->raw_msg.header.neighbour.type == AXIOM_DSCV_TYPE_SETID) {
         axiom_discovery_msg_t *disc_msg;
 
         disc_msg = (axiom_discovery_msg_t *)
                     (&(neighbour_msg->raw_msg));
-        logic->node_sd[disc_msg->data.disc.src_node] = my_sd;
+
+        logic->node_sd[disc_msg->data.disc.src_node] = src_sd;
+        logic->node_sd[disc_msg->data.disc.dst_node] = dst_sd;
+
+        DPRINTF("catched AXIOM_DSCV_TYPE_REQ_ID - src_node: %d dst_node: %d",
+                disc_msg->data.disc.src_node, disc_msg->data.disc.dst_node);
     }
 
-    return 0;
+    return dst_sd;
 }
 
-/* given the received messages, return the recipient
-   socket of the raw message */
+
+/* given the received messages, return the recipient socket of the raw message */
 static int
-axsw_forward_raw(axsw_logic_t *logic, axiom_raw_eth_t *raw_msg, int *dest_sd)
+axsw_forward_raw(axsw_logic_t *logic, axiom_raw_eth_t *raw_msg)
 {
     uint8_t dst_node;
 
     dst_node = raw_msg->raw_msg.header.raw.dst_node;
 
-    *dest_sd = axsw_logic_find_raw_sd(logic, dst_node);
-    if (*dest_sd < 0) {
-        return -1;
-    }
+    DPRINTF("dst_node: %d", dst_node);
 
-    return 0;
+    return axsw_logic_find_raw_sd(logic, dst_node);
 }
 
 
 int
-axsw_logic_forward(axsw_logic_t *logic, char *buffer, uint32_t length,
-        int my_sd)
+axsw_logic_forward(axsw_logic_t *logic, int src_sd, axiom_raw_eth_t *axiom_packet)
 {
-    axiom_raw_eth_t *axiom_packet;
-    int ret, dest_sd;
+    int dst_sd;
 
-    if (sizeof(axiom_raw_eth_t) != length)
-    {
-        printf("Received a ethernet packet with unexpected length");
-        return- 1;
-    }
-
-    axiom_packet = (axiom_raw_eth_t *)buffer;
-
-    if (axiom_packet->eth_hdr.type != AXIOM_ETH_TYPE_RAW)
-    {
-        printf("Received a ethernet packet with wrong type");
+    if (ntohs(axiom_packet->eth_hdr.type) != AXIOM_ETH_TYPE_RAW) {
+        EPRINTF("Received a ethernet packet with wrong type");
         return -1;
     }
 
-    if (axiom_packet->raw_msg.header.raw.flags & AXIOM_RAW_FLAG_NEIGHBOUR)
-    {
+    DPRINTF("src_sd: %d", src_sd);
+
+    if (axiom_packet->raw_msg.header.raw.flags & AXIOM_RAW_FLAG_NEIGHBOUR) {
         /* neighbour message */
-        ret = axsw_forward_neighbour(logic, axiom_packet, my_sd, &dest_sd);
-    }
-    else
-    {
+        dst_sd = axsw_forward_neighbour(logic, axiom_packet, src_sd);
+    } else {
         /* raw message */
-        ret = axsw_forward_raw(logic, axiom_packet, &dest_sd);
+        dst_sd = axsw_forward_raw(logic, axiom_packet);
     }
 
-    /* TODO: if dest_sd is -1 or 0? */
+    DPRINTF("dst_sd: %d", dst_sd);
 
-    if (ret != 0)
-    {
-        printf("message management error\n");
-        return ret;
-    }
-
-    ret = send(dest_sd, &length, sizeof(length), 0);
-    if (ret != sizeof(length))
-    {
-        DPRINTF("length send error");
+    if (dst_sd < 0) {
+        EPRINTF("dstination socket not found - dst_sd: %d", dst_sd);
         return -1;
     }
 
-    /* send message to the receiver */
-    ret = send(dest_sd, buffer, length, 0);
-    if (ret != length)
-    {
-        DPRINTF("message send error");
-        return -1;
-    }
-
-    return 0;
+    return dst_sd;
 }

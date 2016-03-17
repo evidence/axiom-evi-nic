@@ -10,14 +10,11 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 
-#define PDEBUG
-#include "dprintf.h"
-
+#include "axiom_switch.h"
+#include "axiom_switch_packets.h"
 #include "axiom_switch_logic.h"
-#include "axiom_switch_topology.h"
-
-#define AXSW_BUF_SIZE           1024
-#define AXSW_FDS_SIZE           AXSW_PORT_MAX*2
+#include "axiom_switch_event_loop.h"
+#include "axiom_switch_qemu.h"
 
 
 static int
@@ -92,52 +89,14 @@ listen_socket_find(int *listen_sd, int fds_index, int sd, int *vm_index)
     return 0;
 }
 
-typedef struct axsw_event_loop {
-    int timeout;
-    int end_server;
-    int compress_array;
-    int fds_tail;
-    int fds_size;
-    char buffer[AXSW_BUF_SIZE];
-    struct pollfd fds[AXSW_FDS_SIZE];
-} axsw_event_loop_t;
-
-static void
-axsw_event_loop_init(axsw_event_loop_t *el_status)
-{
-    /* Initialize the timeout to 3 minutes. */
-    el_status->timeout = (3 * 60 * 1000);
-    el_status->end_server = 0;
-    el_status->compress_array = 0;
-    el_status->fds_tail = 0;
-    el_status->fds_size = AXSW_FDS_SIZE;
-
-    memset(el_status->fds, 0 , sizeof(el_status->fds));
-}
-
-static int
-axsw_event_loop_add_sd(axsw_event_loop_t *el_status, int new_sd, int events)
-{
-    int cur_tail = el_status->fds_tail;
-
-    if (cur_tail >= el_status->fds_size)
-        return -1;
-
-    el_status->fds[cur_tail].fd = new_sd;
-    el_status->fds[cur_tail].events = events;
-    el_status->fds_tail++;
-
-    return cur_tail;
-}
-
 
 
 int main (int argc, char *argv[])
 {
-    int ret, fds_tail_max_listen, i, j;
-    int num_ports = 0;
+    int ret, fds_tail_max_listen, i;
+    int num_ports = 0, end_server = 0;
     int listen_sd[AXSW_PORT_MAX];
-    uint32_t axiom_msg_length;
+    axiom_raw_eth_t axiom_raw_eth_msg;
     axsw_logic_t logic_status;
     axsw_event_loop_t el_status;
 
@@ -180,34 +139,34 @@ int main (int argc, char *argv[])
 
     /* main event loop */
     do {
-        int current_size = el_status.fds_tail;
+        int current_size = axsw_event_loop_get_tail(&el_status);
 
-        DPRINTF("Waiting on poll()...\n");
-        ret = poll(el_status.fds, el_status.fds_tail, el_status.timeout);
+        DPRINTF("Waiting on poll()...");
+        ret = axsw_event_loop_poll(&el_status);
         if (ret < 0) {
-            perror("  poll() failed");
-            break;
-        }
-        if (ret == 0) {
-            IPRINTF("  poll() timed out\n");
+            DPRINTF("poll error");
             break;
         }
 
         for (i = 0; i < current_size; i++) {
-            int vm_index;
+            int vm_index, revents, fd;
 
-            if (el_status.fds[i].revents == 0)
+            revents = axsw_event_loop_get_revents(&el_status, i);
+
+            if (revents == 0)
                 continue;
 
-            if(el_status.fds[i].revents != POLLIN) {
-                printf("  Error! revents = %d\n", el_status.fds[i].revents);
-                el_status.end_server = 1;
+            if (revents != POLLIN) {
+                EPRINTF("revents = %d", revents);
+                end_server = 1;
                 break;
             }
 
+            fd = axsw_event_loop_get_fd(&el_status, i);
+
             /* check listener socket */
             if (i < fds_tail_max_listen &&
-                    listen_socket_find(listen_sd, i, el_status.fds[i].fd, &vm_index)) {
+                    listen_socket_find(listen_sd, i, fd, &vm_index)) {
                 int new_sd;
 
                 /* Accept each incoming connection */
@@ -215,13 +174,13 @@ int main (int argc, char *argv[])
                 if (new_sd < 0) {
                     if (errno != EWOULDBLOCK) {
                         perror("  accept() failed");
-                        el_status.end_server = 1;
+                        end_server = 1;
                     }
                     break;
                 }
 
                 /* Add the new incoming connection to the fds structure */
-                printf("  New incoming connection - %d\n", new_sd);
+                DPRINTF("New incoming connection - %d", new_sd);
                 ret = axsw_event_loop_add_sd(&el_status, new_sd, POLLIN);
                 if (ret < 0) {
                     EPRINTF("no space in fds array");
@@ -231,83 +190,33 @@ int main (int argc, char *argv[])
                 axsw_logic_set_vm_sd(&logic_status, vm_index, new_sd);
 
             } else {
-                /* an existing connection must be readable */
-                int close_conn = 0;
+                int dst_sd;
 
-                do {
-                    /* receive the length of the ethernet packet */
-                    ret = recv(el_status.fds[i].fd, &axiom_msg_length, sizeof(int), MSG_WAITALL);
-                    if (ret < 0) {
-                        if (errno != EWOULDBLOCK) {
-                            perror("  recv() failed");
-                            close_conn = 1;
-                        }
-                        break;
-                    }
+                /* receive ethernet packet */
+                ret = axsw_qemu_recv(fd, &axiom_raw_eth_msg);
 
-                    if (ret == 0) {
-                        printf("  Connection closed\n");
-                        close_conn = 1;
-                        break;
-                    }
+                if (ret < 0) {
+                    axsw_event_loop_close(&el_status, i);
+                } else if (ret == 0) {
+                    continue;
+                }
 
-                    axiom_msg_length = ntohl(axiom_msg_length);
-                    if (axiom_msg_length > sizeof(el_status.buffer))
-                    {
-                        printf("Can't receive this too long message\n");
-                    }
-                    else
-                    {
-                        /* receive ethernet packet */
-                        ret = recv(el_status.fds[i].fd, el_status.buffer, axiom_msg_length, MSG_WAITALL);
+                /* forward the received message */
+                dst_sd = axsw_logic_forward(&logic_status, fd, &axiom_raw_eth_msg);
+                if (dst_sd < 0)
+                    continue;
 
-                        if (ret < 0) {
-                            if (errno != EWOULDBLOCK) {
-                                perror("  recv() failed");
-                                close_conn = 1;
-                            }
-                            break;
-                        }
-
-                        if (ret == 0) {
-                            printf("  Connection closed\n");
-                            close_conn = 1;
-                            break;
-                        }
-
-                        if (ret != axiom_msg_length) {
-                            EPRINTF("Received a ethernet packet with unexpected length");
-                        } else {
-                            /* Manage the received message */
-                            axsw_logic_forward(&logic_status, el_status.buffer,
-                                    axiom_msg_length, el_status.fds[i].fd);
-                        }
-                    }
-
-                } while(1);
-
-                if (close_conn == 1) {
-                    close(el_status.fds[i].fd);
-                    el_status.fds[i].fd = -1;
-                    el_status.compress_array = 1;
+                /* send ethernet packet */
+                ret = axsw_qemu_send(dst_sd, &axiom_raw_eth_msg);
+                if (ret < 0) {
+                    axsw_event_loop_close(&el_status, i);
                 }
             }
         }
 
-        if (el_status.compress_array) {
-            el_status.compress_array = 0;
-            for (i = 0; i < el_status.fds_tail; i++) {
-                if (el_status.fds[i].fd == -1) {
-                    for(j = i; j < el_status.fds_tail; j++) {
-                        el_status.fds[j].fd = el_status.fds[j+1].fd;
-                    }
-                    i--;
-                    el_status.fds_tail--;
-                }
-            }
-        }
+        axsw_event_loop_compress(&el_status);
 
-    } while (el_status.end_server == 0); /* End of serving running.    */
+    } while (end_server == 0); /* End of serving running.    */
 
     /* Clean up all of the sockets that are open */
     for (i = 0; i < el_status.fds_tail; i++) {
