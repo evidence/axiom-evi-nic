@@ -21,12 +21,12 @@ axsw_logic_init(axsw_logic_t *logic) {
 }
 /* This function return the destination socket to forward the message */
 int axsw_logic_forward(axsw_logic_t *logic, int src_sd,
-        axiom_raw_eth_t *axiom_packet);
+        axiom_small_eth_t *axiom_packet);
 
 
 /* find the socket descriptor, given its associated node id */
 inline static int
-axsw_logic_find_raw_sd(axsw_logic_t *logic, int dst_node)
+axsw_logic_find_small_sd(axsw_logic_t *logic, int dst_node)
 {
     if (dst_node >= AXSW_PORT_MAX)
         return -1;

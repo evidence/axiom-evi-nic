@@ -3,12 +3,12 @@
 
 
 inline static int
-axsw_qemu_send(int fd, axiom_raw_eth_t *raw_eth)
+axsw_qemu_send(int fd, axiom_small_eth_t *small_eth)
 {
     int ret;
     uint32_t axiom_msg_length = 0;
 
-    axiom_msg_length = sizeof(*raw_eth);
+    axiom_msg_length = sizeof(*small_eth);
 
 
     /* send the length of the ethernet packet */
@@ -19,7 +19,7 @@ axsw_qemu_send(int fd, axiom_raw_eth_t *raw_eth)
     }
 
     /* send ethernet packet */
-    ret = send(fd, raw_eth, axiom_msg_length, 0);
+    ret = send(fd, small_eth, axiom_msg_length, 0);
     if (ret != axiom_msg_length)
     {
         DPRINTF("message send error - return: %d errno: %d", ret, errno);
@@ -31,7 +31,7 @@ axsw_qemu_send(int fd, axiom_raw_eth_t *raw_eth)
 
 
 inline static int
-axsw_qemu_recv(int fd, axiom_raw_eth_t *raw_eth)
+axsw_qemu_recv(int fd, axiom_small_eth_t *small_eth)
 {
     int ret;
     uint32_t axiom_msg_length;
@@ -45,13 +45,13 @@ axsw_qemu_recv(int fd, axiom_raw_eth_t *raw_eth)
     }
 
     axiom_msg_length = ntohl(axiom_msg_length);
-    if (axiom_msg_length > sizeof(*raw_eth)) {
+    if (axiom_msg_length > sizeof(*small_eth)) {
         EPRINTF("too long message - len: %d", axiom_msg_length);
         goto skip;
     }
 
     /* receive ethernet packet */
-    ret = recv(fd, raw_eth, axiom_msg_length, MSG_WAITALL);
+    ret = recv(fd, small_eth, axiom_msg_length, MSG_WAITALL);
     if (ret < 0 && (errno == EWOULDBLOCK)) {
         goto skip;
     } else if (ret <= 0) {

@@ -96,7 +96,7 @@ int main (int argc, char *argv[])
     int ret, fds_tail_max_listen, i;
     int num_ports = 0, end_server = 0;
     int listen_sd[AXSW_PORT_MAX];
-    axiom_raw_eth_t axiom_raw_eth_msg;
+    axiom_small_eth_t axiom_small_eth_msg;
     axsw_logic_t logic_status;
     axsw_event_loop_t el_status;
 
@@ -193,7 +193,7 @@ int main (int argc, char *argv[])
                 int dst_sd;
 
                 /* receive ethernet packet */
-                ret = axsw_qemu_recv(fd, &axiom_raw_eth_msg);
+                ret = axsw_qemu_recv(fd, &axiom_small_eth_msg);
 
                 if (ret < 0) {
                     axsw_event_loop_close(&el_status, i);
@@ -202,12 +202,12 @@ int main (int argc, char *argv[])
                 }
 
                 /* forward the received message */
-                dst_sd = axsw_logic_forward(&logic_status, fd, &axiom_raw_eth_msg);
+                dst_sd = axsw_logic_forward(&logic_status, fd, &axiom_small_eth_msg);
                 if (dst_sd < 0)
                     continue;
 
                 /* send ethernet packet */
-                ret = axsw_qemu_send(dst_sd, &axiom_raw_eth_msg);
+                ret = axsw_qemu_send(dst_sd, &axiom_small_eth_msg);
                 if (ret < 0) {
                     axsw_event_loop_close(&el_status, i);
                 }
