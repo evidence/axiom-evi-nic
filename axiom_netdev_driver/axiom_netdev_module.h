@@ -11,7 +11,7 @@
 
 #define AXIOMNET_MAX_OPEN       1
 
-#define AXIOMNET_RAW_DESC_SIZE  sizeof(struct axiomRawMsg)
+#define AXIOMNET_SMALL_DESC_SIZE  sizeof(struct axiomRawMsg)
 
 struct axiomnet_ring {
     void *desc_addr;
@@ -38,7 +38,7 @@ struct axiomnet_drvdata {
     /* IRQ */
     int irq;
 
-    /* RAW TX Rings TODO */
+    /* SMALL TX Rings TODO */
     struct axiomnet_ring raw_tx_ring;
 
     /* RX Rings */

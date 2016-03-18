@@ -1,14 +1,14 @@
 #ifndef AXIOM_NETDEV_USER_h
 #define AXIOM_NETDEV_USER_h
 
-#define AXIOM_MSG_TYPE_RAW      0
+#define AXIOM_MSG_TYPE_SMALL    0
 #define AXIOM_MSG_TYPE_RDMA     1
 #if 0
 typedef struct axiom_msg {
     uint8_t type;
     uint8_t spare[3];
     union {
-        axiom_raw_msg_t raw_msg;
+        axiom_small_msg_t small_msg;
         axiom_RDMA_msg_t rdma_msg;
     } payload;
 

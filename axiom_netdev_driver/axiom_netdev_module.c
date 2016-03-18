@@ -53,12 +53,12 @@ static const struct of_device_id axiomnet_of_match[] = {
 
 static inline void axiomnet_enable_irq(struct axiomnet_drvdata *drvdata)
 {
-    iowrite32(AXIOMREG_IRQ_ALL, drvdata->vregs + AXIOMREG_IO_SETIRQ);
+    iowrite32(AXIOMREG_IRQ_ALL, drvdata->vregs + AXIOMREG_IO_MSKIRQ);
 }
 
 static inline void axiomnet_disable_irq(struct axiomnet_drvdata *drvdata)
 {
-    iowrite32(~AXIOMREG_IRQ_ALL, drvdata->vregs + AXIOMREG_IO_SETIRQ);
+    iowrite32(~AXIOMREG_IRQ_ALL, drvdata->vregs + AXIOMREG_IO_MSKIRQ);
 }
 
 
@@ -137,7 +137,7 @@ static int axiomnet_probe(struct platform_device *pdev)
     axiom_print_status_reg(drvdata->dev_api);
     axiom_print_control_reg(drvdata->dev_api);
     axiom_print_routing_reg(drvdata->dev_api);
-    axiom_print_raw_queue_reg(drvdata->dev_api);
+    axiom_print_small_queue_reg(drvdata->dev_api);
 
     /* alloc char device */
     err = axiomnet_alloc_chrdev(drvdata, &chrdev);
@@ -149,16 +149,16 @@ static int axiomnet_probe(struct platform_device *pdev)
 
     do {
     //    iowrite32(AXIOMREG_CONTROL_LOOPBACK, drvdata->vregs + AXIOMREG_IO_CONTROL);
-        axiom_raw_msg_t raw_msg;
-        raw_msg.header.raw.src_node = 3;
-        raw_msg.header.raw.dst_node = 134;
-        raw_msg.header.raw.type = 33;
-        iowrite32(*((uint32_t*)(&raw_msg)), drvdata->vregs +
-                AXIOMREG_IO_RAW_TX_BASE + 8*(0));
-        iowrite32(*((uint32_t*)(&raw_msg) + 1), drvdata->vregs +
-                AXIOMREG_IO_RAW_TX_BASE + 8*(0) + 4);
+        axiom_small_msg_t small_msg;
+        small_msg.header.tx.dst = 134;
+        small_msg.header.tx.port_flag.port = 0;
+        small_msg.header.tx.port_flag.flag = 0;
+        iowrite32(*((uint32_t*)(&small_msg)), drvdata->vregs +
+                AXIOMREG_IO_SMALL_TX_BASE + 8*(0));
+        iowrite32(*((uint32_t*)(&small_msg) + 1), drvdata->vregs +
+                AXIOMREG_IO_SMALL_TX_BASE + 8*(0) + 4);
 
-        iowrite32(1, drvdata->vregs + AXIOMREG_IO_RAW_TX_START);
+        iowrite32(1, drvdata->vregs + AXIOMREG_IO_SMALL_TX_PUSH);
     } while(0);
 
     dprintk("end");

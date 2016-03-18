@@ -12,6 +12,6 @@ void axiom_hw_dev_free(axiom_dev_t *dev);
 void axiom_print_status_reg(axiom_dev_t *dev);
 void axiom_print_control_reg(axiom_dev_t *dev);
 void axiom_print_routing_reg(axiom_dev_t *dev);
-void axiom_print_raw_queue_reg(axiom_dev_t *dev);
+void axiom_print_small_queue_reg(axiom_dev_t *dev);
 
 #endif /* !AXIOM_KERNEL_API_H */
