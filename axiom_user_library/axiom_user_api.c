@@ -57,16 +57,16 @@ axiom_close(axiom_dev_t *dev)
 
 
 axiom_msg_id_t
-axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t src_node_id,
-        axiom_node_id_t dst_node_id, axiom_raw_type_t type, axiom_data_t data)
+axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
+        axiom_port_t port, axiom_flag_t flag, axiom_payload_t *payload)
 {
 
     return 0;
 }
 
 axiom_msg_id_t
-axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
-        axiom_node_id_t *dst_node_id, axiom_raw_type_t *type, axiom_data_t *data)
+axiom_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
+        axiom_port_t *port, axiom_flag_t *flag, axiom_payload_t *payload)
 {
 
     return 0;
@@ -203,21 +203,4 @@ axiom_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
     *if_features = buf_if;
 
     return ret;
-}
-
-axiom_msg_id_t
-axiom_send_raw_neighbour(axiom_dev_t *dev, axiom_if_id_t src_interface,
-        axiom_raw_type_t type, axiom_data_t data)
-{
-
-    return 0;
-}
-
-axiom_msg_id_t
-axiom_recv_raw_neighbour(axiom_dev_t *dev, axiom_if_id_t *src_interface,
-        axiom_if_id_t *dst_interface, axiom_raw_type_t *type,
-        axiom_data_t *data)
-{
-
-    return 0;
 }
