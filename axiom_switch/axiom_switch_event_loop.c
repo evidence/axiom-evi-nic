@@ -31,7 +31,7 @@ axsw_event_loop_add_sd(axsw_event_loop_t *el_status, int new_sd, int events)
     el_status->fds[cur_tail].events = events;
     el_status->fds_tail++;
 
-    return cur_tail;
+    return el_status->fds_tail;
 }
 
 void
