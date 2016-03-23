@@ -99,7 +99,7 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
         int src_sd)
 {
     int src_vm, dst_vm, dst_sd;
-    uint8_t dst_if;
+    uint8_t dst_if, neighbour_if;
 
     /* get the index of src virtual machine */
     src_vm = axsw_logic_find_vm_index(logic, src_sd);
@@ -119,7 +119,14 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
         return -1;
     }
 
-    /* capture AXIOM_DSCV_TYPE_SETID messages in order to memorize socket
+    /* find the recipient receiving interface */
+    neighbour_if = axsw_logic_find_neighbour_if(&start_topology, src_vm, dst_vm);
+    if (neighbour_if < 0) {
+        return -1;
+    }
+    neighbour_msg->small_msg.header.tx.dst = neighbour_if;
+
+    /* capture AXIOM_DSCV_CMD_SETID messages in order to memorize socket
      * descriptor associated to each node id for small messages forwarding */
     if (neighbour_msg->small_msg.header.tx.port_flag.port != AXIOM_SMALL_PORT_DISCOVERY) {
         axiom_discovery_payload_t *disc_payload;
@@ -131,7 +138,7 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
             logic->node_sd[disc_payload->src_node] = src_sd;
             logic->node_sd[disc_payload->dst_node] = dst_sd;
 
-            DPRINTF("catched AXIOM_DSCV_TYPE_SETID - src_node: %d dst_node: %d",
+            DPRINTF("catched AXIOM_DSCV_CMD_SETID - src_node: %d dst_node: %d",
                     disc_payload->src_node, disc_payload->dst_node);
         }
     }
