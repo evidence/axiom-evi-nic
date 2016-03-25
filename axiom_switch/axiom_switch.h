@@ -11,11 +11,11 @@
 #define AXSW_FDS_SIZE           AXSW_PORT_MAX*2
 
 
-//#define AXTP_EXAMPLE1
+#define AXTP_EXAMPLE1
 //#define AXTP_EXAMPLE2
 //#define AXTP_EXAMPLE3
 //#define AXTP_EXAMPLE4
-#define AXTP_EXAMPLE5
+//#define AXTP_EXAMPLE5
 
 #ifdef AXTP_EXAMPLE1
 #define AXTP_NUM_NODES               8
@@ -38,8 +38,49 @@
 
 typedef struct axiom_topology {
     uint8_t topology[AXTP_NUM_NODES][AXTP_NUM_INTERFACES];
+    uint8_t if_topology[AXTP_NUM_NODES][AXTP_NUM_INTERFACES];
     int num_nodes;
     int num_interfaces;
 } axiom_topology_t;
+
+inline static void
+axsw_if_topology_init(axiom_topology_t *topology)
+{
+    int node_index, if_index, i;
+    uint8_t pair_node;
+
+    for (node_index = 0; node_index < AXTP_NUM_NODES; node_index++)
+    {
+        for (if_index = 0; if_index < AXTP_NUM_INTERFACES; if_index++)
+        {
+            topology->if_topology[node_index][if_index] = AXTP_NULL_NODE;
+        }
+    }
+
+    for (node_index = 0; node_index < AXTP_NUM_NODES; node_index++)
+    {
+        for (if_index = 0; if_index < AXTP_NUM_INTERFACES; if_index++)
+        {
+            pair_node = topology->topology[node_index][if_index];
+            if (pair_node != AXTP_NULL_NODE)
+            {
+                for (i = 0; i < AXTP_NUM_INTERFACES; i++)
+                {
+                    if (topology->topology[pair_node][i] == node_index)
+                    {
+                        if (topology->if_topology[pair_node][i] == AXTP_NULL_NODE)
+                        {
+                            /* interface of the connected nodes */
+                            topology->if_topology[node_index][if_index] = i;
+                            topology->if_topology[pair_node][i] = if_index;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+}
 
 #endif /* AXIOM_SWITCH_LOGIC_h */
