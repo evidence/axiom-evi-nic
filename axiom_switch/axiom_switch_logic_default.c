@@ -130,7 +130,7 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
 
     /* capture AXIOM_DSCV_CMD_SETID messages in order to memorize socket
      * descriptor associated to each node id for small messages forwarding */
-    if (neighbour_msg->small_msg.header.tx.port_flag.port == AXIOM_SMALL_PORT_DISCOVERY) {
+    if (neighbour_msg->small_msg.header.tx.port_flag.field.port == AXIOM_SMALL_PORT_DISCOVERY) {
         axiom_discovery_payload_t *disc_payload;
 
         disc_payload = (axiom_discovery_payload_t *)
@@ -175,7 +175,7 @@ axsw_logic_forward(axsw_logic_t *logic, int src_sd, axiom_small_eth_t *axiom_pac
 
     DPRINTF("src_sd: %d", src_sd);
 
-    if (axiom_packet->small_msg.header.tx.port_flag.flag & AXIOM_SMALL_FLAG_NEIGHBOUR) {
+    if (axiom_packet->small_msg.header.tx.port_flag.field.flag & AXIOM_SMALL_FLAG_NEIGHBOUR) {
         /* neighbour message */
         dst_sd = axsw_forward_neighbour(logic, axiom_packet, src_sd);
     } else {
