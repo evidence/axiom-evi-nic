@@ -16,6 +16,7 @@
 #include "axiom_switch_event_loop.h"
 #include "axiom_switch_qemu.h"
 
+extern axiom_topology_t start_topology;
 
 static int
 listen_socket_init(int *listen_sd, uint16_t port) {
@@ -118,6 +119,7 @@ int main (int argc, char *argv[])
     }
 
     axsw_logic_init(&logic_status);
+    axsw_if_topology_init(&start_topology);
     axsw_event_loop_init(&el_status);
 
     /* listening sockets creation */
