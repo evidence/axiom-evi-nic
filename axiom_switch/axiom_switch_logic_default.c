@@ -111,7 +111,7 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
     dst_if = neighbour_msg->small_msg.header.tx.dst;
     dst_vm = start_topology.topology[src_vm][dst_if];
 
-    DPRINTF("src_vm_index: %d dst_if: %d dst_vm: %d", src_vm, dst_if, dst_vm);
+    NDPRINTF("src_vm_index: %d dst_if: %d dst_vm: %d", src_vm, dst_if, dst_vm);
 
     /* find receiver socket */
     dst_sd = axsw_logic_find_neighbour_sd(logic, dst_vm);
@@ -120,15 +120,17 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
     }
 
     /* find the recipient receiving interface */
-    neighbour_if = axsw_logic_find_neighbour_if(&start_topology, src_vm, dst_vm);
+    neighbour_if = axsw_logic_find_neighbour_if(&start_topology, src_vm,
+                                                neighbour_msg->small_msg.header.tx.dst);
     if (neighbour_if < 0) {
         return -1;
     }
+    DPRINTF("neighbour_if %d", neighbour_if);
     neighbour_msg->small_msg.header.tx.dst = neighbour_if;
 
     /* capture AXIOM_DSCV_CMD_SETID messages in order to memorize socket
      * descriptor associated to each node id for small messages forwarding */
-    if (neighbour_msg->small_msg.header.tx.port_flag.port != AXIOM_SMALL_PORT_DISCOVERY) {
+    if (neighbour_msg->small_msg.header.tx.port_flag.port == AXIOM_SMALL_PORT_DISCOVERY) {
         axiom_discovery_payload_t *disc_payload;
 
         disc_payload = (axiom_discovery_payload_t *)
@@ -181,7 +183,7 @@ axsw_logic_forward(axsw_logic_t *logic, int src_sd, axiom_small_eth_t *axiom_pac
         dst_sd = axsw_forward_small(logic, axiom_packet);
     }
 
-    DPRINTF("dst_sd: %d", dst_sd);
+    NDPRINTF("dst_sd: %d", dst_sd);
 
     if (dst_sd < 0) {
         EPRINTF("dstination socket not found - dst_sd: %d", dst_sd);

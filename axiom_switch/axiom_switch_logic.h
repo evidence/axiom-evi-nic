@@ -44,23 +44,19 @@ axsw_logic_find_neighbour_sd(axsw_logic_t *logic, int dst_vm)
     return logic->vm_sd[dst_vm];
 }
 
-/* find the dst_vm interface wich is connected to src_vm*/
 inline static int
 axsw_logic_find_neighbour_if(axiom_topology_t *start_topology,
-                             int src_vm, int dst_vm)
+                             int src_vm, int source_if)
 {
-    int i, if_index = -1;
+    int ret_if_index;
 
-    for (i = 0; i < AXTP_NUM_INTERFACES; i++)
+    ret_if_index = start_topology->if_topology[src_vm][source_if];
+    if (ret_if_index != AXTP_NULL_NODE)
     {
-        if (src_vm == start_topology->topology[dst_vm][i])
-        {
-            if_index = i;
-            break;
-        }
+        return ret_if_index;
     }
 
-    return if_index;
+    return -1;
 }
 
 /* find the index of virtual machine, given its associated socket descriptor */
