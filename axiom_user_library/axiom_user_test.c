@@ -20,7 +20,7 @@ int main (int argc, char *argv[])
     uint32_t status, control;
     axiom_err_t err;
 
-    dev = axiom_open();
+    dev = axiom_open(NULL);
     if (!dev) {
         EPRINTF("axiom_open failed! - errno = %d", errno);
         return -1;
@@ -58,19 +58,19 @@ int main (int argc, char *argv[])
 
 
     err = axiom_set_routing(dev, 3, 0x12);
-    IPRINTF("set routing node_id = 0x%x  enabled_mask = 0x%x- err = %d", 3, 0x12, err);
+    IPRINTF("set routing node_id = 0x%x  enabled_mask = 0x%x - err = %d", 3, 0x12, err);
 
     err = axiom_get_routing(dev, 3, &enabled_mask);
-    IPRINTF("get routing node_id = 0x%x  enabled_mask = 0x%x- err = %d", 3, enabled_mask, err);
+    IPRINTF("get routing node_id = 0x%x  enabled_mask = 0x%x - err = %d", 3, enabled_mask, err);
 
     err = axiom_get_routing(dev, 102, &enabled_mask);
-    IPRINTF("get routing node_id = 0x%x  enabled_mask = 0x%x- err = %d", 102, enabled_mask, err);
+    IPRINTF("get routing node_id = 0x%x  enabled_mask = 0x%x - err = %d", 102, enabled_mask, err);
 
     err = axiom_set_routing(dev, 102, 0x33);
-    IPRINTF("set routing node_id = 0x%x  enabled_mask = 0x%x- err = %d", 102, 0x33, err);
+    IPRINTF("set routing node_id = 0x%x  enabled_mask = 0x%x - err = %d", 102, 0x33, err);
 
     err = axiom_get_routing(dev, 102, &enabled_mask);
-    IPRINTF("get routing node_id = 0x%x  enabled_mask = 0x%x- err = %d", 102, enabled_mask, err);
+    IPRINTF("get routing node_id = 0x%x  enabled_mask = 0x%x - err = %d", 102, enabled_mask, err);
 
     axiom_close(dev);
 

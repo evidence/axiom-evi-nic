@@ -10,8 +10,9 @@
 
 #include "axiom_nic_api_user.h"
 
+struct axiom_args {
 
-axiom_dev_t *axiom_open(void);
-void axiom_close(axiom_dev_t *dev);
+};
+
 
 #endif /* !AxiomAPI_h */

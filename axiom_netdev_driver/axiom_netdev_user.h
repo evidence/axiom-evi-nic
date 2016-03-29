@@ -30,6 +30,7 @@ typedef struct axiom_ioctl_routing {
 #define AXNET_GET_STATUS        _IOR(AXNET_MAGIC, 106, uint32_t)
 #define AXNET_SET_CONTROL       _IOW(AXNET_MAGIC, 107, uint32_t)
 #define AXNET_GET_CONTROL       _IOR(AXNET_MAGIC, 108, uint32_t)
+#define AXNET_BIND              _IOW(AXNET_MAGIC, 109, uint8_t)
 
 
 #endif /* !AXIOM_NETDEV_USER_h */

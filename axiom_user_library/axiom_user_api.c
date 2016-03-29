@@ -25,7 +25,7 @@ typedef struct axiom_dev {
 
 
 axiom_dev_t *
-axiom_open(void) {
+axiom_open(axiom_args_t *args) {
     axiom_dev_t *dev;
 
     dev = malloc(sizeof(*dev));
@@ -54,7 +54,22 @@ axiom_close(axiom_dev_t *dev)
     free(dev);
 }
 
+axiom_err_t
+axiom_bind(axiom_dev_t *dev, axiom_port_t port)
+{
+    int ret;
 
+    if (!dev || dev->fd <= 0)
+        return AXIOM_RET_ERROR;
+
+    ret = ioctl(dev->fd, AXNET_BIND, &port);
+
+    if (ret < 0) {
+        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+    }
+
+    return AXIOM_RET_OK;
+}
 
 axiom_msg_id_t
 axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,

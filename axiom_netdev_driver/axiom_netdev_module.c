@@ -151,8 +151,8 @@ static int axiomnet_probe(struct platform_device *pdev)
     //    iowrite32(AXIOMREG_CONTROL_LOOPBACK, drvdata->vregs + AXIOMREG_IO_CONTROL);
         axiom_small_msg_t small_msg;
         small_msg.header.tx.dst = 134;
-        small_msg.header.tx.port_flag.port = 0;
-        small_msg.header.tx.port_flag.flag = 0;
+        small_msg.header.tx.port_flag.field.port = 0;
+        small_msg.header.tx.port_flag.field.flag = 0;
         iowrite32(*((uint32_t*)(&small_msg)), drvdata->vregs +
                 AXIOMREG_IO_SMALL_TX_BASE + 8*(0));
         iowrite32(*((uint32_t*)(&small_msg) + 1), drvdata->vregs +
@@ -205,25 +205,34 @@ static int axiomnet_open(struct inode *inode, struct file *filep)
     int err = 0;
     unsigned int minor = iminor(inode);
     struct axiomnet_drvdata *drvdata = chrdev.drvdata_a[minor];
+    struct axiomnet_priv *priv;
+
     dprintk("start minor: %u drvdata: %p", minor, drvdata);
 
-    mutex_lock(&drvdata->lock);
+    /* allocate per-open structure and fill it out */
+    priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+    if (priv == NULL)
+        return -ENOMEM;
 
+    mutex_lock(&drvdata->lock);
     if (drvdata->used >= AXIOMNET_MAX_OPEN) {
         err = -EBUSY;
         goto err;
     }
     drvdata->used++;
-
-    filep->private_data = drvdata;
-
     mutex_unlock(&drvdata->lock);
+
+    priv->drvdata = drvdata;
+
+    filep->private_data = priv;
+
     dprintk("end");
     return 0;
 
 err:
     mutex_unlock(&drvdata->lock);
     pr_err("unable to open char dev [error %d]\n", err);
+    kfree(priv);
     dprintk("error: %d", err);
     return err;
 }
@@ -231,6 +240,8 @@ static int axiomnet_release(struct inode *inode, struct file *filep)
 {
     unsigned int minor = iminor(inode);
     struct axiomnet_drvdata *drvdata = chrdev.drvdata_a[minor];
+    struct axiomnet_priv *priv = filep->private_data;
+
     dprintk("start");
 
     mutex_lock(&drvdata->lock);
@@ -238,6 +249,9 @@ static int axiomnet_release(struct inode *inode, struct file *filep)
     drvdata->used--;
 
     mutex_unlock(&drvdata->lock);
+
+    filep->private_data = NULL;
+    kfree(priv);
 
     dprintk("end");
     return 0;
@@ -263,7 +277,8 @@ static ssize_t axiomnet_write(struct file *filep, const char __user *buffer,
 static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         unsigned long arg)
 {
-    struct axiomnet_drvdata *drvdata = filep->private_data;
+    struct axiomnet_priv *priv = filep->private_data;
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
     void __user* argp = (void __user*)arg;
     long ret = 0;
     uint32_t buf_uint32;
@@ -323,6 +338,10 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         get_user(buf_uint32, (uint32_t __user*)arg);
         axiom_hw_set_ni_control(drvdata->dev_api, buf_uint32);
         break;
+    case AXNET_BIND:
+        get_user(buf_uint8, (uint8_t __user*)arg);
+        priv->bind_port = buf_uint8;
+        break;
     default:
         ret = -EINVAL;
     }
@@ -334,7 +353,8 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
 
 static int axiomnet_mmap(struct file *filep, struct vm_area_struct *vma)
 {
-    struct axiomnet_drvdata *drvdata = filep->private_data;
+    struct axiomnet_priv *priv = filep->private_data;
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
     unsigned long size = vma->vm_end - vma->vm_start;
     int err = 0;
     dprintk("start");

@@ -60,6 +60,13 @@ struct axiomnet_chrdev {
     struct axiomnet_drvdata *drvdata_a[AXIOMNET_DEV_MAX];
 };
 
+struct axiomnet_priv {
+    struct axiomnet_drvdata *drvdata;
+
+    int bind_port;
+
+};
+
 
 #define _dprintk(_fmt, ... )\
     do {                                                        \
