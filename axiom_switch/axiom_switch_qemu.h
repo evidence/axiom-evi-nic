@@ -6,12 +6,9 @@ inline static int
 axsw_qemu_send(int fd, axiom_small_eth_t *small_eth)
 {
     int ret;
-    uint32_t axiom_msg_length = 0;
-
-    axiom_msg_length = sizeof(*small_eth);
+    uint32_t axiom_msg_length = htonl(sizeof(*small_eth));
 
     /* send the length of the ethernet packet */
-    axiom_msg_length = htonl(axiom_msg_length);
     ret = send(fd, &axiom_msg_length, sizeof(axiom_msg_length), 0);
     if (ret != sizeof(axiom_msg_length)) {
         EPRINTF("length send error - return: %d errno: %d", ret, errno);
@@ -19,8 +16,7 @@ axsw_qemu_send(int fd, axiom_small_eth_t *small_eth)
     }
 
     /* send ethernet packet */
-    axiom_msg_length = ntohl(axiom_msg_length);
-    ret = send(fd, small_eth, axiom_msg_length, 0);
+    ret = send(fd, small_eth, sizeof(*small_eth), 0);
     if (ret != axiom_msg_length)
     {
         DPRINTF("message send error - return: %d errno: %d", ret, errno);
