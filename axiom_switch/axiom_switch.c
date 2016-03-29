@@ -199,6 +199,7 @@ int main (int argc, char *argv[])
 
                 if (ret < 0) {
                     axsw_event_loop_close(&el_status, i);
+                    axsw_logic_clean_vm_sd(&logic_status, fd);
                     continue;
                 } else if (ret == 0) {
                     continue;
@@ -212,7 +213,7 @@ int main (int argc, char *argv[])
                 /* send ethernet packet */
                 ret = axsw_qemu_send(dst_sd, &axiom_small_eth_msg);
                 if (ret < 0) {
-                    axsw_event_loop_close(&el_status, i);
+                    continue;
                 }
             }
         }

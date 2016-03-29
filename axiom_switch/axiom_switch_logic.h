@@ -84,4 +84,20 @@ axsw_logic_set_vm_sd(axsw_logic_t *logic, int vm_index, int sd)
 
 }
 
+inline static void
+axsw_logic_clean_vm_sd(axsw_logic_t *logic, int sd)
+{
+    int i;
+
+    for (i = 0; i < AXSW_PORT_MAX; i++) {
+        if (logic->vm_sd[i] == sd) {
+            logic->vm_sd[i] = -1;
+        }
+        if (logic->node_sd[i] == sd) {
+            logic->node_sd[i] = -1;
+        }
+    }
+
+}
+
 #endif /* AXIOM_SWITCH_LOGIC_h */
