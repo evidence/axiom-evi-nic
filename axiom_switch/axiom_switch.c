@@ -199,6 +199,7 @@ int main (int argc, char *argv[])
 
                 if (ret < 0) {
                     axsw_event_loop_close(&el_status, i);
+                    continue;
                 } else if (ret == 0) {
                     continue;
                 }
