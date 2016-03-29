@@ -1,11 +1,13 @@
+#include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <fcntl.h>
 
 #include "axiom_user_api.h"
 #include "axiom_netdev_user.h"
@@ -42,8 +44,6 @@ free_dev:
     free(dev);
     return NULL;
 }
-
-
 
 void
 axiom_close(axiom_dev_t *dev)
@@ -83,6 +83,10 @@ axiom_read_ni_status(axiom_dev_t *dev)
 
     ret = ioctl(dev->fd, AXNET_GET_STATUS, &status);
 
+    if (ret < 0) {
+        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+    }
+
     return status;
 }
 
@@ -95,6 +99,10 @@ axiom_set_ni_control(axiom_dev_t *dev, uint32_t reg_mask)
         return;
 
     ret = ioctl(dev->fd, AXNET_SET_CONTROL, &reg_mask);
+
+    if (ret < 0) {
+        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+    }
 }
 
 uint32_t
@@ -107,6 +115,10 @@ axiom_read_ni_control(axiom_dev_t *dev)
         return -1;
 
     ret = ioctl(dev->fd, AXNET_GET_CONTROL, &control);
+
+    if (ret < 0) {
+        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+    }
 
     return control;
 }
@@ -121,6 +133,10 @@ axiom_set_node_id(axiom_dev_t *dev, axiom_node_id_t node_id)
         return;
 
     ret = ioctl(dev->fd, AXNET_SET_NODEID, &node_id);
+
+    if (ret < 0) {
+        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+    }
 }
 
 axiom_node_id_t
@@ -133,6 +149,10 @@ axiom_get_node_id(axiom_dev_t *dev)
         return -1;
 
     ret = ioctl(dev->fd, AXNET_GET_NODEID, &node_id);
+
+    if (ret < 0) {
+        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+    }
 
     return node_id;
 }
@@ -152,6 +172,10 @@ axiom_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
 
     ret = ioctl(dev->fd, AXNET_SET_ROUTING, &routing);
 
+    if (ret < 0) {
+        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+    }
+
     return ret;
 }
 
@@ -170,6 +194,10 @@ axiom_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
 
     ret = ioctl(dev->fd, AXNET_GET_ROUTING, &routing);
 
+    if (ret < 0) {
+        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+    }
+
     *enabled_mask = routing.enabled_mask;
 
     return ret;
@@ -185,6 +213,10 @@ axiom_get_if_number(axiom_dev_t *dev, axiom_if_id_t *if_number)
 
     ret = ioctl(dev->fd, AXNET_GET_IFNUMBER, if_number);
 
+    if (ret < 0) {
+        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+    }
+
     return ret;
 }
 
@@ -199,6 +231,10 @@ axiom_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
         return -1;
 
     ret = ioctl(dev->fd, AXNET_GET_IFINFO, &buf_if);
+
+    if (ret < 0) {
+        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+    }
 
     *if_features = buf_if;
 
