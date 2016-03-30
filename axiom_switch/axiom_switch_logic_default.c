@@ -126,11 +126,13 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
         return -1;
     }
     DPRINTF("neighbour_if %d", neighbour_if);
-    neighbour_msg->small_msg.header.tx.dst = neighbour_if;
+    /* set receiver interface */
+    neighbour_msg->small_msg.header.rx.src = neighbour_if;
 
     /* capture AXIOM_DSCV_CMD_SETID messages in order to memorize socket
      * descriptor associated to each node id for small messages forwarding */
-    if (neighbour_msg->small_msg.header.tx.port_flag.field.port == AXIOM_SMALL_PORT_DISCOVERY) {
+    if (neighbour_msg->small_msg.header.tx.port_flag.field.port
+            == AXIOM_SMALL_PORT_DISCOVERY) {
         axiom_discovery_payload_t *disc_payload;
 
         disc_payload = (axiom_discovery_payload_t *)
@@ -151,13 +153,18 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
 
 /* given the received messages, return the recipient socket of the small message */
 static int
-axsw_forward_small(axsw_logic_t *logic, axiom_small_eth_t *small_msg)
+axsw_forward_small(axsw_logic_t *logic, axiom_small_eth_t *small_msg,
+        int src_sd)
 {
-    uint8_t dst_node;
+    uint8_t dst_node, src_node;
 
     dst_node = small_msg->small_msg.header.tx.dst;
+    src_node = axsw_logic_find_node_id(logic, src_sd);
 
-    DPRINTF("dst_node: %d", dst_node);
+    DPRINTF("dst_node: %d - src_node: %d", dst_node, src_node);
+
+    /* set source node id in the packet */
+    small_msg->small_msg.header.rx.src = src_node;
 
     return axsw_logic_find_small_sd(logic, dst_node);
 }
@@ -180,7 +187,7 @@ axsw_logic_forward(axsw_logic_t *logic, int src_sd, axiom_small_eth_t *axiom_pac
         dst_sd = axsw_forward_neighbour(logic, axiom_packet, src_sd);
     } else {
         /* small message */
-        dst_sd = axsw_forward_small(logic, axiom_packet);
+        dst_sd = axsw_forward_small(logic, axiom_packet, src_sd);
     }
 
     NDPRINTF("dst_sd: %d", dst_sd);

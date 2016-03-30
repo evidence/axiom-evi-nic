@@ -74,6 +74,21 @@ axsw_logic_find_vm_index(axsw_logic_t *logic, int sd)
     return -1;
 }
 
+/* find the node id, given its associated socket descriptor */
+inline static int
+axsw_logic_find_node_id(axsw_logic_t *logic, int sd)
+{
+    int i;
+
+    for (i = 0; i < AXSW_PORT_MAX; i++) {
+        if (logic->node_sd[i] == sd) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 /* store socket associated with the virtual machine vm_index */
 inline static void
 axsw_logic_set_vm_sd(axsw_logic_t *logic, int vm_index, int sd)
