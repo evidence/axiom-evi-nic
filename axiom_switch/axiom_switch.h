@@ -3,7 +3,7 @@
 
 #define PDEBUG
 #include "dprintf.h"
-#include "axiom_topology.h"
+#include "axiom_sim_topology.h"
 
 #define AXSW_PORT_MAX           16      /* max port supported */
 #define AXSW_PORT_START         33300   /* first port to listen */
