@@ -3,6 +3,7 @@
 #include <linux/io.h>
 #include <linux/types.h>
 #include <linux/vmalloc.h>
+#include <linux/wait.h>
 
 #include "axiom_nic_regs.h"
 
@@ -35,22 +36,79 @@ axiom_hw_dev_free(axiom_dev_t *dev)
 }
 
 
-
-
 axiom_msg_id_t
 axiom_hw_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
-        axiom_port_t port, axiom_flag_t flag, axiom_payload_t *payload)
+        axiom_port_flag_t port_flag, axiom_payload_t *payload)
 {
+    uint32_t tail;
+    uint16_t header;
+
+    /* XXX: check the space? */
+    tail = ioread32(dev->vregs + AXIOMREG_IO_SMALL_TX_TAIL);
+
+    header = ((dst_id << 8) | port_flag);
+    /* write header */
+    iowrite16(header, dev->vregs + AXIOMREG_IO_SMALL_TX_BASE + 8*(tail));
+    /* write payload */
+    iowrite32(*payload, dev->vregs + AXIOMREG_IO_SMALL_TX_BASE + 8*(tail) + 4);
 
     return 0;
 }
 
+axiom_small_len_t
+axiom_hw_small_tx_avail(axiom_dev_t *dev)
+{
+    uint32_t ret;
+
+    ret = ioread32(dev->vregs + AXIOMREG_IO_SMALL_TX_AVAIL);
+
+    return ret;
+}
+
+void
+axiom_hw_small_tx_push(axiom_dev_t *dev, axiom_small_len_t count)
+{
+    /*TODO: check how many descriptors are pushed */
+    iowrite32(count, dev->vregs + AXIOMREG_IO_SMALL_TX_PUSH);
+}
+
 axiom_msg_id_t
 axiom_hw_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
-        axiom_port_t *port, axiom_flag_t *flag, axiom_payload_t *payload)
+        axiom_port_flag_t *port_flag, axiom_payload_t *payload)
 {
+    uint32_t head;
+    uint16_t header;
+
+    /* XXX: check available? */
+    head = ioread32(dev->vregs + AXIOMREG_IO_SMALL_RX_HEAD);
+
+    /* read header */
+    header = ioread16(dev->vregs + AXIOMREG_IO_SMALL_RX_BASE + 8*(head));
+
+    *src_id = ((header >> 8) & 0xFF);
+    *port_flag = (header & 0xFF);
+
+    /* read payload */
+    *payload = ioread32(dev->vregs + AXIOMREG_IO_SMALL_RX_BASE + 8*(head) + 4);
 
     return 0;
+}
+
+axiom_small_len_t
+axiom_hw_small_rx_avail(axiom_dev_t *dev)
+{
+    uint32_t ret;
+
+    ret = ioread32(dev->vregs + AXIOMREG_IO_SMALL_RX_AVAIL);
+
+    return ret;
+}
+
+void
+axiom_hw_small_rx_pop(axiom_dev_t *dev, axiom_small_len_t count)
+{
+    /*TODO: check how many descriptors are poped */
+    iowrite32(count, dev->vregs + AXIOMREG_IO_SMALL_RX_POP);
 }
 
 uint32_t

@@ -68,13 +68,69 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
     irqreturn_t serviced = IRQ_NONE;
     uint32_t irq_pending;
 
-    dprintk("start");
+    DPRINTF("start");
     irq_pending = ioread32(drvdata->vregs + AXIOMREG_IO_PNDIRQ);
     iowrite32(irq_pending, drvdata->vregs + AXIOMREG_IO_ACKIRQ);
     serviced = IRQ_HANDLED;
-    dprintk("end");
+    DPRINTF("end");
 
     return serviced;
+}
+
+inline static unsigned int axiomnet_small_tx_avail(struct axiomnet_ring *ring)
+{
+    /*TODO: try to minimize the register read */
+    return axiom_hw_small_tx_avail(ring->drvdata->dev_api);
+}
+
+inline static int axiomnet_small_tx(struct axiomnet_ring *ring,
+        axiom_small_msg_t *msg)
+{
+    int ret = 0;
+
+    if (axiom_hw_send_small(ring->drvdata->dev_api, msg->header.tx.dst,
+                msg->header.tx.port_flag.raw, &msg->payload)) {
+        ret = -1;
+    }
+
+    /* TODO: implement batch */
+    axiom_hw_small_tx_push(ring->drvdata->dev_api, 1);
+
+    return ret;
+}
+
+inline static unsigned int axiomnet_small_rx_avail(struct axiomnet_ring *ring)
+{
+    /*TODO: try to minimize the register read */
+    return axiom_hw_small_rx_avail(ring->drvdata->dev_api);
+}
+
+inline static int axiomnet_small_rx(struct axiomnet_ring *ring,
+        axiom_small_msg_t *msg)
+{
+    int ret = 0;
+
+    if (axiom_hw_recv_small(ring->drvdata->dev_api, &msg->header.rx.src,
+                &msg->header.rx.port_flag.raw, &msg->payload)) {
+        ret = -1;
+    }
+
+    /* TODO: implement batch */
+    axiom_hw_small_rx_pop(ring->drvdata->dev_api, 1);
+
+    return ret;
+}
+
+static int axiomnet_ring_init(struct axiomnet_drvdata *drvdata,
+        struct axiomnet_ring *ring)
+{
+
+    ring->drvdata = drvdata;
+
+    mutex_init(&ring->mutex);
+    init_waitqueue_head(&ring->wait_queue);
+
+    return 0;
 }
 
 
@@ -87,7 +143,7 @@ static int axiomnet_probe(struct platform_device *pdev)
     int err = 0;
 
 
-    dprintk("start");
+    DPRINTF("start");
 
     /* allocate our structure and fill it out */
     drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
@@ -119,9 +175,9 @@ static int axiomnet_probe(struct platform_device *pdev)
     regs_pfn = vmalloc_to_pfn(drvdata->vregs);
     regs_phys = (regs_pfn << PAGE_SHIFT) + off;
 
-    dprintk("drvdata: %p", drvdata);
-    dprintk("--- is_vmalloc_addr(%p): %d", drvdata->vregs, is_vmalloc_addr(drvdata->vregs))
-    dprintk("--- vregs: %p regs_pfn:%lx regs_phys:%lx res->start:%zx", drvdata->vregs, regs_pfn,
+    DPRINTF("drvdata: %p", drvdata);
+    DPRINTF("--- is_vmalloc_addr(%p): %d", drvdata->vregs, is_vmalloc_addr(drvdata->vregs))
+    DPRINTF("--- vregs: %p regs_pfn:%lx regs_phys:%lx res->start:%zx", drvdata->vregs, regs_pfn,
             regs_phys, drvdata->regs_res->start);
 
     axiomnet_disable_irq(drvdata);
@@ -132,7 +188,7 @@ static int axiomnet_probe(struct platform_device *pdev)
 
     /* TODO: check version */
     version = ioread32(drvdata->vregs + AXIOMREG_IO_VERSION);
-    sprintk("version: 0x%08x", version);
+    IPRINTF("version: 0x%08x", version);
 
     axiom_print_status_reg(drvdata->dev_api);
     axiom_print_control_reg(drvdata->dev_api);
@@ -145,8 +201,21 @@ static int axiomnet_probe(struct platform_device *pdev)
         goto free_irq;
     }
 
+    /* init SMALL TX ring */
+    err = axiomnet_ring_init(drvdata, &drvdata->small_tx_ring);
+    if (err) {
+        goto free_cdev;
+    }
+
+    /* init SMALL RX ring */
+    err = axiomnet_ring_init(drvdata, &drvdata->small_rx_ring);
+    if (err) {
+        goto free_cdev;
+    }
+
     axiomnet_enable_irq(drvdata);
 
+#if 0
     do {
     //    iowrite32(AXIOMREG_CONTROL_LOOPBACK, drvdata->vregs + AXIOMREG_IO_CONTROL);
         axiom_small_msg_t small_msg;
@@ -160,32 +229,33 @@ static int axiomnet_probe(struct platform_device *pdev)
 
         iowrite32(1, drvdata->vregs + AXIOMREG_IO_SMALL_TX_PUSH);
     } while(0);
+#endif
 
-    dprintk("end");
+    DPRINTF("end");
 
     return 0;
-//free_cdev:
+free_cdev:
     axiomnet_destroy_chrdev(drvdata, &chrdev);
 free_irq:
     free_irq(drvdata->irq, drvdata);
     axiom_hw_dev_free(drvdata->dev_api);
 free_local:
     kfree(drvdata);
-    dprintk("error: %d", err);
+    DPRINTF("error: %d", err);
     return err;
 }
 
 static int axiomnet_remove(struct platform_device *pdev)
 {
     struct axiomnet_drvdata *drvdata = platform_get_drvdata(pdev);
-    dprintk("start");
+    DPRINTF("start");
 
     axiomnet_destroy_chrdev(drvdata, &chrdev);
     free_irq(drvdata->irq, drvdata);
     axiom_hw_dev_free(drvdata->dev_api);
     kfree(drvdata);
 
-    dprintk("end");
+    DPRINTF("end");
     return 0;
 }
 
@@ -207,7 +277,7 @@ static int axiomnet_open(struct inode *inode, struct file *filep)
     struct axiomnet_drvdata *drvdata = chrdev.drvdata_a[minor];
     struct axiomnet_priv *priv;
 
-    dprintk("start minor: %u drvdata: %p", minor, drvdata);
+    DPRINTF("start minor: %u drvdata: %p", minor, drvdata);
 
     /* allocate per-open structure and fill it out */
     priv = kzalloc(sizeof(*priv), GFP_KERNEL);
@@ -226,14 +296,14 @@ static int axiomnet_open(struct inode *inode, struct file *filep)
 
     filep->private_data = priv;
 
-    dprintk("end");
+    DPRINTF("end");
     return 0;
 
 err:
     mutex_unlock(&drvdata->lock);
     pr_err("unable to open char dev [error %d]\n", err);
     kfree(priv);
-    dprintk("error: %d", err);
+    DPRINTF("error: %d", err);
     return err;
 }
 static int axiomnet_release(struct inode *inode, struct file *filep)
@@ -242,7 +312,7 @@ static int axiomnet_release(struct inode *inode, struct file *filep)
     struct axiomnet_drvdata *drvdata = chrdev.drvdata_a[minor];
     struct axiomnet_priv *priv = filep->private_data;
 
-    dprintk("start");
+    DPRINTF("start");
 
     mutex_lock(&drvdata->lock);
 
@@ -253,24 +323,119 @@ static int axiomnet_release(struct inode *inode, struct file *filep)
     filep->private_data = NULL;
     kfree(priv);
 
-    dprintk("end");
+    DPRINTF("end");
     return 0;
 }
 
 static ssize_t axiomnet_read(struct file *filep, char __user *buffer, size_t len,
         loff_t *offset)
 {
-    dprintk("start");
-    dprintk("end");
-    return 0;
+    struct axiomnet_priv *priv = filep->private_data;
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    struct axiomnet_ring *ring = &drvdata->small_rx_ring;
+    axiom_small_msg_t small_msg;
+
+    DPRINTF("start");
+    if (mutex_lock_interruptible(&ring->mutex))
+        return -ERESTARTSYS;
+
+    while (axiomnet_small_rx_avail(ring) == 0) { /* nothing to read */
+        mutex_unlock(&ring->mutex);
+
+        /* no blocking write */
+        if (filep->f_flags & O_NONBLOCK)
+            return -EAGAIN;
+
+        /* put the process in the wait_queue to wait new space (irq) */
+        if (wait_event_interruptible(ring->wait_queue,
+                    axiomnet_small_rx_avail(ring) > 0))
+            return -ERESTARTSYS;
+
+        if (mutex_lock_interruptible(&ring->mutex))
+            return -ERESTARTSYS;
+    }
+
+    /* XXX: we support only small message for now */
+    if (len != sizeof(small_msg)) {
+        len = -EFBIG;
+        goto err;
+    }
+
+    /* copy packet from the ring */
+    if (axiomnet_small_rx(ring, &small_msg)) {
+        len = -EFAULT;
+        goto err;
+    }
+
+    if (copy_to_user(buffer, &small_msg, sizeof(small_msg))) {
+        len = -EFAULT;
+        goto err;
+    }
+
+    /* TODO: flush rx ring */
+    /* TODO: implement flush (fops) and ioctl to enable/disable auto flush */
+
+err:
+    mutex_unlock(&ring->mutex);
+
+    DPRINTF("end");
+    return len;
 }
 
 static ssize_t axiomnet_write(struct file *filep, const char __user *buffer,
         size_t len, loff_t *offset)
 {
-    dprintk("start");
-    dprintk("end");
+    struct axiomnet_priv *priv = filep->private_data;
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    struct axiomnet_ring *ring = &drvdata->small_tx_ring;
+    axiom_small_msg_t small_msg;
+
+    DPRINTF("start");
+    if (mutex_lock_interruptible(&ring->mutex))
+        return -ERESTARTSYS;
+
+    while (axiomnet_small_tx_avail(ring) == 0) { /* no space to write */
+        mutex_unlock(&ring->mutex);
+
+        /* no blocking write */
+        if (filep->f_flags & O_NONBLOCK)
+            return -EAGAIN;
+
+        /* put the process in the wait_queue to wait new space (irq) */
+        if (wait_event_interruptible(ring->wait_queue,
+                    axiomnet_small_tx_avail(ring) > 0))
+            return -ERESTARTSYS;
+
+        if (mutex_lock_interruptible(&ring->mutex))
+            return -ERESTARTSYS;
+    }
+
+    /* XXX: we support only small message for now */
+    if (len != sizeof(small_msg)) {
+        len = -EFBIG;
+        goto err;
+    }
+
+    if (copy_from_user(&small_msg, buffer, len)) {
+        len = -EFAULT;
+        goto err;
+    }
+
+    /* copy packet into the ring */
+    if (axiomnet_small_tx(ring, &small_msg)) {
+        len = -EFAULT;
+        goto err;
+    }
+
+    /* TODO: flush tx ring */
+    /* TODO: implement flush (fops) and ioctl to enable/disable auto flush */
+
+err:
+    mutex_unlock(&ring->mutex);
+
+    DPRINTF("end");
     return len;
+
 }
 
 
@@ -286,7 +451,7 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
     uint8_t buf_uint8_2;
     axiom_ioctl_routing_t buf_routing;
 
-    dprintk("start");
+    DPRINTF("start");
 
     if (!drvdata)
         return -EINVAL;
@@ -347,7 +512,7 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
     }
 
 
-    dprintk("end");
+    DPRINTF("end");
     return ret;
 }
 
@@ -357,7 +522,7 @@ static int axiomnet_mmap(struct file *filep, struct vm_area_struct *vma)
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     unsigned long size = vma->vm_end - vma->vm_start;
     int err = 0;
-    dprintk("start");
+    DPRINTF("start");
 
     if (!drvdata)
         return -EINVAL;
@@ -376,12 +541,12 @@ static int axiomnet_mmap(struct file *filep, struct vm_area_struct *vma)
 
     mutex_unlock(&drvdata->lock);
 
-    dprintk("end");
+    DPRINTF("end");
     return 0;
 err:
     mutex_unlock(&drvdata->lock);
     pr_err("unable to mmap registers [error %d]\n", err);
-    dprintk("error: %d", err);
+    DPRINTF("error: %d", err);
     return err;
 }
 
@@ -401,7 +566,7 @@ static int axiomnet_alloc_chrdev(struct axiomnet_drvdata *drvdata,
 {
     int err = 0, devnum;
     struct device *dev_ret;
-    dprintk("start");
+    DPRINTF("start");
 
     spin_lock(&map_lock);
     devnum = find_first_zero_bit(dev_map, AXIOMNET_DEV_MAX);
@@ -425,7 +590,7 @@ static int axiomnet_alloc_chrdev(struct axiomnet_drvdata *drvdata,
 
     chrdev->drvdata_a[devnum] = drvdata;
 
-    dprintk("end major:%d minor:%d", MAJOR(chrdev->dev), devnum);
+    DPRINTF("end major:%d minor:%d", MAJOR(chrdev->dev), devnum);
     return 0;
 
 free_devnum:
@@ -435,14 +600,14 @@ free_devnum:
 
 err:
     pr_err("unable to allocate char dev [error %d]\n", err);
-    dprintk("error: %d", err);
+    DPRINTF("error: %d", err);
     return err;
 }
 
 static void axiomnet_destroy_chrdev(struct axiomnet_drvdata *drvdata,
         struct axiomnet_chrdev *chrdev)
 {
-    dprintk("start");
+    DPRINTF("start");
 
     device_destroy(chrdev->dclass, MKDEV(MAJOR(chrdev->dev), drvdata->devnum));
     spin_lock(&map_lock);
@@ -452,13 +617,13 @@ static void axiomnet_destroy_chrdev(struct axiomnet_drvdata *drvdata,
     chrdev->drvdata_a[drvdata->devnum] = NULL;
     drvdata->devnum = -1;
 
-    dprintk("end");
+    DPRINTF("end");
 }
 
 static int axiomnet_init_chrdev(struct axiomnet_chrdev *chrdev)
 {
     int err = 0;
-    dprintk("start");
+    DPRINTF("start");
 
     err = alloc_chrdev_region(&chrdev->dev, AXIOMNET_DEV_MINOR,
                     AXIOMNET_DEV_MAX, AXIOMNET_DEV_NAME);
@@ -488,20 +653,20 @@ free_dev:
     unregister_chrdev_region(chrdev->dev, AXIOMNET_DEV_MINOR);
 err:
     pr_err("unable to init char dev [error %d]\n", err);
-    dprintk("error: %d", err);
+    DPRINTF("error: %d", err);
     return err;
 }
 
 static void axiomnet_cleanup_chrdev(struct axiomnet_chrdev *chrdev)
 {
-    dprintk("start");
+    DPRINTF("start");
 
     class_unregister(chrdev->dclass);
     class_destroy(chrdev->dclass);
     cdev_del(&chrdev->cdev);
     unregister_chrdev_region(chrdev->dev, AXIOMNET_DEV_MINOR);
 
-    dprintk("end");
+    DPRINTF("end");
 }
 
 /********************** AxiomNet Module [un]init *****************************/
@@ -510,7 +675,7 @@ static void axiomnet_cleanup_chrdev(struct axiomnet_chrdev *chrdev)
 static int __init axiomnet_init(void)
 {
     int err;
-    dprintk("start");
+    DPRINTF("start");
 
     err = axiomnet_init_chrdev(&chrdev);
     if (err) {
@@ -522,24 +687,24 @@ static int __init axiomnet_init(void)
         goto free_chrdev;
     }
 
-    dprintk("end");
+    DPRINTF("end");
     return 0;
 
 free_chrdev:
     axiomnet_cleanup_chrdev(&chrdev);
 err:
     pr_err("unable to init axiomnet module [error %d]\n", err);
-    dprintk("error: %d", err);
+    DPRINTF("error: %d", err);
     return err;
 }
 
 /* Entry point for unloading the module */
 static void __exit axiomnet_cleanup(void)
 {
-    dprintk("start");
+    DPRINTF("start");
     platform_driver_unregister(&axiomnet_driver);
     axiomnet_cleanup_chrdev(&chrdev);
-    dprintk("end");
+    DPRINTF("end");
 }
 
 module_init(axiomnet_init);

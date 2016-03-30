@@ -15,9 +15,11 @@ int main (int argc, char *argv[])
     int i;
     axiom_dev_t *dev;
     axiom_node_id_t node_id;
+    axiom_port_t port;
+    axiom_flag_t flag;
     axiom_if_id_t if_number;
     uint8_t if_features, enabled_mask;
-    uint32_t status, control;
+    uint32_t status, control, payload;
     axiom_err_t err;
 
     dev = axiom_open(NULL);
@@ -71,6 +73,20 @@ int main (int argc, char *argv[])
 
     err = axiom_get_routing(dev, 102, &enabled_mask);
     IPRINTF("get routing node_id = 0x%x  enabled_mask = 0x%x - err = %d", 102, enabled_mask, err);
+
+    payload = 1234567;
+
+    /* loopback */
+    err = axiom_send_small(dev, 22, 1, 0, &payload);
+    IPRINTF("send small nodeid = 0x%x port = 0x%x flag = 0x%x payload = 0x%x", 22, 1, 0, payload);
+
+    err = axiom_recv_small(dev, &node_id, &port, &flag, &payload);
+    IPRINTF("recv small nodeid = 0x%x port = 0x%x flag = 0x%x payload = 0x%x", node_id, port, flag, payload);
+
+    axiom_set_ni_control(dev, 0x00000000);
+    err = axiom_send_small(dev, 22, 1, 0, &payload);
+    IPRINTF("send small nodeid = 0x%x port = 0x%x flag = 0x%x payload = 0x%x", 22, 1, 0, payload);
+
 
     axiom_close(dev);
 
