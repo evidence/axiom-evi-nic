@@ -17,7 +17,7 @@ axsw_qemu_send(int fd, axiom_small_eth_t *small_eth)
 
     /* send ethernet packet */
     ret = send(fd, small_eth, sizeof(*small_eth), 0);
-    if (ret != axiom_msg_length)
+    if (ret != sizeof(*small_eth))
     {
         DPRINTF("message send error - return: %d errno: %d", ret, errno);
         return -1;
