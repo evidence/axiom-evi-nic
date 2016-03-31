@@ -11,6 +11,9 @@
 #define AXSW_BUF_SIZE           1024
 #define AXSW_FDS_SIZE           AXSW_PORT_MAX*2
 
+#ifdef EXAMPLE0
+#define AXTP_EXAMPLE0   EXAMPLE0
+#endif
 #ifdef EXAMPLE1
 #define AXTP_EXAMPLE1   EXAMPLE1
 #endif

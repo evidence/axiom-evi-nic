@@ -15,6 +15,18 @@
 #include "axiom_nic_packets.h"
 #include "axiom_nic_discovery.h"
 
+#ifdef AXTP_EXAMPLE0
+axiom_topology_t start_topology = {
+    .topology = {
+        { 2, 3, AXIOM_NULL_NODE, AXIOM_NULL_NODE},
+        { 3, 2, AXIOM_NULL_NODE, AXIOM_NULL_NODE},
+        { 0, 1, AXIOM_NULL_NODE, AXIOM_NULL_NODE},
+        { 1, 0, AXIOM_NULL_NODE, AXIOM_NULL_NODE},
+    },
+    .num_nodes = AXTP_NUM_NODES,
+    .num_interfaces = AXTP_NUM_INTERFACES
+};
+#endif
 #ifdef AXTP_EXAMPLE1
 axiom_topology_t start_topology = {
     .topology = {
