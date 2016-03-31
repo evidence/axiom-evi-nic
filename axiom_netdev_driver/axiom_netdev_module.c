@@ -70,6 +70,15 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
 
     DPRINTF("start");
     irq_pending = ioread32(drvdata->vregs + AXIOMREG_IO_PNDIRQ);
+
+    if (irq_pending & AXIOMREG_IRQ_SMALL_RX) {
+        wake_up(&drvdata->small_rx_ring.wait_queue);
+    }
+
+    if (irq_pending & AXIOMREG_IRQ_SMALL_TX) {
+        wake_up(&drvdata->small_tx_ring.wait_queue);
+    }
+
     iowrite32(irq_pending, drvdata->vregs + AXIOMREG_IO_ACKIRQ);
     serviced = IRQ_HANDLED;
     DPRINTF("end");
