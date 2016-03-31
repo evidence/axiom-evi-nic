@@ -116,7 +116,7 @@ axiom_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
     *flag = (small_msg.header.rx.port_flag.field.flag & 0x7);
     *payload = small_msg.payload;
 
-    return AXIOM_RET_ERROR;
+    return AXIOM_RET_OK;
 }
 
 uint32_t
