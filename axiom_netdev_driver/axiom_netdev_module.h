@@ -1,6 +1,7 @@
 #ifndef AXIOM_NETDEV_H
 #define AXIOM_NETDEV_H
 
+#include "dprintf.h"
 #include "axiom_nic_regs.h"
 #include "axiom_kernel_api.h"
 
@@ -67,11 +68,5 @@ struct axiomnet_priv {
     int bind_port;
 
 };
-
-
-#define PDEBUG
-#include "dprintf.h"
-
-
 
 #endif /* AXIOM_NETDEV_H */

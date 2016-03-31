@@ -52,6 +52,8 @@ axiom_hw_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
     /* write payload */
     iowrite32(*payload, dev->vregs + AXIOMREG_IO_SMALL_TX_BASE + 8*(tail) + 4);
 
+    DPRINTF("tail: %x header: %x payload: %x", tail, header, *((uint32_t*)payload));
+
     return 0;
 }
 

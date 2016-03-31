@@ -9,12 +9,10 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 
+#include "dprintf.h"
 #include "axiom_user_api.h"
 #include "axiom_nic_packets.h"
 #include "axiom_netdev_user.h"
-
-#define PDEBUG
-#include "dprintf.h"
 
 #define AXIOM_DEV_FILENAME      "/dev/axiom0"
 
@@ -92,6 +90,8 @@ axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
     if (ret != sizeof(small_msg)) {
         return AXIOM_RET_ERROR;
     }
+
+    DPRINTF("dst: %x payload: %d", small_msg.header.tx.dst, small_msg.payload);
 
     return AXIOM_RET_OK;
 }

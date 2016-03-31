@@ -3,9 +3,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "axiom_user_api.h"
-#define PDEBUG
 #include "dprintf.h"
+#include "axiom_user_api.h"
 
 
 #define AX_TEST_NODEID          33

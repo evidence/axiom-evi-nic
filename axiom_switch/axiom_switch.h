@@ -1,7 +1,6 @@
 #ifndef AXIOM_SWITCH_h
 #define AXIOM_SWITCH_h
 
-#define PDEBUG
 #include "dprintf.h"
 #include "axiom_nic_types.h"
 #include "axiom_sim_topology.h"

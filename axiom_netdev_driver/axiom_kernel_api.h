@@ -1,7 +1,9 @@
 #ifndef AXIOM_KERNEL_API_H
 #define AXIOM_KERNEL_API_H
 
+#include "dprintf.h"
 #include "axiom_nic_api_hw.h"
+
 
 axiom_dev_t *axiom_hw_dev_alloc(void *vregs);
 void axiom_hw_dev_free(axiom_dev_t *dev);
