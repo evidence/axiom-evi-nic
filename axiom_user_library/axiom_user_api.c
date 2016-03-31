@@ -91,7 +91,7 @@ axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
         return AXIOM_RET_ERROR;
     }
 
-    DPRINTF("dst: %x payload: %d", small_msg.header.tx.dst, small_msg.payload);
+    DPRINTF("dst: %x payload: %x", small_msg.header.tx.dst, small_msg.payload);
 
     return AXIOM_RET_OK;
 }
