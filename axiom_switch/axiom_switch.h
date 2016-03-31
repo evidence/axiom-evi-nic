@@ -3,6 +3,7 @@
 
 #define PDEBUG
 #include "dprintf.h"
+#include "axiom_nic_types.h"
 #include "axiom_sim_topology.h"
 
 #define AXSW_PORT_MAX           16      /* max port supported */
