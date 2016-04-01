@@ -19,7 +19,7 @@ axsw_qemu_send(int fd, axiom_small_eth_t *small_eth)
     ret = send(fd, small_eth, sizeof(*small_eth), 0);
     if (ret != sizeof(*small_eth))
     {
-        DPRINTF("message send error - return: %d errno: %d", ret, errno);
+        EPRINTF("message send error - return: %d errno: %d", ret, errno);
         return -1;
     }
 
@@ -66,7 +66,8 @@ axsw_qemu_recv(int fd, axiom_small_eth_t *small_eth)
 skip:
     return 0;
 err:
-    EPRINTF("connection error - errno: %d", errno);
+    if (ret)
+        EPRINTF("connection error ret: %d - errno: %d", ret, errno);
     return -1;
 }
 

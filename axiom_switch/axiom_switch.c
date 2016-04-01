@@ -182,7 +182,7 @@ int main (int argc, char *argv[])
                 }
 
                 /* Add the new incoming connection to the fds structure */
-                DPRINTF("New incoming connection - %d", new_sd);
+                IPRINTF("New incoming connection - sd: %d", new_sd);
                 ret = axsw_event_loop_add_sd(&el_status, new_sd, POLLIN);
                 if (ret < 0) {
                     EPRINTF("no space in fds array");

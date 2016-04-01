@@ -37,6 +37,7 @@ axsw_event_loop_add_sd(axsw_event_loop_t *el_status, int new_sd, int events)
 void
 axsw_event_loop_close(axsw_event_loop_t *el_status, int fds_index)
 {
+    IPRINTF("Close connection - sd: %d", el_status->fds[fds_index].fd);
     close(el_status->fds[fds_index].fd);
     el_status->fds[fds_index].fd = -1;
     el_status->compress_array = 1;
