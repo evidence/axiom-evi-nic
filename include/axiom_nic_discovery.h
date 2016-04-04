@@ -4,80 +4,99 @@
 /*
  * axiom_nic_discovery.h
  *
+ * Version:     v0.2
  * Last update: 2016-03-08
  *
  * This file contains the AXIOM NIC API for the discovery
  *
  */
+#include "axiom_nic_types.h"
+#include "axiom_nic_api_user.h"
+#include "axiom_nic_small_commands.h"
 
 /********************************* Types **************************************/
-typedef uint8_t		axiom_raw_disc_type_t;	/* Raw message discovery-type */
+typedef uint8_t		axiom_discovery_cmd_t;	/* Discovery command */
+
+
+
+/********************************* Packet *************************************/
+typedef struct axiom_discovery_payload {
+    uint8_t command;                    /* Command of discovery messages */
+    uint8_t src_node;                   /* Source node id */
+    uint8_t dst_node;                   /* Destination node id */
+    uint8_t src_dst_if;                 /* Source interface | Dest Interface */
+} axiom_discovery_payload_t;
+
+
 
 /*
  * @brief This function sends a discovery message to a neighbour on a specific
  *        interface.
  * @param dev The axiom devive private data pointer
  * @param src_interface Sender interface identification
- * @param type type of the raw message
+ * @param type type of the small message
  * @param data Data to send
  * return Returns ...
  */
 inline static axiom_msg_id_t
-axiom_send_raw_discovery(axiom_dev_t *dev, axiom_if_id_t src_local_if,
-        axiom_raw_disc_type_t data_type,
-        axiom_node_id_t data_src_id, axiom_node_id_t data_dst_id,
-        axiom_if_id_t data_src_if, axiom_if_id_t data_dst_if)
+axiom_send_small_discovery(axiom_dev_t *dev, axiom_if_id_t my_interface,
+        axiom_discovery_cmd_t cmd, axiom_node_id_t payload_src_id,
+        axiom_node_id_t payload_dst_id, axiom_if_id_t payload_src_if,
+        axiom_if_id_t payload_dst_if)
 {
-    axiom_discovery_msg_t msg;
+    axiom_discovery_payload_t payload;
     axiom_msg_id_t ret;
 
 
-    msg.data.disc.type = data_type;
-    msg.data.disc.src_node = data_src_id;
-    msg.data.disc.dst_node = data_dst_id;
-    msg.data.disc.src_dst_if  = ((axiom_if_id_t)((0x0F & data_src_if) << 4) |
-                                (0x0F & data_dst_if)) ;
+    payload.command = cmd;
+    payload.src_node = payload_src_id;
+    payload.dst_node = payload_dst_id;
+    payload.src_dst_if  = ((axiom_if_id_t)((0x0F & payload_src_if) << 4) |
+                                (0x0F & payload_dst_if)) ;
 
 
-    ret = axiom_send_raw_neighbour(dev, src_local_if, AXIOM_RAW_TYPE_DISCOVERY, msg.data.raw);
+    ret = axiom_send_small(dev, my_interface, AXIOM_SMALL_PORT_DISCOVERY,
+            AXIOM_SMALL_FLAG_NEIGHBOUR, (axiom_payload_t*)(&payload));
+
+
 
     return ret;
 }
 
 /*
- * @brief This function sends a discovery message to a neighbour on a specific
- *        interface.
+ * @brief This function receive a discovery message to a neighbour
+ *        on a specific interface.
  * @param dev The axiom devive private data pointer
  * @param src_interface Sender interface identification
- * @param type type of the raw message
+ * @param type type of the small message
  * @param data Data to send
  * return Returns ...
  */
 inline static axiom_msg_id_t
-axiom_recv_raw_discovery(axiom_dev_t *dev, axiom_raw_disc_type_t *data_type,
+axiom_recv_small_discovery(axiom_dev_t *dev, axiom_discovery_cmd_t *cmd,
                          axiom_node_id_t *src_id, axiom_node_id_t *dst_id,
-                         axiom_if_id_t *src_interface, axiom_if_id_t *dst_interface,
-                         axiom_if_id_t *data_src_if, axiom_if_id_t *data_dst_if)
+                         axiom_if_id_t *my_interface,
+                         axiom_if_id_t *payload_src_if,
+                         axiom_if_id_t *payload_dst_if)
 {
-    axiom_discovery_msg_t msg;
+    axiom_discovery_payload_t payload;
+    axiom_port_t port;
+    axiom_flag_t flag;
     axiom_msg_id_t ret;
 
-    ret = axiom_recv_raw_neighbour (dev, &msg.header.neighbour.src_if,
-            &msg.header.neighbour.dst_if, &msg.header.neighbour.type,
-            &msg.data.raw);
+    port = AXIOM_SMALL_PORT_DISCOVERY;
+    flag = AXIOM_SMALL_FLAG_NEIGHBOUR;
+    ret = axiom_recv_small(dev, my_interface, &port, &flag,
+            (axiom_payload_t*)(&payload));
 
-    if ((ret == AXIOM_RET_OK) &&
-        (msg.header.neighbour.type == AXIOM_RAW_TYPE_DISCOVERY))
+    if ((ret == AXIOM_RET_OK) && (port == AXIOM_SMALL_PORT_DISCOVERY))
     {
-        /* Header info */
-        *src_interface = msg.header.neighbour.src_if;
-        *dst_interface = msg.header.neighbour.dst_if;
         /* payload info */
-        *data_type = msg.data.disc.type;
-        *src_id    = msg.data.disc.src_node;
-        *dst_id    = msg.data.disc.dst_node;
-        *data_src_if = (msg.data.disc.src_dst_if >> 4) & 0x0F;
-        *data_dst_if = (msg.data.disc.src_dst_if) & 0x0F;
+        *cmd = payload.command;
+        *src_id    = payload.src_node;
+        *dst_id    = payload.dst_node;
+        *payload_src_if = (payload.src_dst_if >> 4) & 0x0F;
+        *payload_dst_if = (payload.src_dst_if) & 0x0F;
 
         return AXIOM_RET_OK;
     }
