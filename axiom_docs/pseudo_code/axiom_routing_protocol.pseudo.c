@@ -1,3 +1,13 @@
+/*
+ * axiom_routing_protocol.pseudo.c
+ *
+ * Version:     v0.2
+ * Last update: 2016-03-08
+ *
+ * This file contains the pseudo code of AXIOM Routing Protocol
+ *
+ */
+
 A. Nodo Master data la Topologia della rete calcola NUM_NODES tabelle di routing (una per ogni nodo)
 
    utilizzando l'alogoritmo di simil-Dijkstra:

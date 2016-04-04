@@ -1,56 +1,47 @@
-#ifndef AXIOM_NIC_API_h
-#define AXIOM_NIC_API_h
+#ifndef AXIOM_NIC_API_USER_h
+#define AXIOM_NIC_API_USER_h
 
 /*
- * axiom_nic_api.h
+ * axiom_nic_api_user.h
  *
- * Last update: 2016-03-08
+ * Version:     v0.2
+ * Last update: 2016-03-14
  *
- * This file contains the AXIOM NIC API
+ * This file contains the AXIOM NIC API for the userspace
  *
  */
+#include "axiom_nic_types.h"
 
-/*****************************Return Values ***********************************/
-#define AXIOM_RET_ERROR       0       /* error */
-#define AXIOM_RET_OK          1       /*no error  */
-
-/********************************* Types **************************************/
-typedef uint8_t		axiom_raw_type_t;	/* Raw message type */
-typedef uint8_t		axiom_node_id_t;	/* Node identifier */
-typedef uint8_t		axiom_msg_id_t;	/* Message identifier */
-typedef uint8_t		axiom_if_id_t;	/* Interface identifier */
-typedef uint8_t*	axiom_addr_t;	/* Address memory type */
-typedef uint32_t	axiom_data_t;	/* DATA type */
-typedef uint8_t		axiom_err_t;	/* Axiom Error type */
-typedef struct axiom_dev axiom_dev_t;     /* Axiom device private data pointer */
 
 /*
- * @brief This function sends raw data to a remote node.
+ * @brief This function sends small data to a remote node.
  * @param dev The axiom devive private data pointer
- * @param type type of the raw message
- * @param src_node_id The local node Id that will send raw data
- * @param dst_node_id The remote node id that will receive the raw data
- * @param data data to be sent
+ * @param dst_id The remote node id that will receive the small data or local
+ *               interface that will send the small data
+ * @param port port of the small message
+ * @param flag flags of the small message
+ * @param payload data to be sent
  * @return Returns a unique positive message id on success, -1 otherwise.
  * XXX: the return type is unsigned!
  */
 axiom_msg_id_t
-axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t src_node_id,
-        axiom_node_id_t dst_node_id, axiom_raw_type_t type, axiom_data_t data);
+axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
+        axiom_port_t port, axiom_flag_t flag, axiom_payload_t *payload);
 
 /*
- * @brief This function receives raw data to a remote node.
+ * @brief This function receives small data to a remote node.
  * @param dev The axiom devive private data pointer
- * @param type type of the raw message
- * @param src_node_id The source node Id that sent raw data
- * @param dst_node_id The destination node id that received the raw data
- * @param data data received
+ * @param src_id The source node id that sent the small data or local
+ *               interface that received the small data
+ * @param port port of the small message
+ * @param flag flags of the small message
+ * @param payload data received
  * @return Returns a unique positive message id on success, -1 otherwise.
  * XXX: the return type is unsigned!
  */
 axiom_msg_id_t
-axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
-        axiom_node_id_t *dst_node_id, axiom_raw_type_t *type, axiom_data_t *data);
+axiom_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
+        axiom_port_t *port, axiom_flag_t *flag, axiom_payload_t *payload);
 
 /*
  * @brief This function stores data to a remote node’s memory.
@@ -228,33 +219,5 @@ axiom_err_t
 axiom_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
         uint8_t *if_features);
 
-/*
- * @brief This function sends a raw message to a neighbour on a specific
- *        interface.
- * @param dev The axiom devive private data pointer
- * @param src_interface Sender interface identification
- * @param type type of the raw message
- * @param data Data to send
- * return Returns ...
- */
-axiom_msg_id_t
-axiom_send_raw_neighbour(axiom_dev_t *dev, axiom_if_id_t src_interface,
-        axiom_raw_type_t type, axiom_data_t data);
 
-/*
- * @brief This function receives a raw message from a neighbour on a specific
- *        interface.
- * @param dev The axiom devive private data pointer
- * @param src_interface Pointer to the remote sender interface identification
- * @param dst_interface Pointer to the local receiver interface identification
- * @param type type of the raw message
- * @param data Received data
- * return Returns ...
- */
-axiom_msg_id_t
-axiom_recv_raw_neighbour (axiom_dev_t *dev, axiom_if_id_t *src_interface,
-        axiom_if_id_t *dst_interface, axiom_raw_type_t *type,
-        axiom_data_t *data);
-
-
-#endif /* !AXIOM_NIC_API_h */
+#endif /* !AXIOM_NIC_API_USER_h */

@@ -1,3 +1,13 @@
+/*
+ * axiom_discovery_protocol.pseudo.c
+ *
+ * Version:     v0.2
+ * Last update: 2016-03-08
+ *
+ * This file contains the pseudo code of AXIOM Discovery Protocol
+ *
+ */
+
 /********************************************************/
 /************ Discovery Algorithm pseudo-code ***********/
 /* The Topology matrix of the master node, at the end of*/
