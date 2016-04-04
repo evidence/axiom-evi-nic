@@ -4,11 +4,32 @@
 #define AXSW_PORT_MAX           16      /* max port supported */
 #define AXSW_PORT_START         33300   /* first port to listen */
 
+/* actual number of defined topology */
+#define AXTP_NUM_SIM        6
+/* maximum topologies number */
+#define AXTP_MAX_NUM_SIM    10
+/* switch port needed for each toploogy simualation case */
+#define AXTP_NUM_PORT_SIM_0     8
+#define AXTP_NUM_PORT_SIM_1     10
+#define AXTP_NUM_PORT_SIM_2     6
+#define AXTP_NUM_PORT_SIM_3     6
+#define AXTP_NUM_PORT_SIM_4     6
+#define AXTP_NUM_PORT_SIM_5     6
+
+/* possible toplogies types */
+#define AXTP_DEFAULT_SIM        0
+#define AXTP_RING_SIM           1
+
+typedef struct axsw_sim_topology {
+    /* array of pointer to topology initialization functions */
+    void (*axsw_f_init_topology[AXTP_MAX_NUM_SIM])(axiom_topology_t *start_topology);
+    int needed_switch_port[AXTP_MAX_NUM_SIM];
+} axsw_sim_topology_t;
+
 typedef struct axsw_logic {
     int    vm_sd[AXSW_PORT_MAX];
     int    node_sd[AXSW_PORT_MAX];
 } axsw_logic_t;
-
 
 inline static void
 axsw_logic_init(axsw_logic_t *logic) {
@@ -114,5 +135,15 @@ axsw_logic_clean_vm_sd(axsw_logic_t *logic, int sd)
     }
 
 }
+
+/* functions for toplogy management */
+void axsw_init_topology(axiom_topology_t *start_topology);
+void axsw_init_topology_0(axiom_topology_t *start_topology);
+void axsw_init_topology_1(axiom_topology_t *start_topology);
+void axsw_init_topology_2(axiom_topology_t *start_topology);
+void axsw_init_topology_3(axiom_topology_t *start_topology);
+void axsw_init_topology_4(axiom_topology_t *start_topology);
+void axsw_init_topology_5(axiom_topology_t *start_topology);
+void axsw_init_f_topology (axsw_sim_topology_t *sim_toplogy) ;
 
 #endif /* AXIOM_SWITCH_LOGIC_h */

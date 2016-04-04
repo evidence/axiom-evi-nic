@@ -9,6 +9,7 @@
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <getopt.h>
 
 #include "axiom_switch.h"
 #include "axiom_switch_packets.h"
@@ -17,6 +18,14 @@
 #include "axiom_switch_qemu.h"
 
 extern axiom_topology_t start_topology;
+
+static void usage(void)
+{
+    printf("usage: ./axiom_switch [[-t port] [-n] [-h]] -t topology -n number of topology or number of nodes \n\n");
+    printf("-t, --toplogy   topology_numer      0:pre-existent topology 1:RING \n");
+    printf("-n,             number              number of pre-existent topology | number of nodes for other topologies\n");
+    printf("-h, --help                          print this help\n");
+}
 
 static int
 listen_socket_init(int *listen_sd, uint16_t port) {
@@ -95,13 +104,127 @@ listen_socket_find(int *listen_sd, int fds_index, int sd, int *vm_index)
 int main (int argc, char *argv[])
 {
     int ret, fds_tail_max_listen, i;
-    int num_ports = 0, end_server = 0;
+    int n, num_ports = 0, topology = 0, end_server = 0;
     int listen_sd[AXSW_PORT_MAX];
     axiom_small_eth_t axiom_small_eth_msg;
     axsw_logic_t logic_status;
     axsw_event_loop_t el_status;
+    int topology_ok = 0, n_ok = 0;
+    int long_index =0;
+    int opt = 0;
+    static struct option long_options[] = {
+        {"n", required_argument, 0, 'n'},
+        {"topology", required_argument, 0, 't'},
+        {"help", no_argument, 0, 'h'},
+        {0, 0, 0, 0}
+    };
+    axsw_sim_topology_t sim_toplogy;
+
+    while ((opt = getopt_long(argc, argv,"t:n:h",
+                         long_options, &long_index )) != -1) {
+        switch (opt) {
+            case 't' :
+                if (sscanf(optarg, "%i", &topology) != 1) {
+                    usage();
+                    exit(-1);
+                }
+                else {
+                    topology_ok = 1;
+                }
+                break;
+
+            case 'n' :
+                if (sscanf(optarg, "%i", &n) != 1) {
+                    usage();
+                    exit(-1);
+                }
+                else {
+                    n_ok = 1;
+                }
+                break;
 
 
+            case 'h':
+            default:
+                usage();
+                exit(-1);
+        }
+    }
+
+    /* chack topology paramenter */
+    if (topology_ok == 1) {
+        switch (topology) {
+            case AXTP_DEFAULT_SIM:
+                /* pre-esistent toplogy management */
+                /* Initialization of pointer to the all
+                 * possible topologyies management functions */
+                axsw_init_f_topology(&sim_toplogy);
+
+                if (n_ok == 1) {
+                    if ((n < 0) || (n > AXTP_NUM_SIM)) {
+                        printf("Please, for topology %d insert a simulation number between 0 and %d\n",
+                            AXTP_DEFAULT_SIM,
+                            AXTP_NUM_SIM-1);
+                        exit (-1);
+                    }
+                    else {
+                        num_ports = sim_toplogy.needed_switch_port[n];
+                        /* init the selected topology */
+                        axsw_init_topology(&start_topology);
+                        sim_toplogy.axsw_f_init_topology[n](&start_topology);
+                    }
+                }
+                else {
+                   usage();
+                   exit(-1);
+                }
+                break;
+
+            default:
+                printf("Topology type not existent!\n");
+                exit (-1);
+        }
+    }
+    else {
+       usage();
+       exit(-1);
+    }
+
+
+#if 0
+    /* check toplogy parameter */
+    if (topology_ok == 1) {
+        if (topology > AXTP_MAX_NUM_SIM) {
+            printf("Actual number of supported topology is %d",
+                    AXTP_NUM_SIM);
+            exit (-1);
+        }
+        else {
+            /* Initialization of pointer to the all
+             * possible topologyies management functions */
+            axsw_init_f_topology (sim_toplogy.axsw_f_init_topology);
+
+            if (sim_toplogy.needed_switch_port[topology] != num_ports) {
+                printf("Number %d",
+                        AXTP_NUM_SIM);
+                exit (-1);
+            }
+            else {
+                /* init the selected topology */
+                axsw_init_topology(&start_topology);
+                axsw_f_init_topology[topology](&start_topology);
+            }
+
+        }
+    }
+    else {
+        usage();
+        exit(-1);
+    }
+#endif
+
+
+#if 0
     /* first parameter: number of ports */
     if (argc < 2) {
         printf("Parameter required: number of ports\n");
@@ -117,7 +240,7 @@ int main (int argc, char *argv[])
         printf("Max ports supported is %d\n", AXSW_PORT_MAX);
         exit(-1);
     }
-
+#endif
     axsw_logic_init(&logic_status);
     axsw_if_topology_init(&start_topology);
     axsw_event_loop_init(&el_status);
