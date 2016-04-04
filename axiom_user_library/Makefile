@@ -1,12 +1,12 @@
 
 APPS := axiom_user_test
 CLEANFILES = $(APPS) *.o
-CFLAGS += -g -Wall -DPDEBUG -I../../axiom-docs/include/ -I../axiom_netdev_driver/
+CFLAGS += -g -Wall -DPDEBUG -I../include/ -I../axiom_netdev_driver/
 #LDFLAGS += -pthread
 
 PWD := $(shell pwd)
 #MKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-BUILDROOT := ${PWD}/../../axiom-buildroot
+BUILDROOT := ${PWD}/../../axiom-evi-buildroot
 DESTDIR := ${BUILDROOT}/output/target
 CCPREFIX := ${BUILDROOT}/output/host/usr/bin/arm-linux-
 CC := ${CCPREFIX}gcc

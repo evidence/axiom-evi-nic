@@ -4,12 +4,12 @@ axiom_netdev-objs := axiom_kernel_api.o axiom_netdev_module.o
 
 PWD := $(shell pwd)
 MKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-BUILDROOT := ${PWD}/../../axiom-buildroot
+BUILDROOT := ${PWD}/../../axiom-evi-buildroot
 KERNELDIR := ${BUILDROOT}/output/build/linux-custom
 DESTDIR := ${BUILDROOT}/output/target
 CCPREFIX := ${BUILDROOT}/output/host/usr/bin/arm-linux-
 
-ccflags-y += -DPDEBUG -I${MKFILE_DIR}/../../axiom-docs/include/ -Wall
+ccflags-y += -DPDEBUG -I${MKFILE_DIR}/../include/ -Wall
 
 default:
 	$(MAKE) ARCH=arm CROSS_COMPILE=${CCPREFIX} -C $(KERNELDIR) M=$(PWD) modules
