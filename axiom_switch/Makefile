@@ -1,13 +1,9 @@
-
 APPS := axiom_switch
 CLEANFILES = $(APPS) *.o
 CFLAGS += -g -DPDEBUG -I../include/ -Wall
-#LDFLAGS += -pthread
 
-PWD := $(shell pwd)
-DESTDIR := $(PWD)
 
-.PHONY: all clean install
+.PHONY: all clean
 
 all: $(APPS)
 
@@ -19,8 +15,6 @@ axiom_switch_logic_default.o: axiom_switch_logic_default.c axiom_switch_logic.h 
 
 axiom_switch_event_loop.o: axiom_switch_event_loop.h axiom_switch_event_loop.c axiom_switch.h
 
-install: $(APPS)
-	cp $(APPS) $(DESTDIR)/usr/bin/
 
 clean:
 	rm -rf $(CLEANFILES)
