@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #include "dprintf.h"
-#include "axiom_user_api.h"
+#include "axiom_nic_api_user.h"
 
 
 #define AX_TEST_NODEID          33

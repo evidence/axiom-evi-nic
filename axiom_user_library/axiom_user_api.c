@@ -10,7 +10,7 @@
 #include <sys/ioctl.h>
 
 #include "dprintf.h"
-#include "axiom_user_api.h"
+#include "axiom_nic_api_user.h"
 #include "axiom_nic_packets.h"
 #include "axiom_netdev_user.h"
 
