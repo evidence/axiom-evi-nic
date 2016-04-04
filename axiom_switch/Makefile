@@ -1,6 +1,9 @@
+AXIOM_INCLUDE := ../include
+
 APPS := axiom_switch
 CLEANFILES = $(APPS) *.o
-CFLAGS += -g -DPDEBUG -I../include/ -Wall
+DFLAGS := -g -DPDEBUG
+CFLAGS += -Wall $(DFLAGS) -I$(AXIOM_INCLUDE)
 
 
 .PHONY: all clean

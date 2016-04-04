@@ -1,6 +1,7 @@
-
 obj-m := axiom_netdev.o
 axiom_netdev-objs := axiom_kernel_api.o axiom_netdev_module.o
+
+AXIOM_INCLUDE := ../include
 
 PWD := $(shell pwd)
 MKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
@@ -9,7 +10,8 @@ KERNELDIR := ${BUILDROOT}/output/build/linux-custom
 DESTDIR := ${BUILDROOT}/output/target
 CCPREFIX := ${BUILDROOT}/output/host/usr/bin/arm-linux-
 
-ccflags-y += -DPDEBUG -I${MKFILE_DIR}/../include/ -Wall
+DFLAGS := -g -DPDEBUG
+ccflags-y += -Wall $(DFLAGS) -I${MKFILE_DIR}/${AXIOM_INCLUDE}
 
 default:
 	$(MAKE) ARCH=arm CROSS_COMPILE=${CCPREFIX} -C $(KERNELDIR) M=$(PWD) modules

@@ -4,8 +4,8 @@ AXIOM_DRIVER :=	../axiom_netdev_driver
 APPS := axiom_user_test
 LIBS := axiom_user_api.a
 CLEANFILES = $(APPS) $(LIBS) *.o
-CFLAGS += -g -Wall -DPDEBUG -I$(AXIOM_INCLUDE) -I$(AXIOM_DRIVER)
-#LDFLAGS += -pthread
+DFLAGS := -g -DPDEBUG
+CFLAGS += -Wall $(DFLAGS) -I$(AXIOM_INCLUDE) -I$(AXIOM_DRIVER)
 
 PWD := $(shell pwd)
 #MKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
