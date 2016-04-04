@@ -12,6 +12,29 @@
  */
 #include "axiom_nic_types.h"
 
+/*
+ * @brief This function open an axiom device
+ * @param args The axiom open arguments
+ * @return Returns a pointer to the axiom devive private data pointer,
+ *         NULL otherwise.
+ */
+axiom_dev_t *
+axiom_open(axiom_args_t *args);
+
+/*
+ * @brief This function close an axiom device
+ * @param dev The axiom devive private data pointer
+ */
+void
+axiom_close(axiom_dev_t *dev);
+
+/*
+ * @brief This function bind the current process on a specified port
+ * @param port Port numberr
+ * @return Returns AXIOM_RET_OK on success, an error otherwise.
+ */
+axiom_err_t
+axiom_bind(axiom_dev_t *dev, axiom_port_t port);
 
 /*
  * @brief This function sends small data to a remote node.
@@ -137,6 +160,7 @@ axiom_get_node_id(axiom_dev_t *dev);
  * @param dev The axiom devive private data pointer
  * @param node_id Remote connected node id
  * @param enabled_mask bit mask interface
+ * @return Returns AXIOM_RET_OK on success, an error otherwise.
  */
 axiom_err_t
 axiom_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
@@ -156,6 +180,7 @@ axiom_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
  * @param dev The axiom devive private data pointer
  * @param node_id Remote connected node id
  * @param enabled_mask bit mask interface
+ * @return Returns AXIOM_RET_OK on success, an error otherwise.
  */
 axiom_err_t
 axiom_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
@@ -203,7 +228,7 @@ axiom_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
  * node.
  * @param dev The axiom devive private data pointer
  * @param if_number The number of the node interfaces
- * return Returns ...
+ * @return Returns AXIOM_RET_OK on success, an error otherwise.
  */
 axiom_err_t
 axiom_get_if_number(axiom_dev_t *dev, axiom_if_id_t *if_number);
@@ -213,7 +238,7 @@ axiom_get_if_number(axiom_dev_t *dev, axiom_if_id_t *if_number);
  * @param dev The axiom devive private data pointer
  * @param if_number The number of the node interface
  * @param if_features The features of the node interface
- * return Returns ...
+ * @return Returns AXIOM_RET_OK on success, an error otherwise.
  */
 axiom_err_t
 axiom_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,

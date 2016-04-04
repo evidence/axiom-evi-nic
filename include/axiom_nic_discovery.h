@@ -10,6 +10,7 @@
  * This file contains the AXIOM NIC API for the discovery
  *
  */
+#include "dprintf.h"
 #include "axiom_nic_types.h"
 #include "axiom_nic_api_user.h"
 #include "axiom_nic_small_commands.h"
@@ -59,6 +60,7 @@ axiom_send_small_discovery(axiom_dev_t *dev, axiom_if_id_t my_interface,
             AXIOM_SMALL_FLAG_NEIGHBOUR, (axiom_payload_t*)(&payload));
 
 
+    DPRINTF("ret: %x payload: %x", ret, (*(uint32_t*)&payload));
 
     return ret;
 }
@@ -101,6 +103,8 @@ axiom_recv_small_discovery(axiom_dev_t *dev, axiom_discovery_cmd_t *cmd,
         return AXIOM_RET_OK;
     }
 
+    EPRINTF("ret: %x port: %x flag: %x payload: %x", ret, port, flag,
+            (*(uint32_t*)&payload));
     return AXIOM_RET_ERROR;
 }
 

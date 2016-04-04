@@ -18,30 +18,60 @@
  * @param dev The axiom devive private data pointer
  * @param dst_id The remote node id that will receive the small data or local
  *               interface that will send the small data
- * @param port port of the small message
- * @param flag flags of the small message
+ * @param port_flag port and flags of the small message
  * @param payload data to be sent
  * @return Returns a unique positive message id on success, -1 otherwise.
  * XXX: the return type is unsigned!
  */
 axiom_msg_id_t
 axiom_hw_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
-        axiom_port_t port, axiom_flag_t flag, axiom_payload_t *payload);
+        axiom_port_flag_t port_flag, axiom_payload_t *payload);
+
+/*
+ * @brief This function returns the space available in the small TX queue.
+ * @param dev The axiom devive private data pointer
+ * @return Returns the space available
+ */
+axiom_small_len_t
+axiom_hw_small_tx_avail(axiom_dev_t *dev);
+
+/*
+ * @brief This function pushes descriptors in the small TX queue.
+ * @param dev The axiom devive private data pointer
+ * @param count Number of descriptor to push
+ */
+void
+axiom_hw_small_tx_push(axiom_dev_t *dev, axiom_small_len_t count);
 
 /*
  * @brief This function receives small data to a remote node.
  * @param dev The axiom devive private data pointer
  * @param src_id The source node id that sent the small data or local
  *               interface that received the small data
- * @param port port of the small message
- * @param flag flags of the small message
+ * @param port_flag port and flags of the small message
  * @param payload data received
  * @return Returns a unique positive message id on success, -1 otherwise.
  * XXX: the return type is unsigned!
  */
 axiom_msg_id_t
 axiom_hw_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
-        axiom_port_t *port, axiom_flag_t *flag, axiom_payload_t *payload);
+        axiom_port_flag_t *porr_flag, axiom_payload_t *payload);
+
+/*
+ * @brief This function returns the messages available in the small RX queue.
+ * @param dev The axiom devive private data pointer
+ * @return Returns the messages available
+ */
+axiom_small_len_t
+axiom_hw_small_rx_avail(axiom_dev_t *dev);
+
+/*
+ * @brief This function pops descriptors from the small RX queue.
+ * @param dev The axiom devive private data pointer
+ * @param count Number of descriptor to pop
+ */
+void
+axiom_hw_small_rx_pop(axiom_dev_t *dev, axiom_small_len_t count);
 
 /*
  * @brief This function stores data to a remote node’s memory.
