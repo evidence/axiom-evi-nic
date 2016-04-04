@@ -146,6 +146,7 @@ axsw_logic_clean_vm_sd(axsw_logic_t *logic, int sd)
 
 /* functions for toplogy management */
 void axsw_init_topology(axiom_topology_t *start_topology);
+void axsw_make_ring_toplogy(axiom_topology_t *start_topology, int num_nodes);
 void axsw_init_topology_0(axiom_topology_t *start_topology);
 void axsw_init_topology_1(axiom_topology_t *start_topology);
 void axsw_init_topology_2(axiom_topology_t *start_topology);
