@@ -10,12 +10,16 @@
 #ifndef AXIOM_TOPOLOGY_h
 #define AXIOM_TOPOLOGY_H
 
+//#define EXAMPLE0
 #define EXAMPLE1
 //#define EXAMPLE2
 //#define EXAMPLE3
 //#define EXAMPLE4
 //#define EXAMPLE5
 
+#ifdef EXAMPLE0
+#define AXIOM_NUM_NODES               4
+#endif
 #ifdef EXAMPLE1
 #define AXIOM_NUM_NODES               8
 #endif
