@@ -12,6 +12,11 @@
  */
 #include "axiom_nic_types.h"
 
+/*TODO: is it needed ? */
+struct axiom_args {
+
+};
+
 /*
  * @brief This function open an axiom device
  * @param args The axiom open arguments

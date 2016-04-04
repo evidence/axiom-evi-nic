@@ -10,9 +10,5 @@
 
 #include "axiom_nic_api_user.h"
 
-struct axiom_args {
-
-};
-
 
 #endif /* !AxiomAPI_h */

@@ -1,6 +1,7 @@
 
 APPS := axiom_user_test
-CLEANFILES = $(APPS) *.o
+LIBS := axiom_user_api.a
+CLEANFILES = $(APPS) $(LIBS) *.o
 CFLAGS += -g -Wall -DPDEBUG -I../include/ -I../axiom_netdev_driver/
 #LDFLAGS += -pthread
 
@@ -10,14 +11,20 @@ BUILDROOT := ${PWD}/../../axiom-evi-buildroot
 DESTDIR := ${BUILDROOT}/output/target
 CCPREFIX := ${BUILDROOT}/output/host/usr/bin/arm-linux-
 CC := ${CCPREFIX}gcc
+AR := ${CCPREFIX}ar
+RANLIB := ${CCPREFIX}ranlib
 
 .PHONY: all clean install
 
-all: $(APPS)
+all: $(APPS) $(LIBS)
 
-axiom_user_test: axiom_user_test.o axiom_user_api.o
+axiom_user_test: axiom_user_test.o axiom_user_api.a
 
 axiom_user_test.o: axiom_user_test.c axiom_user_api.h
+
+axiom_user_api.a: axiom_user_api.o
+	$(AR) rcs $@ $?
+	$(RANLIB) $@
 
 axiom_user_api.o: axiom_user_api.c axiom_user_api.h
 
