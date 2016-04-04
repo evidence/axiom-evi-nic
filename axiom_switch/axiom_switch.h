@@ -30,7 +30,7 @@
 #define AXTP_EXAMPLE5   EXAMPLE5
 #endif
 
-#define AXTP_NUM_NODES      AXIOM_NUM_NODES
+//#define AXTP_NUM_NODES      AXIOM_NUM_NODES
 /* Max number of connected node interfaces */
 #define AXTP_NUM_INTERFACES AXIOM_NUM_INTERFACES
 #define AXTP_NULL_NODE      AXIOM_NULL_NODE

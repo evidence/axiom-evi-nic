@@ -242,7 +242,7 @@ int main (int argc, char *argv[])
     }
 #endif
     axsw_logic_init(&logic_status);
-    axsw_if_topology_init(&start_topology);
+    axsw_if_topology_init(&start_topology, num_ports);
     axsw_event_loop_init(&el_status);
 
     /* listening sockets creation */

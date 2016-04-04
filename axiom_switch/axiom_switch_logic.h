@@ -8,13 +8,21 @@
 #define AXTP_NUM_SIM        6
 /* maximum topologies number */
 #define AXTP_MAX_NUM_SIM    10
+/* number of nodes for each simulation */
+#define AXTP_NUM_NODES_SIM_0    4
+#define AXTP_NUM_NODES_SIM_1    8
+#define AXTP_NUM_NODES_SIM_2    10
+#define AXTP_NUM_NODES_SIM_3    6
+#define AXTP_NUM_NODES_SIM_4    6
+#define AXTP_NUM_NODES_SIM_5    6
+
 /* switch port needed for each toploogy simualation case */
-#define AXTP_NUM_PORT_SIM_0     8
-#define AXTP_NUM_PORT_SIM_1     10
-#define AXTP_NUM_PORT_SIM_2     6
-#define AXTP_NUM_PORT_SIM_3     6
-#define AXTP_NUM_PORT_SIM_4     6
-#define AXTP_NUM_PORT_SIM_5     6
+#define AXTP_NUM_PORT_SIM_0     AXTP_NUM_NODES_SIM_0
+#define AXTP_NUM_PORT_SIM_1     AXTP_NUM_NODES_SIM_1
+#define AXTP_NUM_PORT_SIM_2     AXTP_NUM_NODES_SIM_2
+#define AXTP_NUM_PORT_SIM_3     AXTP_NUM_NODES_SIM_3
+#define AXTP_NUM_PORT_SIM_4     AXTP_NUM_NODES_SIM_4
+#define AXTP_NUM_PORT_SIM_5     AXTP_NUM_NODES_SIM_5
 
 /* possible toplogies types */
 #define AXTP_DEFAULT_SIM        0
