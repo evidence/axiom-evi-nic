@@ -1,0 +1,535 @@
+\documentclass[10pt,a4paper]{paper}
+\usepackage[latin1]{inputenc}
+\usepackage[margin=2cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{environ}
+\usepackage[colorlinks,linkcolor=blue]{hyperref}
+
+\NewEnviron{regdescription}
+	{\begin{tabbing}
+	\hspace{150pt}\=\kill
+		\BODY
+	\end{tabbing}}
+
+\NewEnviron{regglobalsummary}
+	{\begin{tabularx}{\textwidth}{|l|l|l|l|l|X|}
+	        \hline \textbf{Module} & \textbf{Register Name} & \textbf{Address} & \textbf{Width} & \textbf{Type} &  \textbf{Description} \\
+		\BODY
+	\hline
+	\end{tabularx}}
+
+\NewEnviron{regsummary}
+	{\begin{tabularx}{\textwidth}{|l|l|l|l|l|X|}
+	        \hline \textbf{Register Name} & \textbf{Address} & \textbf{Width} & \textbf{Type} & \textbf{Init Val} & \textbf{Description} \\
+		\BODY
+	\hline
+	\end{tabularx}}
+
+\NewEnviron{regdetails}
+	{\begin{tabularx}{\textwidth}{|l|l|l|l|X|}
+	        \hline \textbf{Field Name} & \textbf{Bit(s)} & \textbf{Type} & \textbf{Init Val} & \textbf{Description} \\
+	 	\BODY
+	\hline 
+	\end{tabularx}}
+
+% Title Page
+\title{Axiom NIC Datasheet}
+\subtitle{v0.1 - \today}
+\author{Evidence SRL}
+
+\begin{document}
+\maketitle
+
+
+%\chapter{Axiom NIC}
+\section{AXIOM NIC Registers}
+\begin{regdescription}
+	Total size      \> 5136 bytes\\
+\end{regdescription}
+
+\subsection{Register summary}
+\begin{regglobalsummary}
+        \hline \textbf{\nameref{mod:status}} & & & & & \\
+                                             & & & & & \\
+        \hline \nameref{mod:status} & \nameref{reg:version} & 0x0000 & 32 & ro & Version register\\
+	\hline \nameref{mod:status} & \nameref{reg:status} & 0x0004 & 32 & ro & Status register\\
+	\hline \nameref{mod:status} & \nameref{reg:ifnumber} & 0x0008 & 32 & ro & Number of interface\\
+        \hline \nameref{mod:status} & \nameref{reg:ifinfo_base} & 0x000C+n, & 8 & ro & Interface status table\\
+                               & n=0...3 & & & & \\
+        \hline \textbf{\nameref{mod:control}} & & & & & \\
+                                              & & & & & \\
+	\hline \nameref{mod:control} & \nameref{reg:control} & 0x0040 & 32 & rw & Control register \\
+	\hline \nameref{mod:control} & \nameref{reg:nodeid} & 0x0044 & 32 & rw & Node ID register \\
+        \hline \textbf{\nameref{mod:interrupt}} & & & & & \\
+                                                & & & & & \\
+	\hline \nameref{mod:interrupt} & \nameref{reg:ackirq} & 0x0060 & 32 & wo & ACK Interrupt Register\\
+	\hline \nameref{mod:interrupt} & \nameref{reg:setirq} & 0x0064 & 32 & rw & Set Interrupt Register\\
+	\hline \nameref{mod:interrupt} & \nameref{reg:pndirq} & 0x0068 & 32 & ro & Pending Interrupt Register\\
+        \hline \textbf{\nameref{mod:routing}} & & & & & \\
+                                              & & & & & \\
+        \hline \nameref{mod:routing} & \nameref{reg:routing_base} & 0x0080+n & 8 & rw & Routing table base register\\
+                            & n=0...255 & & & & \\
+        \hline \textbf{\nameref{mod:queue}} & & & & & \\
+                                            & & & & & \\
+        \hline \nameref{mod:queue} & \nameref{reg:raw_tx_head} & 0x0200 & 32 & ro & RAW TX queue head\\
+	\hline \nameref{mod:queue} & \nameref{reg:raw_tx_tail} & 0x0204 & 32 & ro & RAW TX queue tail\\
+	\hline \nameref{mod:queue} & \nameref{reg:raw_tx_info} & 0x0208 & 32 & ro & RAW TX queue info\\
+	\hline \nameref{mod:queue} & \nameref{reg:raw_tx_start} & 0x020C & 32 & wo & RAW TX queue start\\
+        \hline \nameref{mod:queue} & \nameref{reg:raw_tx_base} & 0x0210+8*n & 64 & wo & RAW TX queue base register\\
+                                & n=0...255 & & & & \\
+	\hline \nameref{mod:queue} & \nameref{reg:raw_rx_head} & 0x0C00 & 32 & ro & RAW TX queue head\\
+	\hline \nameref{mod:queue} & \nameref{reg:raw_rx_tail} & 0x0C04 & 32 & ro & RAW TX queue tail\\
+	\hline \nameref{mod:queue} & \nameref{reg:raw_rx_info} & 0x0C08 & 32 & ro & RAW TX queue info\\
+	\hline \nameref{mod:queue} & \nameref{reg:raw_rx_start} & 0x0C0C & 32 & wo & RAW TX queue start\\
+        \hline \nameref{mod:queue} & \nameref{reg:raw_rx_base} & 0x0C10+8*n & 64 & ro & RAW TX queue base register\\
+                                & n=0...255 & & & & \\
+\end{regglobalsummary}
+
+
+\section{Status Registers} \label{mod:status}
+\begin{regdescription}
+	Module Name 	\> Status Registers\\
+	Description 	\> Registers used to check the status of the device\\
+\end{regdescription}
+
+\subsection{Register summary}
+\begin{regsummary}
+	\hline \nameref{reg:version} & 0x0000 & 32 & ro & 0x0 & Version register\\
+	\hline \nameref{reg:status} & 0x0004 & 32 & ro & 0x0 & Status register\\
+	\hline \nameref{reg:ifnumber} & 0x0008 & 32 & ro & 0x0 & Number of interface\\
+        \hline \nameref{reg:ifinfo_base} & 0x000C+n, & 8 & ro & 0x0 & Interface status table\\
+                               & n=0...3 & & & & \\
+\end{regsummary}
+
+
+\subsubsection{VERSION} \label{reg:version}
+\begin{regdescription}
+	Name			\> VERSION\\
+	Relative Address	\> 0x00000000\\
+	Width			\> 32 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00000000\\
+	Description		\> Version register\\
+\end{regdescription}
+\begin{regdetails}
+	\hline reserved & 31:16 & ro & 0x0 & Reserved. Writes are ignored, read data is zero.\\
+	\hline BITSTREAM & 15:8 & ro & 0x0 & Bitstream version\\
+	\hline BOARD & 7:0 & ro & 0x0 & Axiom board model\\
+\end{regdetails}
+
+
+\subsubsection{STATUS} \label{reg:status}
+\begin{regdescription}
+	Name			\> STATUS\\
+	Relative Address	\> 0x00000004\\
+	Width			\> 32 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00000000\\
+	Description		\> Status register\\
+\end{regdescription}
+\begin{regdetails}
+	\hline reserved & 31:1 & ro & 0x0 & Reserved. Writes are ignored, read data is zero.\\
+	\hline TBD & 0 & rw & 0x0 & TBD\\
+\end{regdetails}
+
+
+\subsubsection{IFNUMBER} \label{reg:ifnumber}
+\begin{regdescription}
+	Name			\> IFNUMBER\\
+	Relative Address	\> 0x00000008\\
+	Width			\> 32 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00\\
+	Description		\> Number of interface\\
+\end{regdescription}
+\begin{regdetails}
+	\hline IFNUMBER & 7:0 & ro & 0x2 & Number of interface which are present on a node.\\
+\end{regdetails}
+
+
+\subsubsection{IFINFO\_BASE[n]} \label{reg:ifinfo_base}
+\begin{regdescription}
+	Name			\> IFINFO\_BASE[n]\\
+	Relative Address	\> 0x0000000C+n, n=0...3\\
+	Width (single row)	\> 8 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00\\
+	Description		\> Interface status table\\
+\end{regdescription}
+\begin{regdetails}
+	\hline reserved & 7:3 & ro & 0x0 & Reserved. Writes are ignored, read data is zero.\\
+	\hline CONNECTED & 2 & ro & 0x0 & Interface connected status.\\
+               & & & & 1b = interface is physically connected to another board.\\
+               & & & & 0b = interface is disconnected.\\
+	\hline RX & 1 & ro & 0x0 & Interface RX functionality.\\
+               & & & & This bit is set when the interface can work as RX.\\
+	\hline TX & 0 & ro & 0x0 & Interface TX functionality.\\
+               & & & & This bit is set when the interface can work as TX.\\
+\end{regdetails}
+
+
+
+\section{Control Registers} \label{mod:control}
+\begin{regdescription}
+	Module Name 	\> Control Registers\\
+	Description 	\> Registers used to control the device\\
+\end{regdescription}
+
+\subsection{Register summary}
+\begin{regsummary}
+	\hline \nameref{reg:control} & 0x0040 & 32 & rw & 0x0 & Control register \\
+	\hline \nameref{reg:nodeid} & 0x0044 & 32 & rw & 0x0 & Node ID register \\
+\end{regsummary}
+
+
+\subsubsection{CONTROL} \label{reg:control}
+\begin{regdescription}
+	Name			\> CONTROL\\
+	Relative Address	\> 0x00000040\\
+	Width			\> 32 bits\\
+	Access Type		\> rw\\
+	Init Value		\> 0x00000000\\
+	Description		\> Control register. Used to enable local transmission ACKs\\
+	                        \> and/or the PHY loopback mode configuration.\\
+\end{regdescription}
+\begin{regdetails}
+	\hline reserved & 31:1 & rw & 0x0 & Reserved. Writes are ignored, read data is zero.\\
+	\hline LOOPBACK & 0 & rw & 0x0 & When set to 1b, the interface is in loopback mode.\\
+\end{regdetails}
+
+
+\subsubsection{NODEID} \label{reg:nodeid}
+\begin{regdescription}
+	Name			\> NODEID\\
+	Relative Address	\> 0x00000044\\
+	Width			\> 32 bits\\
+	Access Type		\> rw\\
+	Init Value		\> 0x00\\
+	Description		\> Node ID register\\
+\end{regdescription}
+\begin{regdetails}
+	\hline NODEID & 7:0 & rw & 0x0 & Defines the ID of a local node.\\
+\end{regdetails}
+
+
+
+\section{Interrupt Registers} \label{mod:interrupt}
+\begin{regdescription}
+	Module Name 	\> Interrupt Registers\\
+	Description 	\> Registers used to handle interrupts\\
+\end{regdescription}
+
+\subsection{Register summary}
+\begin{regsummary}
+	\hline \nameref{reg:ackirq} & 0x0060 & 32 & wo & 0x0 & ACK Interrupt Register\\
+	\hline \nameref{reg:setirq} & 0x0064 & 32 & rw & 0x0 & Set Interrupt Register\\
+	\hline \nameref{reg:pndirq} & 0x0068 & 32 & ro & 0x0 & Pending Interrupt Register\\
+\end{regsummary}
+
+\subsubsection{ACKIRQ} \label{reg:ackirq}
+\begin{regdescription}
+	Name			\> ACKIRQ\\
+	Relative Address	\> 0x00000060\\
+	Width			\> 32 bits\\
+	Access Type		\> wo\\
+	Init Value		\> 0x00000000\\
+	Description		\> ACK Interrupt Register. Used to send an ack for the interrupts\\
+\end{regdescription}
+\begin{regdetails}
+	\hline reserved & 31:3 & wo & 0x0 & Reserved. Writes are ignored.\\
+	\hline IRQ\_RAW\_TX & 2 & wo & 0x0 & Interrupt RAW TX queue.\\
+               & & & & When set to 1b, the RAW TX interrupt is acknowledged.\\
+	\hline IRQ\_RAW\_RX & 1 & wo & 0x0 & Interrupt RAW RX queue.\\
+               & & & & When set to 1b, the RAW RX interrupt is acknowledged.\\
+	\hline IRQ\_GENERIC & 0 & wo & 0x0 & Interrupt generic.\\
+               & & & & When set to 1b, the GENERIC interrupt is acknowledged.\\
+\end{regdetails}
+
+\subsubsection{SETIRQ} \label{reg:setirq}
+\begin{regdescription}
+	Name			\> SETIRQ\\
+	Relative Address	\> 0x00000064\\
+	Width			\> 32 bits\\
+	Access Type		\> rw\\
+	Init Value		\> 0x00000000\\
+	Description		\> Set Interrupt Register. Used to enable/disable interrupts\\
+\end{regdescription}
+\begin{regdetails}
+	\hline reserved & 31:3 & rw & 0x0 & Reserved. Writes are ignored, read data is zero.\\
+	\hline IRQ\_RAW\_TX & 2 & rw & 0x0 & Interrupt RAW TX queue.\\
+               & & & & 1b = RAW TX interrupt is enabled.\\
+               & & & & 0b = RAW TX interrupt is disabled.\\
+	\hline IRQ\_RAW\_RX & 1 & rw & 0x0 & Interrupt RAW RX queue.\\
+               & & & & 1b = RAW RX interrupt is enabled.\\
+               & & & & 0b = RAW RX interrupt is disabled.\\
+	\hline IRQ\_GENERIC & 0 & rw & 0x0 & Interrupt generic.\\
+               & & & & 1b = GENERIC interrupt is enabled.\\
+               & & & & 0b = GENERIC interrupt is disabled.\\
+\end{regdetails}
+
+\subsubsection{PNDIRQ} \label{reg:pndirq}
+\begin{regdescription}
+	Name			\> PNDIRQ\\
+	Relative Address	\> 0x00000068\\
+	Width			\> 32 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00000000\\
+	Description		\> Pending Interrupt Register. Used to report the cause of the interrupt\\
+\end{regdescription}
+\begin{regdetails}
+	\hline reserved & 31:3 & ro & 0x0 & Reserved. Read data is zero.\\
+	\hline IRQ\_RAW\_TX & 2 & ro & 0x0 & Interrupt RAW TX queue.\\
+               & & & & This bit is set to 1b when the RAW TX queue generates an interrupt.\\
+               & & & & This bit is reset to 0b when the RAW TX queue interrupt is acknowledged.\\
+	\hline IRQ\_RAW\_RX & 1 & ro & 0x0 & Interrupt RAW RX queue.\\
+               & & & & This bit is set to 1b when the RAW RX queue generates an interrupt.\\
+               & & & & This bit is reset to 0b when the RAW RX queue interrupt is acknowledged.\\
+	\hline IRQ\_GENERIC & 0 & ro & 0x0 & Interrupt generic.\\
+               & & & & This bit is set to 1b when the GENERIC interrupt is raised.\\
+               & & & & This bit is reset to 0b when the GENERIC interrupt is acknowledged.\\
+\end{regdetails}
+
+
+
+\section{Routing Registers} \label{mod:routing}
+\begin{regdescription}
+	Module Name 	\> Routing Registers\\
+	Description 	\> Registers used to manage the routing table\\
+\end{regdescription}
+
+\subsection{Register summary}
+\begin{regsummary}
+    \hline \nameref{reg:routing_base} & 0x0080+n & 8 & rw & 0x00 & Routing table base register\\
+                            & n=0...255 & & & & \\
+\end{regsummary}
+
+\subsubsection{ROUTING\_BASE[n]} \label{reg:routing_base}
+\begin{regdescription}
+	Name			\> RAW\_RX\_BASE[n]\\
+	Relative Address	\> 0x00000080+n, n=0...255\\
+	Width (single row)	\> 8 bits\\
+	Access Type		\> rw\\
+	Init Value		\> 0x00\\
+	Description		\> Routing table base register\\
+	                        \> This array of registers represents the routing table.\\
+	                        \> The array index represents the destination node id.\\
+\end{regdescription}
+\begin{regdetails}
+	\hline reserved & 7:4 & rw & 0x0 & Reserved. Writes are ignored, read data is zero.\\
+        \hline ENABLED\_IF\_3 & 3 & rw & 0x0 & When set to 1b, the node n (array index) is reachable through the interface 3.\\
+        \hline ENABLED\_IF\_2 & 2 & rw & 0x0 & When set to 1b, the node n (array index) is reachable through the interface 2.\\
+        \hline ENABLED\_IF\_1 & 1 & rw & 0x0 & When set to 1b, the node n (array index) is reachable through the interface 1.\\
+        \hline ENABLED\_IF\_0 & 0 & rw & 0x0 & When set to 1b, the node n (array index) is reachable through the interface 0.\\
+\end{regdetails}
+
+
+
+\subsection{Queues Registers} \label{mod:queue}
+\begin{regdescription}
+	Module Name 	\> Queues Registers\\
+	Description 	\> Registers used to manage the descriptor queues\\
+\end{regdescription}
+
+\subsection{Register summary}
+\begin{regsummary}
+        \hline \nameref{reg:raw_tx_head} & 0x0200 & 32 & ro & 0x0 & RAW TX queue head\\
+	\hline \nameref{reg:raw_tx_tail} & 0x0204 & 32 & ro & 0x0 & RAW TX queue tail\\
+	\hline \nameref{reg:raw_tx_info} & 0x0208 & 32 & ro & 0x0 & RAW TX queue info\\
+	\hline \nameref{reg:raw_tx_start} & 0x020C & 32 & wo & 0x0 & RAW TX queue start\\
+        \hline \nameref{reg:raw_tx_base} & 0x0210+8*n & 64 & wo & 0x0 & RAW TX queue base register\\
+                                & n=0...255 & & & & \\
+	\hline \nameref{reg:raw_rx_head} & 0x0C00 & 32 & ro & 0x0 & RAW TX queue head\\
+	\hline \nameref{reg:raw_rx_tail} & 0x0C04 & 32 & ro & 0x0 & RAW TX queue tail\\
+	\hline \nameref{reg:raw_rx_info} & 0x0C08 & 32 & ro & 0x0 & RAW TX queue info\\
+	\hline \nameref{reg:raw_rx_start} & 0x0C0C & 32 & wo & 0x0 & RAW TX queue start\\
+        \hline \nameref{reg:raw_rx_base} & 0x0C10+8*n & 64 & ro & 0x0 & RAW TX queue base register\\
+                                & n=0...255 & & & & \\
+\end{regsummary}
+
+\subsubsection{RAW\_TX\_HEAD} \label{reg:raw_tx_head}
+\begin{regdescription}
+	Name			\> RAW\_TX\_HEAD\\
+	Relative Address	\> 0x00000200\\
+	Width			\> 32 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00\\
+	Description		\> RAW TX queue head\\
+\end{regdescription}
+\begin{regdetails}
+	\hline RAW\_TX\_HEAD & 7:0 & ro & 0x0 & RAW TX queue head.\\
+               & & & &  This register contains the head pointer for the RAW TX queue.
+                        The head (in the TX queue) points to the first descriptor to be sent by
+                        the network card. Hardware controls this pointer. When the descriptor
+                        pointed by the head is sent, this register is incremented.\\
+\end{regdetails}
+
+\subsubsection{RAW\_TX\_TAIL} \label{reg:raw_tx_tail}
+\begin{regdescription}
+	Name			\> RAW\_TX\_TAIL\\
+	Relative Address	\> 0x00000204\\
+	Width			\> 32 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00\\
+	Description		\> RAW TX queue tail\\
+\end{regdescription}
+\begin{regdetails}
+	\hline RAW\_TX\_TAIL & 7:0 & ro & 0x0 & RAW TX queue tail.\\
+               & & & &  This register contains the tail pointer for the RAW TX queue.
+                        The tail (in the TX queue) points to the first empty descriptor
+                        which the software can fill. Hardware controls this pointer. When the
+                        software writes on \nameref{reg:raw_tx_start}, this register
+                        is incremented.\\
+\end{regdetails}
+
+\subsubsection{RAW\_TX\_INFO} \label{reg:raw_tx_info}
+\begin{regdescription}
+	Name			\> RAW\_TX\_INFO\\
+	Relative Address	\> 0x00000208\\
+	Width			\> 32 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00\\
+	Description		\> RAW TX queue info\\
+\end{regdescription}
+\begin{regdetails}
+	\hline reserved & 7:2 & ro & 0x0 & Reserved. Read data is zero.\\
+	\hline RAW\_STATUS\_FULL & 1 & ro & 0x0 & RAW TX queue full.\\
+               & & & & This bit is set to 1b when the RAW TX queue is full.\\
+	\hline RAW\_STATUS\_EMPTY & 0 & ro & 0x0 & RAW TX queue empty.\\
+               & & & & This bit is set to 1b when the RAW TX queue is empty.\\
+\end{regdetails}
+
+\subsubsection{RAW\_TX\_START} \label{reg:raw_tx_start}
+\begin{regdescription}
+	Name			\> RAW\_TX\_START\\
+	Relative Address	\> 0x0000020C\\
+	Width			\> 32 bits\\
+	Access Type		\> wo\\
+	Init Value		\> 0x00\\
+	Description		\> RAW TX queue start\\
+\end{regdescription}
+\begin{regdetails}
+	\hline RAW\_TX\_START & 7:0 & ro & 0x0 & RAW TX queue start.\\
+                       & & & & When set to value X, the \nameref{reg:raw_tx_tail} is
+                                incremented by X (the hardware prevents the head overtaking).
+                                After that, the new X descriptors are ready
+                                to be sent by the hardware. The software should fill the
+                                descriptors pointed by \nameref{reg:raw_tx_tail},
+                                before setting this registers.\\
+\end{regdetails}
+
+\subsubsection{RAW\_TX\_BASE[n]} \label{reg:raw_tx_base}
+\begin{regdescription}
+	Name			\> RAW\_TX\_BASE[n]\\
+	Relative Address	\> 0x00000210+8*n, n=0...255\\
+	Width (single row)	\> 64 bits\\
+	Access Type		\> wo\\
+	Init Value		\> 0x00\\
+	Description		\> RAW TX queue base register\\
+	                        \> This array of registers represents the queue of RAW TX descriptors.\\
+	                        \> Each descriptor is 64-bit.\\
+\end{regdescription}
+\begin{regdetails}
+	\hline DATA & 63:32 & wo & 0x0 & Data to be sent. \\
+	\hline TYPE & 31:24 & wo & 0x0 & RAW message type.\\
+        \hline FLAGS & 23:16 & wo & 0x0 & RAW message flags. (NEIGHBOUR, OVERFLOW, etc.)\\
+	\hline DST\_NODE& 15:8 & wo & 0x0 & Receiver node id.\\
+	\hline SRC\_NODE& 7:0 & wo & 0x0 & Sender node id.\\
+\end{regdetails}
+
+\subsubsection{RAW\_RX\_HEAD} \label{reg:raw_rx_head}
+\begin{regdescription}
+	Name			\> RAW\_RX\_HEAD\\
+	Relative Address	\> 0x00000C00\\
+	Width			\> 32 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00\\
+	Description		\> RAW RX queue head\\
+\end{regdescription}
+\begin{regdetails}
+	\hline RAW\_RX\_HEAD & 7:0 & ro & 0x0 & RAW RX queue head.\\
+               & & & &  This register contains the head pointer for the RAW RX queue.
+                        The head (in the RX queue) points to the first descriptor received by
+                        the network card, which the software can read.
+                        Hardware controls this pointer. When the software writes on
+                        \nameref{reg:raw_rx_start}, this register is incremented.\\
+\end{regdetails}
+
+\subsubsection{RAW\_RX\_TAIL} \label{reg:raw_rx_tail}
+\begin{regdescription}
+	Name			\> RAW\_RX\_TAIL\\
+	Relative Address	\> 0x00000C04\\
+	Width			\> 32 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00\\
+	Description		\> RAW RX queue tail\\
+\end{regdescription}
+\begin{regdetails}
+	\hline RAW\_RX\_TAIL & 7:0 & ro & 0x0 & RAW RX queue tail.\\
+               & & & &  This register contains the tail pointer for the RAW RX queue.
+                        The tail (in the RX queue) points to the first empty descriptor
+                        which the hardware can fill. Hardware controls this pointer.
+                        When the descriptor pointed by the tail is filled by the hardware,
+                        this register is incremented.\\
+\end{regdetails}
+
+\subsubsection{RAW\_RX\_INFO} \label{reg:raw_rx_info}
+\begin{regdescription}
+	Name			\> RAW\_RX\_INFO\\
+	Relative Address	\> 0x00000C08\\
+	Width			\> 32 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00\\
+	Description		\> RAW RX queue info\\
+\end{regdescription}
+\begin{regdetails}
+	\hline reserved & 7:2 & ro & 0x0 & Reserved. Read data is zero.\\
+	\hline RAW\_STATUS\_FULL & 1 & ro & 0x0 & RAW RX queue full.\\
+               & & & & This bit is set to 1b when the RAW RX queue is full.\\
+	\hline RAW\_STATUS\_EMPTY & 0 & ro & 0x0 & RAW RX queue empty.\\
+               & & & & This bit is set to 1b when the RAW RX queue is empty.\\
+\end{regdetails}
+
+\subsubsection{RAW\_RX\_START} \label{reg:raw_rx_start}
+\begin{regdescription}
+	Name			\> RAW\_RX\_START\\
+	Relative Address	\> 0x00000C0C\\
+	Width			\> 32 bits\\
+	Access Type		\> wo\\
+	Init Value		\> 0x00\\
+	Description		\> RAW RX queue start\\
+\end{regdescription}
+\begin{regdetails}
+	\hline RAW\_RX\_START & 7:0 & ro & 0x0 & RAW RX queue start.\\
+                       & & & & When set to value X, the \nameref{reg:raw_rx_head} is
+                                incremented by X (the hardware prevents the tail overtaking).
+                                After that, the new X descriptors are consumed by the
+                                software and ready to be reused by the hardware.
+                                The software should read the
+                                descriptors pointed by \nameref{reg:raw_rx_head},
+                                before setting this register.\\
+\end{regdetails}
+
+\subsubsection{RAW\_RX\_BASE[n]} \label{reg:raw_rx_base}
+\begin{regdescription}
+	Name			\> RAW\_RX\_BASE[n]\\
+	Relative Address	\> 0x00000C10+8*n, n=0...255\\
+	Width (single row)	\> 64 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00\\
+	Description		\> RAW RX queue base register\\
+	                        \> This array of registers represents the queue of RAW RX descriptors.\\
+	                        \> Each descriptor is 64-bit.\\
+\end{regdescription}
+\begin{regdetails}
+	\hline DATA & 63:32 & ro & 0x0 & Data received. \\
+	\hline TYPE & 31:24 & ro & 0x0 & RAW message type.\\
+        \hline FLAGS & 23:16 & ro & 0x0 & RAW message flags. (NEIGHBOUR, OVERFLOW, etc.)\\
+	\hline DST\_NODE& 15:8 & ro & 0x0 & Receiver node id.\\
+	\hline SRC\_NODE& 7:0 & ro & 0x0 & Sender node id.\\
+\end{regdetails}
+
+\end{document}
