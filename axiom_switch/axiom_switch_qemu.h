@@ -1,6 +1,7 @@
 #ifndef AXIOM_SWITCH_QEMU_h
 #define AXIOM_SWITCH_QEMU_h
 
+#include "axiom_nic_regs.h"
 
 inline static int
 axsw_qemu_send(int fd, axiom_small_eth_t *small_eth)
@@ -69,6 +70,28 @@ err:
     if (ret)
         EPRINTF("connection error ret: %d - errno: %d", ret, errno);
     return -1;
+}
+
+/* This function send to qemu the interface information */
+inline static int
+axsw_qemu_send_ifinfo(int fd, axiom_if_id_t if_id, int connected)
+{
+    axiom_small_eth_t small_eth;
+
+    small_eth.eth_hdr.type = htons(AXIOM_ETH_TYPE_CTRL);
+    memset(&small_eth, 0, sizeof(small_eth));
+
+    /* send if_info to QEMU vm:
+     *  - header.src contains the interface id
+     *  - payload[0] contains the information
+     */
+    small_eth.small_msg.header.tx.dst = if_id;
+    if (connected) {
+        ((uint8_t *)&small_eth.small_msg.payload)[0] =
+            AXIOMREG_IFINFO_CONNECTED | AXIOMREG_IFINFO_RX | AXIOMREG_IFINFO_TX;
+    }
+
+    return axsw_qemu_send(fd, &small_eth);
 }
 
 #endif /* !AXIOM_SWITCH_QEMU_h */

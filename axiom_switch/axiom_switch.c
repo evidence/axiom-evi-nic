@@ -285,7 +285,7 @@ int main (int argc, char *argv[])
             /* check listener socket */
             if (i < fds_tail_max_listen &&
                     listen_socket_find(listen_sd, i, fd, &vm_index)) {
-                int new_sd;
+                int new_sd, if_id;
 
                 /* Accept each incoming connection */
                 new_sd = accept(listen_sd[i], NULL, NULL);
@@ -306,6 +306,19 @@ int main (int argc, char *argv[])
                 }
 
                 axsw_logic_set_vm_sd(&logic_status, vm_index, new_sd);
+
+                for (if_id = 0; if_id < AXIOM_NUM_INTERFACES; if_id++) {
+                    int connected = 0;
+                    if (axsw_logic_find_neighbour_if(&logic_status, vm_index, if_id) >= 0) {
+                        connected = 1;
+                    }
+
+                    ret = axsw_qemu_send_ifinfo(new_sd, if_id, connected);
+                    if (ret < 0) {
+                        EPRINTF("send_ifinfo error");
+                        break;
+                    }
+                }
 
             } else {
                 int dst_sd;

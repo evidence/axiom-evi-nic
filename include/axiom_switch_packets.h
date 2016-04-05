@@ -15,6 +15,7 @@
 
 /************************ Switch Packets structure ****************************/
 
+#define AXIOM_ETH_TYPE_CTRL       0x8332
 #define AXIOM_ETH_TYPE_SMALL      0x8333
 
 /*
