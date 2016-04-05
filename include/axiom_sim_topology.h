@@ -10,9 +10,7 @@
 #ifndef AXIOM_TOPOLOGY_h
 #define AXIOM_TOPOLOGY_H
 
-//#define EXAMPLE0
-#define EXAMPLE1
-//#define EXAMPLE2
+#define EXAMPLE0
 //#define EXAMPLE1
 //#define EXAMPLE2
 //#define EXAMPLE3
