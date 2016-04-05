@@ -4,7 +4,7 @@
 /*
  * axiom_nic_small_commands.h
  *
- * Version:     v0.2
+ * Version:     v0.3
  * Last update: 2016-03-22
  *
  * This file contains the AXIOM NIC commands

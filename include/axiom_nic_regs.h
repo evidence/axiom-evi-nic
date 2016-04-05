@@ -4,7 +4,7 @@
 /*
  * axiom_nic_regs.h
  *
- * Version:     v0.2
+ * Version:     v0.3
  * Last update: 2016-03-18
  *
  * This file contains the following AXIOM NIC registers informations:
