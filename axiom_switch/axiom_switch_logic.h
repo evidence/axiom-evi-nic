@@ -28,25 +28,27 @@
 #define AXTP_DEFAULT_SIM        0
 #define AXTP_RING_SIM           1
 
-typedef struct axsw_sim_topology {
-    /* array of pointer to topology initialization functions */
-    void (*axsw_f_init_topology[AXTP_MAX_NUM_SIM])(axiom_topology_t *start_topology);
-    int needed_switch_port[AXTP_MAX_NUM_SIM];
-} axsw_sim_topology_t;
-
 typedef struct axsw_logic {
     int    vm_sd[AXSW_PORT_MAX];
     int    node_sd[AXSW_PORT_MAX];
+    axiom_topology_t start_topology;
 } axsw_logic_t;
 
+typedef struct axsw_sim_topology {
+    /* array of pointer to topology initialization functions */
+    void (*axsw_f_init_topology[AXTP_MAX_NUM_SIM])(axsw_logic_t *logic);
+    int needed_switch_port[AXTP_MAX_NUM_SIM];
+} axsw_sim_topology_t;
+
 inline static void
-axsw_logic_init(axsw_logic_t *logic) {
+axsw_logic_init(axsw_logic_t *logic, int num_ports) {
     int i;
 
     for (i = 0; i < AXSW_PORT_MAX; i++) {
         logic->vm_sd[i] = -1;
         logic->node_sd[i] = -1;
     }
+    axsw_if_topology_init(&logic->start_topology, num_ports);
 }
 /* This function return the destination socket to forward the message */
 int axsw_logic_forward(axsw_logic_t *logic, int src_sd,
@@ -74,12 +76,11 @@ axsw_logic_find_neighbour_sd(axsw_logic_t *logic, int dst_vm)
 }
 
 inline static int
-axsw_logic_find_neighbour_if(axiom_topology_t *start_topology,
-                             int src_vm, int source_if)
+axsw_logic_find_neighbour_if(axsw_logic_t *logic, int src_vm, int source_if)
 {
     int ret_if_index;
 
-    ret_if_index = start_topology->if_topology[src_vm][source_if];
+    ret_if_index = logic->start_topology.if_topology[src_vm][source_if];
     if (ret_if_index != AXTP_NULL_NODE)
     {
         return ret_if_index;
@@ -145,17 +146,16 @@ axsw_logic_clean_vm_sd(axsw_logic_t *logic, int sd)
 }
 
 /* functions for toplogy management */
-void axsw_init_topology(axiom_topology_t *start_topology);
-void axsw_make_ring_toplogy(axiom_topology_t *start_topology,
+void axsw_init_topology(axsw_logic_t *logic);
+void axsw_make_ring_toplogy(axsw_logic_t *logic,
                             int num_nodes);
-void axsw_init_topology_0(axiom_topology_t *start_topology);
-void axsw_init_topology_1(axiom_topology_t *start_topology);
-void axsw_init_topology_2(axiom_topology_t *start_topology);
-void axsw_init_topology_3(axiom_topology_t *start_topology);
-void axsw_init_topology_4(axiom_topology_t *start_topology);
-void axsw_init_topology_5(axiom_topology_t *start_topology);
+void axsw_init_topology_0(axsw_logic_t *logic);
+void axsw_init_topology_1(axsw_logic_t *logic);
+void axsw_init_topology_2(axsw_logic_t *logic);
+void axsw_init_topology_3(axsw_logic_t *logic);
+void axsw_init_topology_4(axsw_logic_t *logic);
+void axsw_init_topology_5(axsw_logic_t *logic);
 void axsw_init_f_topology (axsw_sim_topology_t *sim_toplogy) ;
-int axsw_topology_from_file(char *filename,
-                            axiom_topology_t *start_topology);
+int axsw_topology_from_file(axsw_logic_t *logic, char *filename);
 
 #endif /* AXIOM_SWITCH_LOGIC_h */

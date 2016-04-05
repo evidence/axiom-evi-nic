@@ -18,9 +18,6 @@
 #include "axiom_nic_packets.h"
 #include "axiom_nic_discovery.h"
 
-/* nodes topology variable */
-axiom_topology_t start_topology;
-
 /* given the received socket and messages, return the receiver socket of the
  * neighbour message */
 static int
@@ -38,7 +35,7 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
 
     /* find the receiver virtual machine */
     dst_if = neighbour_msg->small_msg.header.tx.dst;
-    dst_vm = start_topology.topology[src_vm][dst_if];
+    dst_vm = logic->start_topology.topology[src_vm][dst_if];
 
     NDPRINTF("src_vm_index: %d dst_if: %d dst_vm: %d", src_vm, dst_if, dst_vm);
 
@@ -49,7 +46,7 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
     }
 
     /* find the recipient receiving interface */
-    neighbour_if = axsw_logic_find_neighbour_if(&start_topology, src_vm,
+    neighbour_if = axsw_logic_find_neighbour_if(logic, src_vm,
                                                 neighbour_msg->small_msg.header.tx.dst);
     if (neighbour_if < 0) {
         return -1;
@@ -132,67 +129,67 @@ axsw_logic_forward(axsw_logic_t *logic, int src_sd, axiom_small_eth_t *axiom_pac
 /* functions for toplogy management */
 /* Initializes start_toplogy with no connected nodes */
 void
-axsw_init_topology(axiom_topology_t *start_topology) {
+axsw_init_topology(axsw_logic_t *logic) {
     int i,j;
 
     for (i = 0; i < AXIOM_MAX_NUM_NODES; i++) {
         for (j = 0; j < AXIOM_NUM_INTERFACES; j++) {
-            start_topology->topology[i][j] = AXTP_NULL_NODE;
+            logic->start_topology.topology[i][j] = AXTP_NULL_NODE;
         }
     }
-    start_topology->num_nodes =  AXIOM_MAX_NUM_NODES;
-    start_topology->num_interfaces =  AXTP_NUM_INTERFACES;
+    logic->start_topology.num_nodes =  AXIOM_MAX_NUM_NODES;
+    logic->start_topology.num_interfaces =  AXTP_NUM_INTERFACES;
 }
 
 /* Initialize a ring of 'num_nodes' nodes */
 void
-axsw_make_ring_toplogy(axiom_topology_t *start_topology, int num_nodes) {
+axsw_make_ring_toplogy(axsw_logic_t *logic, int num_nodes) {
 
     int i;
 
     /* first direction */
     for (i = 0; i < num_nodes-1; i++) {
-        start_topology->topology[i][0] =  i+1;
+        logic->start_topology.topology[i][0] =  i+1;
     }
-    start_topology->topology[num_nodes-1][0] = 0;
+    logic->start_topology.topology[num_nodes-1][0] = 0;
 
     /* second direction */
-    start_topology->topology[0][1] = num_nodes-1;
+    logic->start_topology.topology[0][1] = num_nodes-1;
     for (i = 1; i < num_nodes; i++) {
-        start_topology->topology[i][1] =  i-1;
+        logic->start_topology.topology[i][1] =  i-1;
     }
 
-    start_topology->num_nodes =  num_nodes;
-    start_topology->num_interfaces =  AXTP_NUM_INTERFACES;
+    logic->start_topology.num_nodes =  num_nodes;
+    logic->start_topology.num_interfaces =  AXTP_NUM_INTERFACES;
 }
 
 
 /* Initializes start_toplogy (conf 0) with the connected nodes */
-void axsw_init_topology_0(axiom_topology_t *start_topology) {
+void axsw_init_topology_0(axsw_logic_t *logic) {
     /* { 2, 3, AXIOM_NULL_NODE, AXIOM_NULL_NODE},
        { 3, 2, AXIOM_NULL_NODE, AXIOM_NULL_NODE},
        { 0, 1, AXIOM_NULL_NODE, AXIOM_NULL_NODE},
        { 1, 0, AXIOM_NULL_NODE, AXIOM_NULL_NODE}, */
     /* node 0 */
-    start_topology->topology[0][0] = 2;
-    start_topology->topology[0][1] = 3;
+    logic->start_topology.topology[0][0] = 2;
+    logic->start_topology.topology[0][1] = 3;
     /* node 1 */
-    start_topology->topology[1][0] = 3;
-    start_topology->topology[1][1] = 2;
+    logic->start_topology.topology[1][0] = 3;
+    logic->start_topology.topology[1][1] = 2;
     /* node 2 */
-    start_topology->topology[2][0] = 0;
-    start_topology->topology[2][1] = 1;
+    logic->start_topology.topology[2][0] = 0;
+    logic->start_topology.topology[2][1] = 1;
     /* node 3*/
-    start_topology->topology[3][0] = 1;
-    start_topology->topology[3][1] = 0;
+    logic->start_topology.topology[3][0] = 1;
+    logic->start_topology.topology[3][1] = 0;
 
-    start_topology->num_nodes = AXTP_NUM_NODES_SIM_0;
+    logic->start_topology.num_nodes = AXTP_NUM_NODES_SIM_0;
 
     printf ("Init topology 0, number of nodes: %d \n", AXTP_NUM_NODES_SIM_0);
 }
 
 /* Initializes start_toplogy (conf 1) with the connected nodes */
-void axsw_init_topology_1(axiom_topology_t *start_topology) {
+void axsw_init_topology_1(axsw_logic_t *logic) {
     /*  { 1, 2, 3, AXTP_NULL_NODE},
         { 0, 6, AXTP_NULL_NODE, AXTP_NULL_NODE},
         { 0, 3, AXTP_NULL_NODE, AXTP_NULL_NODE},
@@ -202,39 +199,39 @@ void axsw_init_topology_1(axiom_topology_t *start_topology) {
         { 1, 5, 7, AXTP_NULL_NODE},
         { 6, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE} */
     /* node 0 */
-    start_topology->topology[0][0] = 1;
-    start_topology->topology[0][1] = 2;
-    start_topology->topology[0][2] = 3;
+    logic->start_topology.topology[0][0] = 1;
+    logic->start_topology.topology[0][1] = 2;
+    logic->start_topology.topology[0][2] = 3;
     /* node 1 */
-    start_topology->topology[1][0] = 0;
-    start_topology->topology[1][1] = 6;
+    logic->start_topology.topology[1][0] = 0;
+    logic->start_topology.topology[1][1] = 6;
     /* node 2 */
-    start_topology->topology[2][0] = 0;
-    start_topology->topology[2][1] = 3;
+    logic->start_topology.topology[2][0] = 0;
+    logic->start_topology.topology[2][1] = 3;
     /* node 3 */
-    start_topology->topology[3][0] = 0;
-    start_topology->topology[3][1] = 4;
-    start_topology->topology[3][2] = 2;
+    logic->start_topology.topology[3][0] = 0;
+    logic->start_topology.topology[3][1] = 4;
+    logic->start_topology.topology[3][2] = 2;
     /* node 4 */
-    start_topology->topology[4][0] = 3;
-    start_topology->topology[4][1] = 5;
+    logic->start_topology.topology[4][0] = 3;
+    logic->start_topology.topology[4][1] = 5;
     /* node 5 */
-    start_topology->topology[5][0] = 6;
-    start_topology->topology[5][1] = 4;
+    logic->start_topology.topology[5][0] = 6;
+    logic->start_topology.topology[5][1] = 4;
     /* node 6 */
-    start_topology->topology[6][0] = 1;
-    start_topology->topology[6][1] = 5;
-    start_topology->topology[6][2] = 7;
+    logic->start_topology.topology[6][0] = 1;
+    logic->start_topology.topology[6][1] = 5;
+    logic->start_topology.topology[6][2] = 7;
     /* node 7 */
-    start_topology->topology[7][0] = 6;
+    logic->start_topology.topology[7][0] = 6;
 
-    start_topology->num_nodes = AXTP_NUM_NODES_SIM_1;
+    logic->start_topology.num_nodes = AXTP_NUM_NODES_SIM_1;
 
     printf ("Init topology 1, number of nodes: %d \n", AXTP_NUM_NODES_SIM_1);
 }
 
 /* Initializes start_toplogy (conf 2) with the connected nodes */
-void axsw_init_topology_2(axiom_topology_t *start_topology) {
+void axsw_init_topology_2(axsw_logic_t *logic) {
     /*  { 1, 2, 3, AXTP_NULL_NODE},
         { 0, 4, 8, AXTP_NULL_NODE},
         { 5, 0, 4, AXTP_NULL_NODE},
@@ -246,47 +243,47 @@ void axsw_init_topology_2(axiom_topology_t *start_topology) {
         { 6, 1, AXTP_NULL_NODE, AXTP_NULL_NODE},
         { 7, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE}  */
     /* node 0 */
-    start_topology->topology[0][0] = 1;
-    start_topology->topology[0][1] = 2;
-    start_topology->topology[0][2] = 3;
+    logic->start_topology.topology[0][0] = 1;
+    logic->start_topology.topology[0][1] = 2;
+    logic->start_topology.topology[0][2] = 3;
     /* node 1 */
-    start_topology->topology[1][0] = 0;
-    start_topology->topology[1][1] = 4;
-    start_topology->topology[1][2] = 8;
+    logic->start_topology.topology[1][0] = 0;
+    logic->start_topology.topology[1][1] = 4;
+    logic->start_topology.topology[1][2] = 8;
     /* node 2 */
-    start_topology->topology[2][0] = 5;
-    start_topology->topology[2][1] = 0;
-    start_topology->topology[2][2] = 4;
+    logic->start_topology.topology[2][0] = 5;
+    logic->start_topology.topology[2][1] = 0;
+    logic->start_topology.topology[2][2] = 4;
     /* node 3 */
-    start_topology->topology[3][0] = 0;
+    logic->start_topology.topology[3][0] = 0;
     /* node 4 */
-    start_topology->topology[4][0] = 2;
-    start_topology->topology[4][1] = 1;
-    start_topology->topology[4][2] = 5;
+    logic->start_topology.topology[4][0] = 2;
+    logic->start_topology.topology[4][1] = 1;
+    logic->start_topology.topology[4][2] = 5;
     /* node 5 */
-    start_topology->topology[5][0] = 2;
-    start_topology->topology[5][1] = 4;
-    start_topology->topology[5][2] = 6;
-    start_topology->topology[5][3] = 7;
+    logic->start_topology.topology[5][0] = 2;
+    logic->start_topology.topology[5][1] = 4;
+    logic->start_topology.topology[5][2] = 6;
+    logic->start_topology.topology[5][3] = 7;
     /* node 6 */
-    start_topology->topology[6][0] = 8;
-    start_topology->topology[6][1] = 5;
+    logic->start_topology.topology[6][0] = 8;
+    logic->start_topology.topology[6][1] = 5;
     /* node 7 */
-    start_topology->topology[7][0] = 5;
-    start_topology->topology[7][1] = 9;
+    logic->start_topology.topology[7][0] = 5;
+    logic->start_topology.topology[7][1] = 9;
     /* node 8 */
-    start_topology->topology[8][0] = 6;
-    start_topology->topology[8][1] = 1;
+    logic->start_topology.topology[8][0] = 6;
+    logic->start_topology.topology[8][1] = 1;
     /* node 9 */
-    start_topology->topology[9][0] = 7;
+    logic->start_topology.topology[9][0] = 7;
 
-    start_topology->num_nodes = AXTP_NUM_NODES_SIM_2;
+    logic->start_topology.num_nodes = AXTP_NUM_NODES_SIM_2;
 
     printf ("Init topology 2, number of nodes: %d \n", AXTP_NUM_NODES_SIM_2);
 }
 
 /* Initializes start_toplogy (conf 3) with the connected nodes */
-void axsw_init_topology_3(axiom_topology_t *start_topology) {
+void axsw_init_topology_3(axsw_logic_t *logic) {
     /*  { 1, 2, AXTP_NULL_NODE, AXTP_NULL_NODE},
         { 0, 3, 3, 4},
         { 0, 4, AXTP_NULL_NODE, AXTP_NULL_NODE},
@@ -294,36 +291,36 @@ void axsw_init_topology_3(axiom_topology_t *start_topology) {
         { 3, 1, 2, AXTP_NULL_NODE},
         { 3, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE} */
     /* node 0 */
-    start_topology->topology[0][0] = 1;
-    start_topology->topology[0][1] = 2;
+    logic->start_topology.topology[0][0] = 1;
+    logic->start_topology.topology[0][1] = 2;
     /* node 1 */
-    start_topology->topology[1][0] = 0;
-    start_topology->topology[1][1] = 3;
-    start_topology->topology[1][2] = 3;
-    start_topology->topology[1][3] = 4;
+    logic->start_topology.topology[1][0] = 0;
+    logic->start_topology.topology[1][1] = 3;
+    logic->start_topology.topology[1][2] = 3;
+    logic->start_topology.topology[1][3] = 4;
     /* node 2 */
-    start_topology->topology[2][0] = 0;
-    start_topology->topology[2][1] = 4;
+    logic->start_topology.topology[2][0] = 0;
+    logic->start_topology.topology[2][1] = 4;
     /* node 3 */
-    start_topology->topology[3][0] = 1;
-    start_topology->topology[3][1] = 1;
-    start_topology->topology[3][2] = 4;
-    start_topology->topology[3][3] = 5;
+    logic->start_topology.topology[3][0] = 1;
+    logic->start_topology.topology[3][1] = 1;
+    logic->start_topology.topology[3][2] = 4;
+    logic->start_topology.topology[3][3] = 5;
     /* node 4 */
-    start_topology->topology[4][0] = 3;
-    start_topology->topology[4][1] = 1;
-    start_topology->topology[4][2] = 2;
+    logic->start_topology.topology[4][0] = 3;
+    logic->start_topology.topology[4][1] = 1;
+    logic->start_topology.topology[4][2] = 2;
     /* node 5 */
-    start_topology->topology[5][0] = 3;
+    logic->start_topology.topology[5][0] = 3;
 
-    start_topology->num_nodes = AXTP_NUM_NODES_SIM_3;
+    logic->start_topology.num_nodes = AXTP_NUM_NODES_SIM_3;
 
     printf ("Init topology 3, number of nodes: %d \n", AXTP_NUM_NODES_SIM_3);
 
 }
 
 /* Initializes start_toplogy (conf 4) with the connected nodes */
-void axsw_init_topology_4(axiom_topology_t *start_topology) {
+void axsw_init_topology_4(axsw_logic_t *logic) {
     /*  { 1, 2, AXTP_NULL_NODE, AXTP_NULL_NODE},
         { 0, 4, 3, 3},
         { 4, 0, AXTP_NULL_NODE, AXTP_NULL_NODE},
@@ -331,36 +328,36 @@ void axsw_init_topology_4(axiom_topology_t *start_topology) {
         { 3, 1, 2, AXTP_NULL_NODE},
         { 3, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE} */
     /* node 0 */
-    start_topology->topology[0][0] = 1;
-    start_topology->topology[0][1] = 2;
+    logic->start_topology.topology[0][0] = 1;
+    logic->start_topology.topology[0][1] = 2;
     /* node 1 */
-    start_topology->topology[1][0] = 0;
-    start_topology->topology[1][1] = 4;
-    start_topology->topology[1][2] = 3;
-    start_topology->topology[1][3] = 3;
+    logic->start_topology.topology[1][0] = 0;
+    logic->start_topology.topology[1][1] = 4;
+    logic->start_topology.topology[1][2] = 3;
+    logic->start_topology.topology[1][3] = 3;
     /* node 2 */
-    start_topology->topology[2][0] = 4;
-    start_topology->topology[2][1] = 0;
+    logic->start_topology.topology[2][0] = 4;
+    logic->start_topology.topology[2][1] = 0;
     /* node 3 */
-    start_topology->topology[3][0] = 4;
-    start_topology->topology[3][1] = 1;
-    start_topology->topology[3][2] = 1;
-    start_topology->topology[3][3] = 5;
+    logic->start_topology.topology[3][0] = 4;
+    logic->start_topology.topology[3][1] = 1;
+    logic->start_topology.topology[3][2] = 1;
+    logic->start_topology.topology[3][3] = 5;
     /* node 4 */
-    start_topology->topology[4][0] = 3;
-    start_topology->topology[4][1] = 1;
-    start_topology->topology[4][2] = 2;
+    logic->start_topology.topology[4][0] = 3;
+    logic->start_topology.topology[4][1] = 1;
+    logic->start_topology.topology[4][2] = 2;
     /* node 5 */
-    start_topology->topology[5][0] = 3;
+    logic->start_topology.topology[5][0] = 3;
 
-    start_topology->num_nodes = AXTP_NUM_NODES_SIM_4;
+    logic->start_topology.num_nodes = AXTP_NUM_NODES_SIM_4;
 
     printf ("Init topology 4, number of nodes: %d \n", AXTP_NUM_NODES_SIM_4);
 }
 
 /* Initializes start_toplogy (conf 5) with the connected nodes */
 void
-axsw_init_topology_5(axiom_topology_t *start_topology) {
+axsw_init_topology_5(axsw_logic_t *logic) {
     /*  { 1, 5, AXTP_NULL_NODE, AXTP_NULL_NODE},
         { 0, 2, AXTP_NULL_NODE, AXTP_NULL_NODE},
         { 1, 3, 4, AXTP_NULL_NODE},
@@ -368,32 +365,32 @@ axsw_init_topology_5(axiom_topology_t *start_topology) {
         { 2, 5, AXTP_NULL_NODE, AXTP_NULL_NODE},
         { 4, 0, AXTP_NULL_NODE, AXTP_NULL_NODE} */
     /* node 0 */
-    start_topology->topology[0][0] = 1;
-    start_topology->topology[0][1] = 5;
+    logic->start_topology.topology[0][0] = 1;
+    logic->start_topology.topology[0][1] = 5;
     /* node 1 */
-    start_topology->topology[1][0] = 0;
-    start_topology->topology[1][1] = 2;
+    logic->start_topology.topology[1][0] = 0;
+    logic->start_topology.topology[1][1] = 2;
     /* node 2 */
-    start_topology->topology[2][0] = 1;
-    start_topology->topology[2][1] = 3;
-    start_topology->topology[2][2] = 4;
+    logic->start_topology.topology[2][0] = 1;
+    logic->start_topology.topology[2][1] = 3;
+    logic->start_topology.topology[2][2] = 4;
     /* node 3 */
-    start_topology->topology[3][0] = 2;
+    logic->start_topology.topology[3][0] = 2;
     /* node 4 */
-    start_topology->topology[4][0] = 2;
-    start_topology->topology[4][1] = 5;
+    logic->start_topology.topology[4][0] = 2;
+    logic->start_topology.topology[4][1] = 5;
     /* node 5 */
-    start_topology->topology[5][0] = 4;
-    start_topology->topology[5][1] = 0;
+    logic->start_topology.topology[5][0] = 4;
+    logic->start_topology.topology[5][1] = 0;
 
-    start_topology->num_nodes = AXTP_NUM_NODES_SIM_5;
+    logic->start_topology.num_nodes = AXTP_NUM_NODES_SIM_5;
 
     printf ("Init topology 5, number of nodes: %d \n", AXTP_NUM_NODES_SIM_5);
 }
 
 /* Initialization of pointer to the topology management functions */
 void
-axsw_init_f_topology (axsw_sim_topology_t *sim_toplogy) {
+axsw_init_f_topology(axsw_sim_topology_t *sim_toplogy) {
     int i;
     for (i = 0; i < AXTP_MAX_NUM_SIM; i++) {
         sim_toplogy->axsw_f_init_topology[i] = NULL;
@@ -417,8 +414,7 @@ axsw_init_f_topology (axsw_sim_topology_t *sim_toplogy) {
 /* Initializes start_toplogy with the file input topology
    and returns the number of nodes into */
 int
-axsw_topology_from_file(char *filename,
-                        axiom_topology_t *start_topology) {
+axsw_topology_from_file(axsw_logic_t *logic, char *filename) {
 
     FILE *file = NULL;
     char *line = NULL, *p;
@@ -464,8 +460,8 @@ axsw_topology_from_file(char *filename,
                            return -1;
                        }
                        else {
-                           start_topology->topology[line_count-1][if_index] = (uint8_t)val;
-                           printf ("start_topology->topology[%d][%d] = %d\n", line_count-1, if_index, (uint8_t)val);
+                           logic->start_topology.topology[line_count-1][if_index] = (uint8_t)val;
+                           printf ("logic->start_topology.topology[%d][%d] = %d\n", line_count-1, if_index, (uint8_t)val);
                            if_index++;
                        }
                    }

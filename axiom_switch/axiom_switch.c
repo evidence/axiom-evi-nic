@@ -17,7 +17,6 @@
 #include "axiom_switch_event_loop.h"
 #include "axiom_switch_qemu.h"
 
-extern axiom_topology_t start_topology;
 
 static void usage(void)
 {
@@ -166,7 +165,7 @@ int main (int argc, char *argv[])
     /* check file presence */
     if (file_ok == 1) {
         /* init the topology structure */
-        num_ports = axsw_topology_from_file(filename, &start_topology);
+        num_ports = axsw_topology_from_file(&logic_status, filename);
         if (num_ports < 0)
         {
             printf("Error in reading toplogy from file\n");
@@ -193,8 +192,8 @@ int main (int argc, char *argv[])
                         else {
                             num_ports = sim_toplogy.needed_switch_port[n];
                             /* init the selected topology */
-                            axsw_init_topology(&start_topology);
-                            sim_toplogy.axsw_f_init_topology[n](&start_topology);
+                            axsw_init_topology(&logic_status);
+                            sim_toplogy.axsw_f_init_topology[n](&logic_status);
                         }
                     }
                     else {
@@ -215,8 +214,8 @@ int main (int argc, char *argv[])
                             {
                                 num_ports = n;
                                 /* init the selected topology */
-                                axsw_init_topology(&start_topology);
-                                axsw_make_ring_toplogy(&start_topology, n);
+                                axsw_init_topology(&logic_status);
+                                axsw_make_ring_toplogy(&logic_status, n);
                             }
                         }
                         else {
@@ -236,8 +235,7 @@ int main (int argc, char *argv[])
         }
     }
 
-    axsw_logic_init(&logic_status);
-    axsw_if_topology_init(&start_topology, num_ports);
+    axsw_logic_init(&logic_status, num_ports);
     axsw_event_loop_init(&el_status);
 
     /* listening sockets creation */
