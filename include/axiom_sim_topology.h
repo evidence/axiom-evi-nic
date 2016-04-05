@@ -10,9 +10,14 @@
 #ifndef AXIOM_TOPOLOGY_h
 #define AXIOM_TOPOLOGY_H
 
+<<<<<<< Updated upstream
 //#define EXAMPLE0
 #define EXAMPLE1
 //#define EXAMPLE2
+=======
+//#define EXAMPLE1
+#define EXAMPLE2
+>>>>>>> Stashed changes
 //#define EXAMPLE3
 //#define EXAMPLE4
 //#define EXAMPLE5
