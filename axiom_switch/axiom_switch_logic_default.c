@@ -4,8 +4,11 @@
  *
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <ctype.h>
+#include <limits.h>
 
 #include <netinet/in.h>
 
@@ -14,97 +17,6 @@
 #include "axiom_switch_logic.h"
 #include "axiom_nic_packets.h"
 #include "axiom_nic_discovery.h"
-
-#if 0
-#ifdef AXTP_EXAMPLE0
-axiom_topology_t start_topology = {
-    .topology = {
-        { 2, 3, AXIOM_NULL_NODE, AXIOM_NULL_NODE},
-        { 3, 2, AXIOM_NULL_NODE, AXIOM_NULL_NODE},
-        { 0, 1, AXIOM_NULL_NODE, AXIOM_NULL_NODE},
-        { 1, 0, AXIOM_NULL_NODE, AXIOM_NULL_NODE},
-    },
-    .num_nodes = AXTP_NUM_NODES,
-    .num_interfaces = AXTP_NUM_INTERFACES
-};
-#endif
-#ifdef AXTP_EXAMPLE1
-axiom_topology_t start_topology = {
-    .topology = {
-        { 1, 2, 3, AXTP_NULL_NODE},
-        { 0, 6, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 0, 3, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 0, 4, 2, AXTP_NULL_NODE},
-        { 3, 5, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 6, 4, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 1, 5, 7, AXTP_NULL_NODE},
-        { 6, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE},
-    },
-    .num_nodes = AXTP_NUM_NODES,
-    .num_interfaces = AXTP_NUM_INTERFACES
-};
-#endif
-#ifdef AXTP_EXAMPLE2
-axiom_topology_t start_topology = {
-    .topology = {
-        { 1, 2, 3, AXTP_NULL_NODE},
-        { 0, 4, 8, AXTP_NULL_NODE},
-        { 5, 0, 4, AXTP_NULL_NODE},
-        { 0, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 2, 1, 5, AXTP_NULL_NODE},
-        { 2, 4, 6, 7},
-        { 8, 5, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 5, 9, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 6, 1, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 7, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE},
-    },
-    .num_nodes = AXTP_NUM_NODES,
-    .num_interfaces = AXTP_NUM_INTERFACES
-};
-#endif
-#ifdef AXTP_EXAMPLE3
-axiom_topology_t start_topology = {
-    .topology = {
-        { 1, 2, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 0, 3, 3, 4},
-        { 0, 4, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 1, 1, 4, 5},
-        { 3, 1, 2, AXTP_NULL_NODE},
-        { 3, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE},
-    },
-    .num_nodes = AXTP_NUM_NODES,
-    .num_interfaces = AXTP_NUM_INTERFACES
-};
-#endif
-#ifdef AXTP_EXAMPLE4
-axiom_topology_t start_topology = {
-    .topology = {
-        { 1, 2, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 0, 4, 3, 3},
-        { 4, 0, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 4, 1, 1, 5},
-        { 3, 1, 2, AXTP_NULL_NODE},
-        { 3, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE},
-    },
-    .num_nodes = AXTP_NUM_NODES,
-    .num_interfaces = AXTP_NUM_INTERFACES
-};
-#endif
-#ifdef AXTP_EXAMPLE5
-axiom_topology_t start_topology = {
-    .topology = {
-        { 1, 5, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 0, 2, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 1, 3, 4, AXTP_NULL_NODE},
-        { 2, AXTP_NULL_NODE, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 2, 5, AXTP_NULL_NODE, AXTP_NULL_NODE},
-        { 4, 0, AXTP_NULL_NODE, AXTP_NULL_NODE},
-    },
-    .num_nodes = AXTP_NUM_NODES,
-    .num_interfaces = AXTP_NUM_INTERFACES
-};
-#endif
-#endif
 
 /* nodes topology variable */
 axiom_topology_t start_topology;
@@ -500,4 +412,74 @@ axsw_init_f_topology (axsw_sim_topology_t *sim_toplogy) {
     sim_toplogy->needed_switch_port[4] = AXTP_NUM_PORT_SIM_4;
     sim_toplogy-> axsw_f_init_topology[5] = axsw_init_topology_5;
     sim_toplogy->needed_switch_port[5] = AXTP_NUM_PORT_SIM_5;
+}
+
+/* Initializes start_toplogy with the file input topology
+   and returns the number of nodes into */
+int
+axsw_topology_from_file(char *filename,
+                        axiom_topology_t *start_topology) {
+
+    FILE *file = NULL;
+    char *line = NULL, *p;
+    size_t len = 0;
+    ssize_t read;
+    int line_count = 0, if_index = 0;
+
+    file = fopen(filename, "r");
+    if (file == NULL)  {
+        printf ("File not existent \n");
+        return -1;
+    }
+
+    while ((read = getline(&line, &len, file)) != -1) {
+       printf("%s", line);
+
+       line_count++;
+       if (line_count > AXIOM_MAX_NUM_NODES) {
+           printf ("The topology contains more than %d nodes\n", AXIOM_MAX_NUM_NODES);
+           return -1;
+       }
+       if_index = 0;
+       p = line;
+       /* While there are characters into the line */
+       while (*p) {
+           if (isdigit(*p)) {
+               /* Upon finding a digit, read it */
+               long val = strtol(p, &p, 10);
+               //printf("%ld\n", val);
+               if ((val ==  LONG_MIN) || (val ==  LONG_MAX)) {
+                   printf ("Error in converting nodes id read from file\n");
+                   return -1;
+               }
+               else
+               {
+                   if ((val < 0) || (val > AXIOM_MAX_NUM_NODES)) {
+                       printf ("The topology contains nodes with id greater than %d\n", AXIOM_MAX_NUM_NODES);
+                       return -1;
+                   }
+                   else {
+                       if (if_index >= AXTP_NUM_INTERFACES) {
+                           printf ("The topology contains nodes with more than  than %d interfaces\n", AXTP_NUM_INTERFACES);
+                           return -1;
+                       }
+                       else {
+                           start_topology->topology[line_count-1][if_index] = (uint8_t)val;
+                           printf ("start_topology->topology[%d][%d] = %d\n", line_count-1, if_index, (uint8_t)val);
+                           if_index++;
+                       }
+                   }
+               }
+           }
+           else {
+               /* move on to the next character of the line */
+               p++;
+           }
+       }
+    }
+
+    free(line);
+    fclose(file);
+
+    return line_count;
 }

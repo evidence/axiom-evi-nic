@@ -22,6 +22,7 @@ extern axiom_topology_t start_topology;
 static void usage(void)
 {
     printf("usage: ./axiom_switch [[-t port] [-n] [-h]] -t topology -n number of topology or number of nodes \n\n");
+    printf("-f, --file      file_name           toplogy file \n");
     printf("-t, --toplogy   topology_numer      0:pre-existent topology 1:RING \n");
     printf("-n,             number              number of pre-existent topology | number of nodes for other topologies\n");
     printf("-h, --help                          print this help\n");
@@ -104,25 +105,36 @@ listen_socket_find(int *listen_sd, int fds_index, int sd, int *vm_index)
 int main (int argc, char *argv[])
 {
     int ret, fds_tail_max_listen, i;
+    char filename[100] ;
     int n, num_ports = 0, topology = 0, end_server = 0;
     int listen_sd[AXSW_PORT_MAX];
     axiom_small_eth_t axiom_small_eth_msg;
     axsw_logic_t logic_status;
     axsw_event_loop_t el_status;
-    int topology_ok = 0, n_ok = 0;
+    int file_ok =0, topology_ok = 0, n_ok = 0;
     int long_index =0;
     int opt = 0;
     static struct option long_options[] = {
-        {"n", required_argument, 0, 'n'},
+        {"file", required_argument, 0, 'f'},
         {"topology", required_argument, 0, 't'},
+        {"n", required_argument, 0, 'n'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
     };
     axsw_sim_topology_t sim_toplogy;
 
-    while ((opt = getopt_long(argc, argv,"t:n:h",
+    while ((opt = getopt_long(argc, argv,"f:t:n:h",
                          long_options, &long_index )) != -1) {
         switch (opt) {
+            case 'f' :
+                if (sscanf(optarg, "%s", filename) != 1) {
+                    usage();
+                    exit(-1);
+                }
+                else {
+                    file_ok = 1;
+                }
+                break;
             case 't' :
                 if (sscanf(optarg, "%i", &topology) != 1) {
                     usage();
@@ -151,64 +163,77 @@ int main (int argc, char *argv[])
         }
     }
 
-    /* chack topology paramenter */
-    if (topology_ok == 1) {
-        switch (topology) {
-            case AXTP_DEFAULT_SIM:
-                /* pre-esistent toplogy management */
-                /* Initialization of pointer to the all
-                 * possible topologyies management functions */
-                axsw_init_f_topology(&sim_toplogy);
+    /* check file presence */
+    if (file_ok == 1) {
+        /* init the topology structure */
+        num_ports = axsw_topology_from_file(filename, &start_topology);
+        if (num_ports < 0)
+        {
+            printf("Error in reading toplogy from file\n");
+            exit(-1);
+        }
+    }
+    else
+    {
+        /* check topology paramenter */
+        if (topology_ok == 1) {
+            switch (topology) {
+                case AXTP_DEFAULT_SIM:
+                    /* pre-esistent toplogy management */
+                    /* Initialization of pointer to the all
+                     * possible topologyies management functions */
+                    axsw_init_f_topology(&sim_toplogy);
 
-                if (n_ok == 1) {
-                    if ((n < 0) || (n > (AXTP_NUM_SIM-1))) {
-                        printf("Please, for pre-existent topology insert a simulation number between 0 and %d\n",
-                                AXTP_NUM_SIM-1);
-                        exit (-1);
-                    }
-                    else {
-                        num_ports = sim_toplogy.needed_switch_port[n];
-                        /* init the selected topology */
-                        axsw_init_topology(&start_topology);
-                        sim_toplogy.axsw_f_init_topology[n](&start_topology);
-                    }
-                }
-                else {
-                   usage();
-                   exit(-1);
-                }
-                break;
-
-            case AXTP_RING_SIM:
-                    /* make ring toplogy with the inserted nuber of nodes */
                     if (n_ok == 1) {
-                        if ((n < 2) || (n > AXIOM_MAX_NUM_NODES)) {
-                            printf("Please, for RING topology insert a simulation number between 2 and %d\n",
-                                    AXIOM_MAX_NUM_NODES);
+                        if ((n < 0) || (n > (AXTP_NUM_SIM-1))) {
+                            printf("Please, for pre-existent topology insert a simulation number between 0 and %d\n",
+                                    AXTP_NUM_SIM-1);
                             exit (-1);
                         }
-                        else
-                        {
-                            num_ports = n;
+                        else {
+                            num_ports = sim_toplogy.needed_switch_port[n];
                             /* init the selected topology */
                             axsw_init_topology(&start_topology);
-                            axsw_make_ring_toplogy(&start_topology, n);
+                            sim_toplogy.axsw_f_init_topology[n](&start_topology);
                         }
                     }
                     else {
                        usage();
                        exit(-1);
                     }
-                break;
+                    break;
 
-            default:
-                printf("Topology type not existent!\n");
-                exit (-1);
+                case AXTP_RING_SIM:
+                        /* make ring toplogy with the inserted nuber of nodes */
+                        if (n_ok == 1) {
+                            if ((n < 2) || (n > AXIOM_MAX_NUM_NODES)) {
+                                printf("Please, for RING topology insert a simulation number between 2 and %d\n",
+                                        AXIOM_MAX_NUM_NODES);
+                                exit (-1);
+                            }
+                            else
+                            {
+                                num_ports = n;
+                                /* init the selected topology */
+                                axsw_init_topology(&start_topology);
+                                axsw_make_ring_toplogy(&start_topology, n);
+                            }
+                        }
+                        else {
+                           usage();
+                           exit(-1);
+                        }
+                    break;
+
+                default:
+                    printf("Topology type not existent!\n");
+                    exit (-1);
+            }
         }
-    }
-    else {
-       usage();
-       exit(-1);
+        else {
+           usage();
+           exit(-1);
+        }
     }
 
     axsw_logic_init(&logic_status);
