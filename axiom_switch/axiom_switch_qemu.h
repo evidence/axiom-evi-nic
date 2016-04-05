@@ -78,8 +78,8 @@ axsw_qemu_send_ifinfo(int fd, axiom_if_id_t if_id, int connected)
 {
     axiom_small_eth_t small_eth;
 
-    small_eth.eth_hdr.type = htons(AXIOM_ETH_TYPE_CTRL);
     memset(&small_eth, 0, sizeof(small_eth));
+    small_eth.eth_hdr.type = htons(AXIOM_ETH_TYPE_CTRL);
 
     /* send if_info to QEMU vm:
      *  - header.src contains the interface id
@@ -90,6 +90,7 @@ axsw_qemu_send_ifinfo(int fd, axiom_if_id_t if_id, int connected)
         ((uint8_t *)&small_eth.small_msg.payload)[0] =
             AXIOMREG_IFINFO_CONNECTED | AXIOMREG_IFINFO_RX | AXIOMREG_IFINFO_TX;
     }
+    DPRINTF("if_id: %x if_info: %x", if_id, ((uint8_t *)&small_eth.small_msg.payload)[0]);
 
     return axsw_qemu_send(fd, &small_eth);
 }
