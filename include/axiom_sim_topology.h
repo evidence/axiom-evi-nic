@@ -10,7 +10,7 @@
 #ifndef AXIOM_TOPOLOGY_h
 #define AXIOM_TOPOLOGY_H
 
-#define EXAMPLE0
+//#define EXAMPLE0
 //#define EXAMPLE1
 //#define EXAMPLE2
 //#define EXAMPLE3
@@ -37,8 +37,9 @@
 #endif
 #define AXIOM_NUM_INTERFACES          4
 
+
 /* Invalid node ID */
-#define AXIOM_NULL_NODE              255
+#define AXIOM_NULL_NODE               255
 
 typedef struct axiom_topology {
     uint8_t topology[AXIOM_MAX_NUM_NODES][AXIOM_NUM_INTERFACES];
