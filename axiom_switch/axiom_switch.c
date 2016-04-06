@@ -20,10 +20,12 @@
 
 static void usage(void)
 {
-    printf("usage: ./axiom_switch [[-t port] [-n] [-h]] -t topology -n number of topology or number of nodes \n\n");
+    printf("usage: ./axiom_switch [[-f file_name] | [-t topology_type -n number]\n");
+    printf("                                      | [-h]] \n\n");
     printf("-f, --file      file_name           toplogy file \n");
-    printf("-t, --toplogy   topology_numer      0:pre-existent topology 1:RING \n");
-    printf("-n,             number              number of pre-existent topology | number of nodes for other topologies\n");
+    printf("-t, --toplogy   topology_type       0:pre-existent topology 1:RING \n");
+    printf("-n,             number              number of pre-existent topology |\n");
+    printf("                                    number of nodes for other topologies\n");
     printf("-h, --help                          print this help\n");
 }
 
@@ -104,13 +106,13 @@ listen_socket_find(int *listen_sd, int fds_index, int sd, int *vm_index)
 int main (int argc, char *argv[])
 {
     int ret, fds_tail_max_listen, i;
-    char filename[100] ;
+    char filename[100];
     int n, num_ports = 0, topology = 0, end_server = 0;
     int listen_sd[AXSW_PORT_MAX];
     axiom_small_eth_t axiom_small_eth_msg;
     axsw_logic_t logic_status;
     axsw_event_loop_t el_status;
-    int file_ok =0, topology_ok = 0, n_ok = 0;
+    int file_ok = 0, topology_ok = 0, n_ok = 0;
     int long_index =0;
     int opt = 0;
     static struct option long_options[] = {
@@ -205,9 +207,9 @@ int main (int argc, char *argv[])
                 case AXTP_RING_SIM:
                         /* make ring toplogy with the inserted nuber of nodes */
                         if (n_ok == 1) {
-                            if ((n < 2) || (n > AXIOM_MAX_NUM_NODES)) {
+                            if ((n < 2) || (n > AXIOM_MAX_NODES)) {
                                 printf("Please, for RING topology insert a simulation number between 2 and %d\n",
-                                        AXIOM_MAX_NUM_NODES);
+                                        AXIOM_MAX_NODES);
                                 exit (-1);
                             }
                             else
@@ -307,7 +309,7 @@ int main (int argc, char *argv[])
 
                 axsw_logic_set_vm_sd(&logic_status, vm_index, new_sd);
 
-                for (if_id = 0; if_id < AXIOM_NUM_INTERFACES; if_id++) {
+                for (if_id = 0; if_id < AXIOM_MAX_INTERFACES; if_id++) {
                     int connected = 0;
                     if (axsw_logic_find_neighbour_if(&logic_status, vm_index, if_id) >= 0) {
                         connected = 1;
