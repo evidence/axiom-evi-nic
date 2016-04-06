@@ -7,6 +7,8 @@
 #include "axiom_switch.h"
 #include "axiom_switch_event_loop.h"
 
+extern int verbose;
+
 void
 axsw_event_loop_init(axsw_event_loop_t *el_status)
 {
@@ -37,7 +39,7 @@ axsw_event_loop_add_sd(axsw_event_loop_t *el_status, int new_sd, int events)
 void
 axsw_event_loop_close(axsw_event_loop_t *el_status, int fds_index)
 {
-    IPRINTF("Close connection - sd: %d", el_status->fds[fds_index].fd);
+    IPRINTF(verbose, "Close connection - sd: %d", el_status->fds[fds_index].fd);
     close(el_status->fds[fds_index].fd);
     el_status->fds[fds_index].fd = -1;
     el_status->compress_array = 1;
@@ -88,9 +90,9 @@ axsw_event_loop_poll(axsw_event_loop_t *el_status)
 
     ret = poll(el_status->fds, el_status->fds_tail, el_status->timeout);
     if (ret < 0) {
-        perror("  poll() failed");
+        perror("poll() FAILED");
     } else if (ret == 0) {
-        IPRINTF("  poll() timed out\n");
+        IPRINTF(verbose, "  poll() timed out\n");
         ret = 1;
     }
 

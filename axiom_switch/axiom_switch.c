@@ -17,6 +17,7 @@
 #include "axiom_switch_event_loop.h"
 #include "axiom_switch_qemu.h"
 
+int verbose = 0;
 
 static void usage(void)
 {
@@ -24,6 +25,7 @@ static void usage(void)
     printf("-f, --file      file_name           toplogy file \n");
     printf("-t, --toplogy   topology_numer      0:pre-existent topology 1:RING \n");
     printf("-n,             number              number of pre-existent topology | number of nodes for other topologies\n");
+    printf("-v, --verbose                       verbose output\n");
     printf("-h, --help                          print this help\n");
 }
 
@@ -117,29 +119,29 @@ int main (int argc, char *argv[])
         {"file", required_argument, 0, 'f'},
         {"topology", required_argument, 0, 't'},
         {"n", required_argument, 0, 'n'},
+        {"verbose", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
     };
     axsw_sim_topology_t sim_toplogy;
 
-    while ((opt = getopt_long(argc, argv,"f:t:n:h",
+    while ((opt = getopt_long(argc, argv,"f:t:n:vh",
                          long_options, &long_index )) != -1) {
         switch (opt) {
             case 'f' :
                 if (sscanf(optarg, "%s", filename) != 1) {
                     usage();
                     exit(-1);
-                }
-                else {
+                } else {
                     file_ok = 1;
                 }
                 break;
+
             case 't' :
                 if (sscanf(optarg, "%i", &topology) != 1) {
                     usage();
                     exit(-1);
-                }
-                else {
+                } else {
                     topology_ok = 1;
                 }
                 break;
@@ -148,12 +150,14 @@ int main (int argc, char *argv[])
                 if (sscanf(optarg, "%i", &n) != 1) {
                     usage();
                     exit(-1);
-                }
-                else {
+                } else {
                     n_ok = 1;
                 }
                 break;
 
+            case 'v':
+                verbose = 1;
+                break;
 
             case 'h':
             default:
@@ -259,7 +263,7 @@ int main (int argc, char *argv[])
     do {
         int current_size = axsw_event_loop_get_tail(&el_status);
 
-        DPRINTF("Waiting on poll()...");
+        IPRINTF(verbose, "Waiting on poll()...");
         ret = axsw_event_loop_poll(&el_status);
         if (ret < 0) {
             DPRINTF("poll error");
@@ -298,7 +302,7 @@ int main (int argc, char *argv[])
                 }
 
                 /* Add the new incoming connection to the fds structure */
-                IPRINTF("New incoming connection - sd: %d", new_sd);
+                IPRINTF(verbose, "New incoming connection - sd: %d", new_sd);
                 ret = axsw_event_loop_add_sd(&el_status, new_sd, POLLIN);
                 if (ret < 0) {
                     EPRINTF("no space in fds array");
@@ -323,6 +327,7 @@ int main (int argc, char *argv[])
             } else {
                 int dst_sd;
 
+                IPRINTF(verbose, "New incoming packet - source sd: %d", fd);
                 /* receive ethernet packet */
                 ret = axsw_qemu_recv(fd, &axiom_small_eth_msg);
 
@@ -339,6 +344,7 @@ int main (int argc, char *argv[])
                 if (dst_sd < 0)
                     continue;
 
+                IPRINTF(verbose, "Packet forwarded - destination sd: %d", dst_sd);
                 /* send ethernet packet */
                 ret = axsw_qemu_send(dst_sd, &axiom_small_eth_msg);
                 if (ret < 0) {

@@ -25,9 +25,9 @@ MODULE_AUTHOR("Evidence S.R.L. - Stefano Garzarella");
 MODULE_DESCRIPTION("Axiom Network Device Driver");
 MODULE_VERSION("2016-01-22");
 
-int debug = 0;
-module_param(debug, int, 0);
-MODULE_PARM_DESC(debug, "Debug level (0=none,...,16=all)");
+int verbose = 0;
+module_param(verbose, int, 0);
+MODULE_PARM_DESC(debug, "versbose level (0=none,...,16=all)");
 
 /* bitmat to handle chardev minor (devnum) */
 static DEFINE_SPINLOCK(map_lock);
@@ -197,12 +197,14 @@ static int axiomnet_probe(struct platform_device *pdev)
 
     /* TODO: check version */
     version = ioread32(drvdata->vregs + AXIOMREG_IO_VERSION);
-    IPRINTF("version: 0x%08x", version);
+    IPRINTF(verbose, "version: 0x%08x", version);
 
-    axiom_print_status_reg(drvdata->dev_api);
-    axiom_print_control_reg(drvdata->dev_api);
-    axiom_print_routing_reg(drvdata->dev_api);
-    axiom_print_small_queue_reg(drvdata->dev_api);
+    if (verbose > 1) {
+        axiom_print_status_reg(drvdata->dev_api);
+        axiom_print_control_reg(drvdata->dev_api);
+        axiom_print_routing_reg(drvdata->dev_api);
+        axiom_print_small_queue_reg(drvdata->dev_api);
+    }
 
     /* alloc char device */
     err = axiomnet_alloc_chrdev(drvdata, &chrdev);
