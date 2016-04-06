@@ -6,7 +6,7 @@ DFLAGS := -g -DPDEBUG
 CFLAGS += -Wall $(DFLAGS) -I$(AXIOM_INCLUDE)
 
 
-.PHONY: all clean
+.PHONY: all install clean
 
 all: $(APPS)
 
@@ -18,6 +18,7 @@ axiom_switch_logic_default.o: axiom_switch_logic_default.c axiom_switch_logic.h 
 
 axiom_switch_event_loop.o: axiom_switch_event_loop.h axiom_switch_event_loop.c axiom_switch.h
 
+install: $(APPS)
 
 clean:
 	rm -rf $(CLEANFILES)
