@@ -1,4 +1,10 @@
 #
+# Generated executable
+#
+axiom_switch/axiom_switch
+axiom_user_library/axiom_user_test
+
+#
 # Normal rules
 #
 .*
