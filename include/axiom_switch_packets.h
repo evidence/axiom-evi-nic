@@ -4,7 +4,7 @@
 /*
  * axiom_switch_packets.h
  *
- * Version:     v0.3
+ * Version:     v0.3.1
  * Last update: 2016-03-15
  *
  * This file contains the AXIOM switch packets description

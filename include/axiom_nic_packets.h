@@ -4,7 +4,7 @@
 /*
  * axiom_nic_packets.h
  *
- * Version:     v0.3
+ * Version:     v0.3.1
  * Last update: 2016-03-25
  *
  * This file contains the following AXIOM NIC packets description:

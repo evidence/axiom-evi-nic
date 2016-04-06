@@ -52,6 +52,10 @@ PSEUDOCODE_RE=$INCLUDE_RE
 PSEUDOCODE_SUBS=$INCLUDE_SUBS
 PSEUDOCODE_PATH="axiom_docs/pseudo_code/*.c"
 
+APPS_RE=$INCLUDE_RE
+APPS_SUBS=$INCLUDE_SUBS
+APPS_PATH="../axiom-evi-apps/*"
+
 DATASHEET_RE=".*\\\newcommand{\\\versionapi}.*"
 DATASHEET_SUBS="\\\newcommand{\\\versionapi}{${VERSION}}"
 DATASHEET_PATH="axiom_docs/datasheet/*.tex"
@@ -61,11 +65,13 @@ if [ "$SET" = "1" ]; then
     set -x
     sed -i -e "s/${INCLUDE_RE}/${INCLUDE_SUBS}/" ${INCLUDE_PATH}
     sed -i -e "s/${PSEUDOCODE_RE}/${PSEUDOCODE_SUBS}/" ${PSEUDOCODE_PATH}
+    grep -rl "$APPS_RE" $APPS_PATH | xargs sed -i -e "s/${APPS_RE}/${APPS_SUBS}/"
     sed -i -e "s/${DATASHEET_RE}/${DATASHEET_SUBS}/" ${DATASHEET_PATH}
 elif [ "$PRINT" = "1" ]; then
     echo "printing version"
     grep -rne "$INCLUDE_RE" $INCLUDE_PATH
     grep -rne "$PSEUDOCODE_RE" $PSEUDOCODE_PATH
+    grep -rne "$APPS_RE" $APPS_PATH
     grep -rne "$DATASHEET_RE" $DATASHEET_PATH
 elif [ "$CHECK" = "1" ]; then
     echo "checking version: $VERSION"

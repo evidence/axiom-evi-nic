@@ -4,7 +4,7 @@
 /*
  * axiom_nic_api_user.h
  *
- * Version:     v0.3
+ * Version:     v0.3.1
  * Last update: 2016-03-14
  *
  * This file contains the AXIOM NIC API for the userspace
