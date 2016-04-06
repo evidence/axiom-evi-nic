@@ -1,24 +1,29 @@
 #ifndef DPRINTF_H
 #define DPRINTF_H
 
+#define __FILENAME__ \
+    (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
 #ifdef __KERNEL__
+#include <linux/string.h>
 #define _DPRINTF(type, _fmt, ... )\
-    do {                                                                \
-        struct timeval _t0;                                             \
-        do_gettimeofday(&_t0);                                          \
-        printk(KERN_ERR "%03d.%06d %s[%d]: %s() - %s - " _fmt "%s\n",   \
-                (int)(_t0.tv_sec % 1000), (int)_t0.tv_usec,             \
-                __FILE__, __LINE__, __func__, type , __VA_ARGS__);      \
+    do {                                                                       \
+        struct timeval _t0;                                                    \
+        do_gettimeofday(&_t0);                                                 \
+        printk(KERN_ERR "%03d.%06d %s[%d]: %s() - %s\n  message: " _fmt "%s\n",\
+                (int)(_t0.tv_sec % 1000), (int)_t0.tv_usec,                    \
+                __FILENAME__, __LINE__, __func__, type , __VA_ARGS__);         \
     } while (0);
 #else /* !__KERNEL__ */
 #include <sys/time.h>
+#include <string.h>
 #define _DPRINTF(type, _fmt, ... )\
-    do {                                                                \
-        struct timeval _t0;                                             \
-        gettimeofday(&_t0, NULL);                                       \
-        fprintf(stderr, "%03d.%06d %s[%d]: %s() - %s - " _fmt "%s\n",   \
-                (int)(_t0.tv_sec % 1000), (int)_t0.tv_usec,             \
-                __FILE__, __LINE__, __func__, type , __VA_ARGS__);      \
+    do {                                                                       \
+        struct timeval _t0;                                                    \
+        gettimeofday(&_t0, NULL);                                              \
+        fprintf(stderr, "%03d.%06d %s[%d]: %s() - %s\n  message: " _fmt "%s\n",\
+                (int)(_t0.tv_sec % 1000), (int)_t0.tv_usec,                    \
+                __FILENAME__, __LINE__, __func__, type , __VA_ARGS__);         \
     } while (0);
 #endif /* __KERNEL */
 

@@ -242,6 +242,7 @@ static int axiomnet_probe(struct platform_device *pdev)
     } while(0);
 #endif
 
+    IPRINTF(1, "AXIOM NIC driver loaded");
     DPRINTF("end");
 
     return 0;
@@ -266,6 +267,7 @@ static int axiomnet_remove(struct platform_device *pdev)
     axiom_hw_dev_free(drvdata->dev_api);
     kfree(drvdata);
 
+    IPRINTF(1, "AXIOM NIC driver unloaded");
     DPRINTF("end");
     return 0;
 }
