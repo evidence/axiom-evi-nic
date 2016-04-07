@@ -29,6 +29,8 @@
                                            * table delivered by Master node*/
 #define AXIOM_RT_CMD_INFO               8 /* send a (node_id,if_) pair */
 #define AXIOM_RT_CMD_END_INFO           9 /* end of a node routing table */
+#define AXIOM_RT_CMD_RT_REPLY          10 /* confirmation of routing table
+                                            * reception */
 
 
 
