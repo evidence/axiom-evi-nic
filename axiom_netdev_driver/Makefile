@@ -1,7 +1,7 @@
+AXIOM_INCLUDE := ../include
+
 obj-m := axiom_netdev.o
 axiom_netdev-objs := axiom_kernel_api.o axiom_netdev_module.o
-
-AXIOM_INCLUDE := ../include
 
 PWD := $(shell pwd)
 MKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
@@ -19,6 +19,7 @@ default:
 
 install: default
 	$(MAKE) ARCH=$(ARCH) CROSS_COMPILE=${CCPREFIX} -C $(KERNELDIR) M=$(PWD) INSTALL_MOD_PATH=$(DESTDIR) modules_install
+
 
 clean:
 	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c .tmp_versions
