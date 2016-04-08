@@ -21,12 +21,11 @@ int verbose = 0;
 
 static void usage(void)
 {
-    printf("usage: ./axiom_switch [[-f file_name] | [-t topology_type -n number]\n");
+    printf("usage: ./axiom_switch [[-f file_name] | [-r -n number]\n");
     printf("                                      | [-h]] \n\n");
     printf("-f, --file      file_name           toplogy file \n");
-    printf("-t, --toplogy   topology_type       0:pre-existent topology 1:RING \n");
-    printf("-n,             number              number of pre-existent topology |\n");
-    printf("                                    number of nodes for other topologies\n");
+    printf("-r, --ring                          ring topology \n");
+    printf("-n,             number              number of nodes\n");
     printf("-v, --verbose                       verbose output\n");
     printf("-h, --help                          print this help\n");
 }
@@ -109,25 +108,24 @@ int main (int argc, char *argv[])
 {
     int ret, fds_tail_max_listen, i;
     char filename[100];
-    int n, num_ports = 0, topology = 0, end_server = 0;
+    int n, num_ports = 0, end_server = 0;
     int listen_sd[AXSW_PORT_MAX];
     axiom_small_eth_t axiom_small_eth_msg;
     axsw_logic_t logic_status;
     axsw_event_loop_t el_status;
-    int file_ok = 0, topology_ok = 0, n_ok = 0;
+    int file_ok = 0, ring_ok = 0, n_ok = 0;
     int long_index =0;
     int opt = 0;
     static struct option long_options[] = {
         {"file", required_argument, 0, 'f'},
-        {"topology", required_argument, 0, 't'},
+        {"ring", no_argument, 0, 'r'},
         {"n", required_argument, 0, 'n'},
         {"verbose", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
     };
-    axsw_sim_topology_t sim_toplogy;
 
-    while ((opt = getopt_long(argc, argv,"f:t:n:vh",
+    while ((opt = getopt_long(argc, argv,"f:rn:vh",
                          long_options, &long_index )) != -1) {
         switch (opt) {
             case 'f' :
@@ -139,13 +137,8 @@ int main (int argc, char *argv[])
                 }
                 break;
 
-            case 't' :
-                if (sscanf(optarg, "%i", &topology) != 1) {
-                    usage();
-                    exit(-1);
-                } else {
-                    topology_ok = 1;
-                }
+            case 'r' :
+                ring_ok = 1;
                 break;
 
             case 'n' :
@@ -180,6 +173,34 @@ int main (int argc, char *argv[])
     }
     else
     {
+        /* check ring parameter */
+        if (ring_ok == 1) {
+            /* make ring toplogy with the inserted nuber of nodes */
+            if (n_ok == 1) {
+                if ((n < 2) || (n > AXIOM_MAX_NODES)) {
+                    printf("Please, for RING topology insert a simulation number between 2 and %d\n",
+                            AXIOM_MAX_NODES);
+                    exit (-1);
+                }
+                else
+                {
+                    num_ports = n;
+                    /* init the selected topology */
+                    axsw_init_topology(&logic_status);
+                    axsw_make_ring_toplogy(&logic_status, n);
+                }
+            }
+            else {
+               usage();
+               exit(-1);
+            }
+        }
+        else {
+           usage();
+           exit(-1);
+        }
+
+ #if 0
         /* check topology paramenter */
         if (topology_ok == 1) {
             switch (topology) {
@@ -239,6 +260,7 @@ int main (int argc, char *argv[])
            usage();
            exit(-1);
         }
+#endif
     }
 
     axsw_logic_init(&logic_status, num_ports);
