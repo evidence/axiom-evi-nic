@@ -1,13 +1,13 @@
-#ifndef AXIOM_NIC_API_TYPES_h
-#define AXIOM_NIC_API_TYPES_h
+#ifndef AXIOM_NIC_TYPES_h
+#define AXIOM_NIC_TYPES_h
 
 /*
  * axiom_nic_api_user.h
  *
  * Version:     v0.3.1
- * Last update: 2016-03-14
+ * Last update: 2016-04-08
  *
- * This file contains the AXIOM NIC API for the userspace
+ * This file contains the AXIOM types
  *
  */
 
@@ -36,4 +36,4 @@ typedef struct axiom_args   axiom_args_t;       /* Axiom open arguments */
 
 
 
-#endif /* !AXIOM_NIC_API_TYPES_h */
+#endif /* !AXIOM_NIC_TYPES_h */
