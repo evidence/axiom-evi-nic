@@ -27,7 +27,7 @@ static void usage(void)
     printf("-r, --ring                          ring topology \n");
     printf("-n,             number              number of nodes\n");
     printf("-v, --verbose                       verbose output\n");
-    printf("-h, --help                          print this help\n");
+    printf("-h, --help                          print this help\n\n");
 }
 
 static int
