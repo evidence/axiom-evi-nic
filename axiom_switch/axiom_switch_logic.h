@@ -1,9 +1,6 @@
 #ifndef AXIOM_SWITCH_LOGIC_h
 #define AXIOM_SWITCH_LOGIC_h
 
-#define AXSW_PORT_MAX           16      /* max port supported */
-#define AXSW_PORT_START         33300   /* first port to listen */
-
 /* actual number of defined topology */
 #define AXTP_NUM_SIM        6
 /* maximum topologies number */
