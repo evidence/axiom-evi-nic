@@ -166,7 +166,6 @@ int main (int argc, char *argv[])
     /* check file presence */
     if (file_ok == 1) {
         /* init the topology structure */
-        //axsw_init_topology(&logic_status);
         num_ports = axsw_topology_from_file(&logic_status, filename);
         if (num_ports < 0)
         {
@@ -189,7 +188,6 @@ int main (int argc, char *argv[])
                 {
                     num_ports = n;
                     /* init the selected topology */
-                    //axsw_init_topology(&logic_status);
                     axsw_make_ring_toplogy(&logic_status, n);
                 }
             }

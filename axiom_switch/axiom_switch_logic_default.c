@@ -221,23 +221,16 @@ axsw_topology_from_file(axsw_logic_t *logic, char *filename) {
                    printf ("Error in converting nodes id read from file\n");
                    return -1;
                }
-               else
-               {
-                   if ((val < 0) || (val > AXIOM_MAX_NODES)) {
-                       printf ("The topology contains nodes with id greater than %d\n", AXIOM_MAX_NODES);
-                       return -1;
-                   }
-                   else {
-                       if (if_index >= AXTP_NUM_INTERFACES) {
-                           printf ("The topology contains nodes with more than  than %d interfaces\n", AXTP_NUM_INTERFACES);
-                           return -1;
-                       }
-                       else {
-                           logic->start_topology.topology[line_count-1][if_index] = (uint8_t)val;
-                           if_index++;
-                       }
-                   }
+               if ((val < 0) || (val > AXIOM_MAX_NODES)) {
+                   printf ("The topology contains nodes with id greater than %d\n", AXIOM_MAX_NODES);
+                   return -1;
                }
+               if (if_index >= AXTP_NUM_INTERFACES) {
+                   printf ("The topology contains nodes with more than  than %d interfaces\n", AXTP_NUM_INTERFACES);
+                   return -1;
+               }
+               logic->start_topology.topology[line_count-1][if_index] = (uint8_t)val;
+               if_index++;
            }
            else {
                /* move on to the next character of the line */
