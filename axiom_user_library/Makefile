@@ -8,9 +8,13 @@ CLEANFILES = $(APPS) $(LIBS) *.o
 
 PWD := $(shell pwd)
 #MKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-BUILDROOT := ${PWD}/../../axiom-evi-buildroot
-DESTDIR := ${BUILDROOT}/output/target
-CCPREFIX := ${BUILDROOT}/output/host/usr/bin/arm-linux-
+
+ifeq ($(CCARCH), arm)
+    BUILDROOT := ${PWD}/../../axiom-evi-buildroot
+    DESTDIR := ${BUILDROOT}/output/target
+    CCPREFIX := ${BUILDROOT}/output/host/usr/bin/arm-linux-
+endif
+
 CC := ${CCPREFIX}gcc
 AR := ${CCPREFIX}ar
 RANLIB := ${CCPREFIX}ranlib

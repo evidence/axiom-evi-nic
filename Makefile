@@ -3,9 +3,14 @@ CLEAN_DIR := $(addprefix _clean_, $(APPS_DIR))
 INSTALL_DIR := $(addprefix _install_, $(APPS_DIR))
 
 PWD := $(shell pwd)
-BUILDROOT := ${PWD}/../axiom-evi-buildroot
-DESTDIR := ${BUILDROOT}/output/target
-CCPREFIX := ${BUILDROOT}/output/host/usr/bin/arm-linux-
+
+CCARCH := arm
+
+ifeq ($(CCARCH), arm)
+    BUILDROOT := ${PWD}/../axiom-evi-buildroot
+    DESTDIR := ${BUILDROOT}/output/target
+    CCPREFIX := ${BUILDROOT}/output/host/usr/bin/arm-linux-
+endif
 
 DFLAGS := -g -DPDEBUG
 
@@ -14,13 +19,13 @@ DFLAGS := -g -DPDEBUG
 all: $(APPS_DIR)
 
 $(APPS_DIR):
-	cd $@ && make CCPREFIX=$(CCPREFIX) DFLAGS="$(DFLAGS)"
+	cd $@ && make CCARCH=$(CCARCH) CCPREFIX=$(CCPREFIX) DFLAGS="$(DFLAGS)"
 
 
 install: $(INSTALL_DIR)
 
 $(INSTALL_DIR):
-	cd $(subst _install_,,$@) && make install CCPREFIX=$(CCPREFIX) DESTDIR=$(DESTDIR) DFLAGS="$(DFLAGS)"
+	cd $(subst _install_,,$@) && make install CCARCH=$(CCARCH) CCPREFIX=$(CCPREFIX) DESTDIR=$(DESTDIR) DFLAGS="$(DFLAGS)"
 
 
 clean: $(CLEAN_DIR)

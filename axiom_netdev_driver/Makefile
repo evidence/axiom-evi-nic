@@ -5,20 +5,30 @@ axiom_netdev-objs := axiom_kernel_api.o axiom_netdev_module.o
 
 PWD := $(shell pwd)
 MKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-BUILDROOT := ${PWD}/../../axiom-evi-buildroot
-KERNELDIR := ${BUILDROOT}/output/build/linux-custom
-DESTDIR := ${BUILDROOT}/output/target
-CCPREFIX := ${BUILDROOT}/output/host/usr/bin/arm-linux-
-ARCH := arm
+
+ifeq ($(CCARCH), arm)
+    BUILDROOT := ${PWD}/../../axiom-evi-buildroot
+    KERNELDIR := ${BUILDROOT}/output/build/linux-custom
+    DESTDIR := ${BUILDROOT}/output/target
+    CCPREFIX := ${BUILDROOT}/output/host/usr/bin/arm-linux-
+endif
+
+ifdef CCARCH
+    CROSS_COMPILE := ARCH=$(CCARCH) CROSS_COMPILE=$(CCPREFIX)
+else
+    KERNELDIR := /lib/modules/$(shell uname -r)/build
+    CCPREFIX :=
+    CROSS_COMPILE :=
+endif
 
 DFLAGS := -g -DPDEBUG
 ccflags-y += -Wall $(DFLAGS) -I${MKFILE_DIR}/${AXIOM_INCLUDE}
 
 default:
-	$(MAKE) ARCH=$(ARCH) CROSS_COMPILE=${CCPREFIX} -C $(KERNELDIR) M=$(PWD) modules
+	$(MAKE) $(CROSS_COMPILE) -C $(KERNELDIR) M=$(PWD) modules
 
 install: default
-	$(MAKE) ARCH=$(ARCH) CROSS_COMPILE=${CCPREFIX} -C $(KERNELDIR) M=$(PWD) INSTALL_MOD_PATH=$(DESTDIR) modules_install
+	$(MAKE) $(CROSS_COMPILE) -C $(KERNELDIR) M=$(PWD) INSTALL_MOD_PATH=$(DESTDIR) modules_install
 
 
 clean:

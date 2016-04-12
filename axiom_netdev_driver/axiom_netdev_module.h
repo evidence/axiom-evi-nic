@@ -1,5 +1,5 @@
-#ifndef AXIOM_NETDEV_H
-#define AXIOM_NETDEV_H
+#ifndef AXIOM_NETDEV_MODULE_H
+#define AXIOM_NETDEV_MODULE_H
 
 #include "dprintf.h"
 #include "axiom_nic_regs.h"
@@ -11,8 +11,6 @@
 #define AXIOMNET_DEV_CLASS      "axiomchar"
 
 #define AXIOMNET_MAX_OPEN       1
-
-#define AXIOMNET_SMALL_DESC_SIZE  sizeof(struct axiomRawMsg)
 
 struct axiomnet_ring {
     struct axiomnet_drvdata *drvdata;
@@ -69,4 +67,4 @@ struct axiomnet_priv {
 
 };
 
-#endif /* AXIOM_NETDEV_H */
+#endif /* AXIOM_NETDEV_MODULE_H */

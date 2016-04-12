@@ -15,6 +15,7 @@
 #include <linux/cdev.h>
 #include <linux/device.h>
 #include <linux/types.h>
+#include <linux/sched.h>
 
 #include "axiom_netdev_module.h"
 #include "axiom_netdev_user.h"
@@ -187,7 +188,7 @@ static int axiomnet_probe(struct platform_device *pdev)
     DPRINTF("drvdata: %p", drvdata);
     DPRINTF("--- is_vmalloc_addr(%p): %d", drvdata->vregs, is_vmalloc_addr(drvdata->vregs))
     DPRINTF("--- vregs: %p regs_pfn:%lx regs_phys:%lx res->start:%zx", drvdata->vregs, regs_pfn,
-            regs_phys, drvdata->regs_res->start);
+            regs_phys, (size_t)drvdata->regs_res->start);
 
     axiomnet_disable_irq(drvdata);
 
