@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <ctype.h>
 #include <limits.h>
+#include <math.h>
 
 #include <netinet/in.h>
 
@@ -184,6 +185,110 @@ axsw_make_ring_toplogy(axsw_logic_t *logic, int num_nodes) {
 
     print_computed_toplogy(logic);
 }
+
+/* functions for checking if the inserted number of nodes */
+/* is ok for a mesh topology */
+int axsw_check_mesh_number_of_nodes(int number_of_nodes, uint8_t* row,
+                                    uint8_t* columns)
+{
+    {
+        int i;
+        int sq = (int)sqrt((double)number_of_nodes);
+
+        for (i = sq; i >= 2; i--)
+        {
+            if (number_of_nodes % i == 0)
+            {
+               *row = i;
+               *columns = number_of_nodes / (*row);
+               return 0;
+            }
+        }
+        return -1;
+    }
+}
+
+/* Initialize a ring of 'num_nodes' nodes */
+/* The structure of the start topology is based on the
+ * following hypotesis: each node interfaces are numbered
+ * in the following way
+ *                      |IF1
+ *                      |
+ *           IF2 -------|------- IF0
+ *                      |
+ *                      |IF3
+ */
+void
+axsw_make_mesh_toplogy(axsw_logic_t *logic, int num_nodes,
+                        uint8_t row, uint8_t columns)
+{
+    int i, node_index;
+
+    for (node_index = 0; node_index < num_nodes; node_index++)
+    {
+        /* **************** IF0 of each node ******************/
+        /* general rule for IF0 */
+        logic->start_topology.topology[node_index][0] =  node_index + 1;
+        for (i = 0; i < row; i++)
+        {
+            if (node_index == ((i*columns)+(columns-1)))
+            {
+                /* IF0 rule for nodes of the last column of the topology */
+                logic->start_topology.topology[node_index][0] = (i*columns);
+            }
+        }
+
+        /* **************** IF1 of each node ******************/
+        if (node_index < columns)
+        {
+            /* IF1 rule for nodes of the first row of the topology */
+            logic->start_topology.topology[node_index][1] =
+                                        ((row-1)*columns)+node_index;
+        }
+        else
+        {
+            /* general rule for IF1 */
+            logic->start_topology.topology[node_index][1] =
+                                                node_index - columns;
+        }
+
+        /* **************** IF2 of each node ******************/
+        if (node_index != 0)
+        {
+            /* general rule for IF2 */
+            logic->start_topology.topology[node_index][2] =  node_index - 1;
+        }
+        for (i = 0; i < row; i++)
+        {
+            if (node_index == (i*columns))
+            {
+                /* IF2 rule for nodes of the first column of the topology */
+                logic->start_topology.topology[node_index][2] =
+                                                (node_index + columns -1);
+            }
+        }
+
+        /* **************** IF3 of each node ******************/
+        /* IF3 rule for nodes of the last row of the topology */
+        if ((node_index >= ((row-1)*columns)) && (node_index < num_nodes))
+        {
+            logic->start_topology.topology[node_index][3] =
+                                            node_index - ((row-1)*columns);
+        }
+        else
+        {
+            /* general rule for IF3 */
+            logic->start_topology.topology[node_index][3] =
+                                                        node_index + columns;
+        }
+    }
+
+    logic->start_topology.num_nodes =  num_nodes;
+    logic->start_topology.num_interfaces =  AXTP_NUM_INTERFACES;
+
+    print_computed_toplogy(logic);
+}
+
 
 /* Initializes start_toplogy with the file input topology
    and returns the number of nodes into */

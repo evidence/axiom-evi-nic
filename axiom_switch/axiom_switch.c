@@ -25,6 +25,7 @@ static void usage(void)
     printf("                                      | [-h]] \n\n");
     printf("-f, --file      file_name           toplogy file \n");
     printf("-r, --ring                          ring topology \n");
+    printf("-m, --mesh                          mesh toplogy \n");
     printf("-n,             number              number of nodes\n");
     printf("-v, --verbose                       verbose output\n");
     printf("-h, --help                          print this help\n\n");
@@ -113,19 +114,21 @@ int main (int argc, char *argv[])
     axiom_small_eth_t axiom_small_eth_msg;
     axsw_logic_t logic_status;
     axsw_event_loop_t el_status;
-    int file_ok = 0, ring_ok = 0, n_ok = 0;
+    int file_ok = 0, ring_ok = 0, mesh_ok = 0, n_ok = 0;
+    uint8_t row, columns;
     int long_index =0;
     int opt = 0;
     static struct option long_options[] = {
         {"file", required_argument, 0, 'f'},
         {"ring", no_argument, 0, 'r'},
+        {"mesh", no_argument, 0, 'm'},
         {"n", required_argument, 0, 'n'},
         {"verbose", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv,"f:rn:vh",
+    while ((opt = getopt_long(argc, argv,"f:rmn:vh",
                          long_options, &long_index )) != -1) {
         switch (opt) {
             case 'f' :
@@ -139,6 +142,10 @@ int main (int argc, char *argv[])
 
             case 'r' :
                 ring_ok = 1;
+                break;
+
+            case 'm' :
+                mesh_ok = 1;
                 break;
 
             case 'n' :
@@ -196,7 +203,39 @@ int main (int argc, char *argv[])
                exit(-1);
             }
         }
-        else {
+        else if (mesh_ok == 1)
+        {
+            /* make mesh toplogy with the inserted nuber of nodes */
+            if (n_ok == 1)
+            {
+                if ((n < 4) || (n > AXIOM_MAX_NODES))
+                {
+                    printf("Please, for MESH topology insert a simulation number between 4 and %d\n",
+                            AXIOM_MAX_NODES);
+                    exit (-1);
+                }
+                ret = axsw_check_mesh_number_of_nodes(n, &row, &columns);
+                if (ret == -1)
+                {
+                    printf ("The inserted number of nodes is a prime number\n");
+                    printf ("MESH topology not possible \n");
+                    exit (-1);
+                }
+
+                num_ports = n;
+                /* init the selected topology */
+                axsw_make_mesh_toplogy(&logic_status, n, row, columns);
+
+            }
+            else
+            {
+               usage();
+               exit(-1);
+            }
+
+        }
+        else
+        {
            usage();
            exit(-1);
         }

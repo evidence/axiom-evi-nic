@@ -146,6 +146,11 @@ axsw_logic_clean_vm_sd(axsw_logic_t *logic, int sd)
 void axsw_init_topology(axsw_logic_t *logic);
 void axsw_make_ring_toplogy(axsw_logic_t *logic,
                             int num_nodes);
+int axsw_check_mesh_number_of_nodes(int number_of_nodes, uint8_t* row,
+                                    uint8_t* columns);
+void
+axsw_make_mesh_toplogy(axsw_logic_t *logic, int num_nodes,
+                        uint8_t row, uint8_t columns);
 int axsw_topology_from_file(axsw_logic_t *logic, char *filename);
 
 #endif /* AXIOM_SWITCH_LOGIC_h */
