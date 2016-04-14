@@ -33,20 +33,42 @@ typedef struct axiom_ping_payload {
 } axiom_ping_payload_t;
 
 /*
- * @brief This function receive a discovery message to a neighbour
- *        on a specific interface.
- * @param dev      The axiom devive private data pointer
- * @param src      Local interface or remote id identification
- * @param flag     flags of the small message
- * @param cmd      command of the small message
- * @param payload  payload received
+ * @brief This function sends a init message.
+ *
+ * @param dev           The axiom devive private data pointer
+ * @param dst           Local interface or remote id identification
+ * @param flag          flags of the small message
+ * @param payload       payload to send
  * return Returns ...
  */
 inline static axiom_msg_id_t
-axiom_recv_small_init(axiom_dev_t *dev,axiom_node_id_t *src, axiom_flag_t *flag,
+axiom_send_small_init(axiom_dev_t *dev, axiom_node_id_t dst,
+        axiom_flag_t flag, axiom_payload_t *payload)
+{
+    axiom_msg_id_t ret;
+
+    ret = axiom_send_small(dev, dst, AXIOM_SMALL_PORT_INIT, flag, payload);
+
+    DPRINTF("ret: %x payload: %x", ret, (*(uint32_t*)&payload));
+
+    return ret;
+}
+
+/*
+ * @brief This function receive a init message
+ *
+ * @param dev           The axiom devive private data pointer
+ * @param src           Local interface or remote id identification
+ * @param flag          flags of the small message
+ * @param cmd           command of the small message
+ * @param payload       payload received
+ * return Returns ...
+ */
+inline static axiom_msg_id_t
+axiom_recv_small_init(axiom_dev_t *dev, axiom_node_id_t *src, axiom_flag_t *flag,
         axiom_init_cmd_t *cmd, axiom_payload_t *payload)
 {
-    axiom_port_t port;
+    axiom_port_t port = AXIOM_SMALL_PORT_INIT;
     axiom_msg_id_t ret;
     axiom_init_payload_t *init_payload;
 
