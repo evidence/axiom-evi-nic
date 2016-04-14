@@ -19,7 +19,7 @@ typedef uint8_t		axiom_init_cmd_t;	/* Discovery command */
 
 
 
-/********************************* Packet *************************************/
+/********************************* Packets *************************************/
 typedef struct axiom_init_payload {
     uint8_t  command;                    /* Command of messages */
     uint8_t  spare[3];
@@ -31,6 +31,14 @@ typedef struct axiom_ping_payload {
     uint16_t packet_id;                  /* Packet id */
     uint8_t  spare;                      /* Spare */
 } axiom_ping_payload_t;
+
+
+typedef struct axiom_traceroute_payload {
+    uint8_t  command;                    /* Command of traceroute messages */
+    uint8_t  src_id;                     /* source node id */
+    uint8_t  dst_id;                     /* destination node id */
+    uint8_t  step;                       /* step of the message route */
+} axiom_traceroute_payload_t;
 
 /*
  * @brief This function receive a discovery message to a neighbour

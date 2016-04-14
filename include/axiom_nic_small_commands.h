@@ -31,8 +31,10 @@
 #define AXIOM_RT_CMD_END_INFO           9 /* end of a node routing table */
 #define AXIOM_RT_CMD_RT_REPLY          10 /* confirmation of routing table
                                             * reception */
-#define AXIOM_PING                     11 /* Ping request */
-#define AXIOM_PONG                     12 /* Ping reply */
+#define AXIOM_CMD_PING                 11 /* Ping request */
+#define AXIOM_CMD_PONG                 12 /* Ping reply */
+#define AXIOM_CMD_TRACEROUTE           13 /* Traceroute request */
+#define AXIOM_CMD_TRACEROUTE_REPLY     14 /* Traceroute reply */
 
 
 
