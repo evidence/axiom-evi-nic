@@ -11,15 +11,16 @@
 #include <linux/ioctl.h>
 #include <linux/interrupt.h>
 #include <linux/fs.h>
+#include <linux/list.h>
 #include <linux/mm.h>
 #include <linux/cdev.h>
 #include <linux/device.h>
 #include <linux/types.h>
 #include <linux/sched.h>
 
+#include "axiom_nic_packets.h"
 #include "axiom_netdev_module.h"
 #include "axiom_netdev_user.h"
-#include "axiom_nic_packets.h"
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Evidence SRL");
@@ -131,18 +132,57 @@ inline static int axiomnet_small_rx(struct axiomnet_ring *ring,
     return ret;
 }
 
+static void axiomnet_ring_free(struct axiomnet_drvdata *drvdata,
+            struct axiomnet_ring *ring)
+{
+    struct axiomnet_ring_elem *ring_elem, *tmp;
+
+    /* free empty elem in the ring */
+    list_for_each_entry_safe(ring_elem, tmp, &ring->queue_empty, list) {
+        list_del(&ring_elem->list);
+        kfree(ring_elem);
+    }
+
+    /* free full elem in the ring */
+    list_for_each_entry_safe(ring_elem, tmp, &ring->queue_full, list) {
+        list_del(&ring_elem->list);
+        kfree(ring_elem);
+    }
+
+}
+
 static int axiomnet_ring_init(struct axiomnet_drvdata *drvdata,
         struct axiomnet_ring *ring)
 {
+    struct axiomnet_ring_elem *ring_elem;
+    int i, err;
 
     ring->drvdata = drvdata;
 
     mutex_init(&ring->mutex);
     init_waitqueue_head(&ring->wait_queue);
 
-    return 0;
-}
+    spin_lock_init(&ring->queue_lock);
+    INIT_LIST_HEAD(&ring->queue_empty);
+    INIT_LIST_HEAD(&ring->queue_full);
+    ring->queue_length = AXIOMNET_QUEUE_LENGTH;
 
+    for(i = 0; i < ring->queue_length; i++) {
+        ring_elem = kzalloc(sizeof(*ring_elem), GFP_KERNEL);
+        if (!ring_elem) {
+            err = -ENOMEM;
+            goto err;
+        }
+        INIT_LIST_HEAD(&ring_elem->list);
+        list_add(&ring_elem->list, &ring->queue_empty);
+    }
+
+    return 0;
+err:
+    axiomnet_ring_free(drvdata, ring);
+    DPRINTF("error: %d", err);
+    return err;
+}
 
 static int axiomnet_probe(struct platform_device *pdev)
 {
@@ -262,6 +302,11 @@ static int axiomnet_remove(struct platform_device *pdev)
 {
     struct axiomnet_drvdata *drvdata = platform_get_drvdata(pdev);
     DPRINTF("start");
+
+    axiomnet_disable_irq(drvdata);
+
+    axiomnet_ring_free(drvdata, &drvdata->small_rx_ring);
+    axiomnet_ring_free(drvdata, &drvdata->small_tx_ring);
 
     axiomnet_destroy_chrdev(drvdata, &chrdev);
     free_irq(drvdata->irq, drvdata);

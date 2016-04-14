@@ -12,14 +12,23 @@
 
 #define AXIOMNET_MAX_OPEN       16
 
+#define AXIOMNET_QUEUE_LENGTH   256
+
+struct axiomnet_ring_elem {
+    axiom_small_msg_t small_msg;
+    struct list_head list;
+};
+
 struct axiomnet_ring {
     struct axiomnet_drvdata *drvdata;
 
-    unsigned int desc_count;
-    unsigned int next_to_use;
-    unsigned int next_to_clean;
+    /* hardware interface */
+    spinlock_t queue_lock;
+    struct list_head queue_empty;
+    struct list_head queue_full;
+    int queue_length;
 
-    //spinlock_t lock;
+    /* user-space interface */
     struct mutex mutex;
     wait_queue_head_t wait_queue;
 };
