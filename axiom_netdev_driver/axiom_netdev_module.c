@@ -22,7 +22,7 @@
 #include "axiom_nic_packets.h"
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Evidence S.R.L. - Stefano Garzarella");
+MODULE_AUTHOR("Evidence SRL");
 MODULE_DESCRIPTION("Axiom Network Device Driver");
 MODULE_VERSION("2016-01-22");
 
