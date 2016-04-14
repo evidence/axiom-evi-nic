@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <getopt.h>
+#include <inttypes.h>
 
 #include "axiom_switch.h"
 #include "axiom_switch_packets.h"
@@ -26,6 +27,8 @@ static void usage(void)
     printf("-f, --file      file_name           toplogy file \n");
     printf("-r, --ring                          ring topology \n");
     printf("-m, --mesh                          mesh toplogy \n");
+    printf("-x              number_of_rows      number of rows \n");
+    printf("-y              number_of_columns   number of columns \n");
     printf("-n,             number              number of nodes\n");
     printf("-v, --verbose                       verbose output\n");
     printf("-h, --help                          print this help\n\n");
@@ -115,6 +118,7 @@ int main (int argc, char *argv[])
     axsw_logic_t logic_status;
     axsw_event_loop_t el_status;
     int file_ok = 0, ring_ok = 0, mesh_ok = 0, n_ok = 0;
+    int row_ok = 0, columns_ok = 0;
     uint8_t row, columns;
     int long_index =0;
     int opt = 0;
@@ -122,13 +126,15 @@ int main (int argc, char *argv[])
         {"file", required_argument, 0, 'f'},
         {"ring", no_argument, 0, 'r'},
         {"mesh", no_argument, 0, 'm'},
+        {"x", required_argument, 0, 'x'},
+        {"y", required_argument, 0, 'y'},
         {"n", required_argument, 0, 'n'},
         {"verbose", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv,"f:rmn:vh",
+    while ((opt = getopt_long(argc, argv,"f:rmn:x:y:vh",
                          long_options, &long_index )) != -1) {
         switch (opt) {
             case 'f' :
@@ -154,6 +160,24 @@ int main (int argc, char *argv[])
                     exit(-1);
                 } else {
                     n_ok = 1;
+                }
+                break;
+
+            case 'x' :
+                if (sscanf(optarg, "%" SCNu8, &row) != 1) {
+                    usage();
+                    exit(-1);
+                } else {
+                    row_ok = 1;
+                }
+                break;
+
+            case 'y' :
+                if (sscanf(optarg, "%" SCNu8, &columns) != 1) {
+                    usage();
+                    exit(-1);
+                } else {
+                    columns_ok = 1;
                 }
                 break;
 
@@ -184,6 +208,11 @@ int main (int argc, char *argv[])
     {
         /* check ring parameter */
         if (ring_ok == 1) {
+            if ((row_ok == 1) || (columns_ok == 1))
+            {
+                printf("Please, for RING topology insert only -n option\n");
+                exit (-1);
+            }
             /* make ring toplogy with the inserted nuber of nodes */
             if (n_ok == 1) {
                 if ((n < 2) || (n > AXIOM_MAX_NODES)) {
@@ -206,6 +235,13 @@ int main (int argc, char *argv[])
         else if (mesh_ok == 1)
         {
             /* make mesh toplogy with the inserted nuber of nodes */
+            if ((n_ok == 1) && ((row_ok == 1) || (columns_ok == 1)))
+            {
+                printf("Too many options inserted for MESH topology \n");
+                exit(-1);
+            }
+
+            /* make mesh toplogy with the inserted nuber of nodes */
             if (n_ok == 1)
             {
                 if ((n < 4) || (n > AXIOM_MAX_NODES))
@@ -226,6 +262,11 @@ int main (int argc, char *argv[])
                 /* init the selected topology */
                 axsw_make_mesh_toplogy(&logic_status, n, row, columns);
 
+            }
+            else if ((row_ok == 1) && (columns_ok == 1)) {
+                num_ports = row*columns;
+                /* init the selected topology */
+                axsw_make_mesh_toplogy(&logic_status, num_ports, row, columns);
             }
             else
             {
