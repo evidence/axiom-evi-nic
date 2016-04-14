@@ -10,7 +10,7 @@
 #define AXIOMNET_DEV_NAME       "axiom"
 #define AXIOMNET_DEV_CLASS      "axiomchar"
 
-#define AXIOMNET_MAX_OPEN       1
+#define AXIOMNET_MAX_OPEN       16
 
 struct axiomnet_ring {
     struct axiomnet_drvdata *drvdata;
