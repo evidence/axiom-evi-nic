@@ -18,6 +18,7 @@
 #define AXIOM_SMALL_PORT_INIT           0
 #define AXIOM_SMALL_PORT_DISCOVERY      0 /* XXX: remove */
 #define AXIOM_SMALL_PORT_ROUTING        0
+#define AXIOM_SMALL_PORT_NETUTILS       1
 
 #define AXIOM_SMALL_FLAG_NEIGHBOUR      0x1
 
