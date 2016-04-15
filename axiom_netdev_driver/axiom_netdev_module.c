@@ -11,12 +11,13 @@
 #include <linux/ioctl.h>
 #include <linux/interrupt.h>
 #include <linux/fs.h>
-#include <linux/list.h>
 #include <linux/mm.h>
 #include <linux/cdev.h>
 #include <linux/device.h>
 #include <linux/types.h>
 #include <linux/sched.h>
+
+#include "evi_queue.h"
 
 #include "axiom_nic_packets.h"
 #include "axiom_netdev_module.h"
@@ -88,13 +89,13 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
     return serviced;
 }
 
-inline static unsigned int axiomnet_small_tx_avail(struct axiomnet_ring *ring)
+inline static unsigned int axiomnet_small_tx_avail(struct axiomnet_hw_ring *ring)
 {
     /*TODO: try to minimize the register read */
     return axiom_hw_small_tx_avail(ring->drvdata->dev_api);
 }
 
-inline static int axiomnet_small_tx(struct axiomnet_ring *ring,
+inline static int axiomnet_small_send(struct axiomnet_hw_ring *ring,
         axiom_small_msg_t *msg)
 {
     int ret = 0;
@@ -110,13 +111,13 @@ inline static int axiomnet_small_tx(struct axiomnet_ring *ring,
     return ret;
 }
 
-inline static unsigned int axiomnet_small_rx_avail(struct axiomnet_ring *ring)
+inline static unsigned int axiomnet_small_rx_avail(struct axiomnet_hw_ring *ring)
 {
     /*TODO: try to minimize the register read */
     return axiom_hw_small_rx_avail(ring->drvdata->dev_api);
 }
 
-inline static int axiomnet_small_rx(struct axiomnet_ring *ring,
+inline static int axiomnet_small_recv(struct axiomnet_hw_ring *ring,
         axiom_small_msg_t *msg)
 {
     int ret = 0;
@@ -132,54 +133,104 @@ inline static int axiomnet_small_rx(struct axiomnet_ring *ring,
     return ret;
 }
 
-static void axiomnet_ring_free(struct axiomnet_drvdata *drvdata,
-            struct axiomnet_ring *ring)
+static void axiom_small_rx_dequeue(struct axiomnet_drvdata *drvdata)
 {
-    struct axiomnet_ring_elem *ring_elem, *tmp;
+    struct axiomnet_hw_ring *ring = &drvdata->small_rx_ring;
+    struct axiomnet_sw_queue *sw_queue = &ring->sw_queue;
+    unsigned long flags;
 
-    /* free empty elem in the ring */
-    list_for_each_entry_safe(ring_elem, tmp, &ring->queue_empty, list) {
-        list_del(&ring_elem->list);
-        kfree(ring_elem);
+    unsigned int avail = axiomnet_small_rx_avail(ring);
+    unsigned int received = 0;
+    eviq_pnt_t queue_slot;
+
+    while (avail > 0) { /* something to read */
+        axiom_small_msg_t *msg;
+
+        spin_lock_irqsave(&sw_queue->queue_lock, flags);
+
+        queue_slot = eviq_free_head(&sw_queue->evi_queue);
+        if (queue_slot == EVIQ_NONE) {
+            break;
+        }
+
+        msg = &sw_queue->queue_desc[queue_slot];
+
+        axiom_hw_recv_small(ring->drvdata->dev_api, &msg->header.rx.src,
+                &msg->header.rx.port_flag.raw, &msg->payload);
+
+        eviq_insert(&sw_queue->evi_queue, queue_slot);
+
+        spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
+
+
+        avail--;
+        received++;
     }
 
-    /* free full elem in the ring */
-    list_for_each_entry_safe(ring_elem, tmp, &ring->queue_full, list) {
-        list_del(&ring_elem->list);
-        kfree(ring_elem);
-    }
-
+    axiom_hw_small_rx_pop(ring->drvdata->dev_api, received);
 }
 
-static int axiomnet_ring_init(struct axiomnet_drvdata *drvdata,
-        struct axiomnet_ring *ring)
+static void axiomnet_sw_queue_free(struct axiomnet_sw_queue *queue)
 {
-    struct axiomnet_ring_elem *ring_elem;
-    int i, err;
+    if (queue->queue_desc) {
+        kfree(queue->queue_desc);
+        queue->queue_desc = NULL;
+    }
+
+    eviq_release(&queue->evi_queue);
+}
+
+static int axiomnet_sw_queue_alloc(struct axiomnet_sw_queue *queue)
+{
+    int err;
+
+    spin_lock_init(&queue->queue_lock);
+
+    err = eviq_init(&queue->evi_queue, AXIOMNET_QUEUE_NUM,
+            AXIOMNET_QUEUE_FREE_LEN);
+    if (err) {
+        return -ENOMEM;
+    }
+
+
+    queue->queue_desc = kcalloc(AXIOMNET_QUEUE_FREE_LEN, sizeof(*(queue->queue_desc)),
+            GFP_KERNEL);
+    if (queue->queue_desc == NULL) {
+        err = -ENOMEM;
+        goto err;
+    }
+
+    return 0;
+err:
+    eviq_release(&queue->evi_queue);
+    DPRINTF("error: %d", err);
+    return err;
+}
+
+static void axiomnet_hw_ring_release(struct axiomnet_drvdata *drvdata,
+            struct axiomnet_hw_ring *ring)
+{
+    axiomnet_sw_queue_free(&ring->sw_queue);
+}
+
+static int axiomnet_hw_ring_init(struct axiomnet_drvdata *drvdata,
+        struct axiomnet_hw_ring *ring)
+{
+    int err;
 
     ring->drvdata = drvdata;
 
     mutex_init(&ring->mutex);
     init_waitqueue_head(&ring->wait_queue);
 
-    spin_lock_init(&ring->queue_lock);
-    INIT_LIST_HEAD(&ring->queue_empty);
-    INIT_LIST_HEAD(&ring->queue_full);
-    ring->queue_length = AXIOMNET_QUEUE_LENGTH;
-
-    for(i = 0; i < ring->queue_length; i++) {
-        ring_elem = kzalloc(sizeof(*ring_elem), GFP_KERNEL);
-        if (!ring_elem) {
-            err = -ENOMEM;
-            goto err;
-        }
-        INIT_LIST_HEAD(&ring_elem->list);
-        list_add(&ring_elem->list, &ring->queue_empty);
+    err = axiomnet_sw_queue_alloc(&ring->sw_queue);
+    if (err) {
+        goto err;
     }
 
     return 0;
+
 err:
-    axiomnet_ring_free(drvdata, ring);
     DPRINTF("error: %d", err);
     return err;
 }
@@ -254,15 +305,15 @@ static int axiomnet_probe(struct platform_device *pdev)
     }
 
     /* init SMALL TX ring */
-    err = axiomnet_ring_init(drvdata, &drvdata->small_tx_ring);
+    err = axiomnet_hw_ring_init(drvdata, &drvdata->small_tx_ring);
     if (err) {
         goto free_cdev;
     }
 
     /* init SMALL RX ring */
-    err = axiomnet_ring_init(drvdata, &drvdata->small_rx_ring);
+    err = axiomnet_hw_ring_init(drvdata, &drvdata->small_rx_ring);
     if (err) {
-        goto free_cdev;
+        goto free_tx_ring;
     }
 
     axiomnet_enable_irq(drvdata);
@@ -287,6 +338,8 @@ static int axiomnet_probe(struct platform_device *pdev)
     DPRINTF("end");
 
     return 0;
+free_tx_ring:
+    axiomnet_hw_ring_release(drvdata, &drvdata->small_tx_ring);
 free_cdev:
     axiomnet_destroy_chrdev(drvdata, &chrdev);
 free_irq:
@@ -305,8 +358,8 @@ static int axiomnet_remove(struct platform_device *pdev)
 
     axiomnet_disable_irq(drvdata);
 
-    axiomnet_ring_free(drvdata, &drvdata->small_rx_ring);
-    axiomnet_ring_free(drvdata, &drvdata->small_tx_ring);
+    axiomnet_hw_ring_release(drvdata, &drvdata->small_rx_ring);
+    axiomnet_hw_ring_release(drvdata, &drvdata->small_tx_ring);
 
     axiomnet_destroy_chrdev(drvdata, &chrdev);
     free_irq(drvdata->irq, drvdata);
@@ -391,7 +444,7 @@ static ssize_t axiomnet_read(struct file *filep, char __user *buffer, size_t len
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
-    struct axiomnet_ring *ring = &drvdata->small_rx_ring;
+    struct axiomnet_hw_ring *ring = &drvdata->small_rx_ring;
     axiom_small_msg_t small_msg;
 
     DPRINTF("start");
@@ -421,7 +474,7 @@ static ssize_t axiomnet_read(struct file *filep, char __user *buffer, size_t len
     }
 
     /* copy packet from the ring */
-    if (axiomnet_small_rx(ring, &small_msg)) {
+    if (axiomnet_small_recv(ring, &small_msg)) {
         len = -EFAULT;
         goto err;
     }
@@ -446,7 +499,7 @@ static ssize_t axiomnet_write(struct file *filep, const char __user *buffer,
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
-    struct axiomnet_ring *ring = &drvdata->small_tx_ring;
+    struct axiomnet_hw_ring *ring = &drvdata->small_tx_ring;
     axiom_small_msg_t small_msg;
 
     DPRINTF("start");
@@ -481,7 +534,7 @@ static ssize_t axiomnet_write(struct file *filep, const char __user *buffer,
     }
 
     /* copy packet into the ring */
-    if (axiomnet_small_tx(ring, &small_msg)) {
+    if (axiomnet_small_send(ring, &small_msg)) {
         len = -EFAULT;
         goto err;
     }
