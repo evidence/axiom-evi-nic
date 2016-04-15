@@ -35,6 +35,7 @@
 #define AXIOM_CMD_PONG                 12 /* Ping reply */
 #define AXIOM_CMD_TRACEROUTE           13 /* Traceroute request */
 #define AXIOM_CMD_TRACEROUTE_REPLY     14 /* Traceroute reply */
+#define AXIOM_CMD_NETPERF              15 /* Network performance request */
 
 
 
