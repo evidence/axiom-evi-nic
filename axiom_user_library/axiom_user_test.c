@@ -5,6 +5,7 @@
 
 #include "dprintf.h"
 #include "axiom_nic_api_user.h"
+#include "axiom_nic_packets.h"
 
 int verbose = 1;
 
@@ -77,14 +78,14 @@ int main (int argc, char *argv[])
     payload = 1234567;
 
     /* loopback */
-    err = axiom_send_small(dev, 22, 1, 0, &payload);
+    err = axiom_send_small(dev, 22, 1, AXIOM_SMALL_FLAG_DATA, &payload);
     IPRINTF(verbose, "send small nodeid = 0x%x port = 0x%x flag = 0x%x payload = 0x%x", 22, 1, 0, payload);
 
     err = axiom_recv_small(dev, &node_id, &port, &flag, &payload);
     IPRINTF(verbose, "recv small nodeid = 0x%x port = 0x%x flag = 0x%x payload = 0x%x", node_id, port, flag, payload);
 
     axiom_set_ni_control(dev, 0x00000000);
-    err = axiom_send_small(dev, 22, 1, 0, &payload);
+    err = axiom_send_small(dev, 22, 1, AXIOM_SMALL_FLAG_DATA, &payload);
     IPRINTF(verbose, "send small nodeid = 0x%x port = 0x%x flag = 0x%x payload = 0x%x", 22, 1, 0, payload);
 
 

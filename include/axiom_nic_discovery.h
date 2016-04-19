@@ -56,7 +56,7 @@ axiom_send_small_discovery(axiom_dev_t *dev, axiom_if_id_t my_interface,
                                 (0x0F & payload_dst_if)) ;
 
 
-    ret = axiom_send_small(dev, my_interface, AXIOM_SMALL_PORT_DISCOVERY,
+    ret = axiom_send_small(dev, my_interface, AXIOM_SMALL_PORT_INIT,
             AXIOM_SMALL_FLAG_NEIGHBOUR, (axiom_payload_t*)(&payload));
 
 
@@ -86,12 +86,12 @@ axiom_recv_small_discovery(axiom_dev_t *dev, axiom_discovery_cmd_t *cmd,
     axiom_flag_t flag;
     axiom_msg_id_t ret;
 
-    port = AXIOM_SMALL_PORT_DISCOVERY;
+    port = AXIOM_SMALL_PORT_INIT;
     flag = AXIOM_SMALL_FLAG_NEIGHBOUR;
     ret = axiom_recv_small(dev, my_interface, &port, &flag,
             (axiom_payload_t*)(&payload));
 
-    if ((ret == AXIOM_RET_OK) && (port == AXIOM_SMALL_PORT_DISCOVERY))
+    if ((ret == AXIOM_RET_OK) && (port == AXIOM_SMALL_PORT_INIT))
     {
         /* payload info */
         *cmd = payload.command;

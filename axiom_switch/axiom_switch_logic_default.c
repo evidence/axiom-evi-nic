@@ -59,7 +59,7 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
     /* capture AXIOM_DSCV_CMD_SETID messages in order to memorize socket
      * descriptor associated to each node id for small messages forwarding */
     if (neighbour_msg->small_msg.header.tx.port_flag.field.port
-            == AXIOM_SMALL_PORT_DISCOVERY) {
+            == AXIOM_SMALL_PORT_INIT) {
         axiom_discovery_payload_t *disc_payload;
 
         disc_payload = (axiom_discovery_payload_t *)

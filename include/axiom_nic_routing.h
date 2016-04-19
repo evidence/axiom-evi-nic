@@ -48,7 +48,7 @@ axiom_send_small_delivery(axiom_dev_t *dev, axiom_node_id_t dst_node_id,
     payload.node_id = payload_node_id;
     payload.if_id = payload_if_id;
 
-    ret = axiom_send_small(dev, dst_node_id, AXIOM_SMALL_PORT_ROUTING,
+    ret = axiom_send_small(dev, dst_node_id, AXIOM_SMALL_PORT_INIT,
             0,  (axiom_payload_t*)(&payload));
 
     return ret;
@@ -78,12 +78,12 @@ axiom_recv_small_delivery(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
     axiom_flag_t flag;
     axiom_msg_id_t ret;
 
-    port = AXIOM_SMALL_PORT_ROUTING;
+    port = AXIOM_SMALL_PORT_INIT;
     flag = 0;
     /* receive routing info with small messgees */
     ret = axiom_recv_small(dev, src_node_id, &port, &flag, (axiom_payload_t*)(&payload));
 
-    if ((ret == AXIOM_RET_OK) && (port == AXIOM_SMALL_PORT_ROUTING))
+    if ((ret == AXIOM_RET_OK) && (port == AXIOM_SMALL_PORT_INIT))
     {
         /* payload info */
         *cmd = payload.command;
@@ -116,7 +116,7 @@ axiom_send_small_set_routing(axiom_dev_t *dev, axiom_if_id_t my_interface,
     payload.node_id = 0;
     payload.if_id = 0;
 
-    ret = axiom_send_small(dev, my_interface, AXIOM_SMALL_PORT_ROUTING,
+    ret = axiom_send_small(dev, my_interface, AXIOM_SMALL_PORT_INIT,
             AXIOM_SMALL_FLAG_NEIGHBOUR, (axiom_payload_t*)(&payload));
 
     return ret;
@@ -140,12 +140,12 @@ axiom_recv_small_set_routing(axiom_dev_t *dev, axiom_if_id_t *my_interface,
     axiom_flag_t flag;
     axiom_msg_id_t ret;
 
-    port = AXIOM_SMALL_PORT_ROUTING;
+    port = AXIOM_SMALL_PORT_INIT;
     flag = AXIOM_SMALL_FLAG_NEIGHBOUR;
     /* receive routing info with small messgees */
     ret = axiom_recv_small(dev, my_interface, &port, &flag, (axiom_payload_t*)(&payload));
 
-    if ((ret == AXIOM_RET_OK) && (port == AXIOM_SMALL_PORT_ROUTING))
+    if ((ret == AXIOM_RET_OK) && (port == AXIOM_SMALL_PORT_INIT))
     {
         /* payload info */
         *cmd = payload.command;
