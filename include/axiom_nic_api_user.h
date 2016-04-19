@@ -35,11 +35,23 @@ axiom_close(axiom_dev_t *dev);
 
 /*
  * @brief This function bind the current process on a specified port
- * @param port Port numberr
+ * @param dev The axiom devive private data pointer
+ * @param port Port number
  * @return Returns AXIOM_RET_OK on success, an error otherwise.
  */
 axiom_err_t
 axiom_bind(axiom_dev_t *dev, axiom_port_t port);
+
+/*
+ * @brief This function return the interface to reach a specified node
+ * @param dev The axiom devive private data pointer
+ * @param dst_id Node id of target node
+ * @param if_number Interface id to reache a node
+ * @return Returns AXIOM_RET_OK on success, an error otherwise.
+ */
+axiom_err_t
+axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
+        axiom_if_id_t *if_number);
 
 /*
  * @brief This function sends small data to a remote node.
