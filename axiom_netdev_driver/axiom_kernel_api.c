@@ -16,6 +16,9 @@ MODULE_VERSION("2016-01-22");
 
 typedef struct axiom_dev {
     void __iomem *vregs;
+
+    uint32_t tx_tail;
+    uint32_t rx_head;
 } axiom_dev_t;
 
 axiom_dev_t *
@@ -25,6 +28,9 @@ axiom_hw_dev_alloc(void *vregs)
 
     dev = vmalloc(sizeof(*dev));
     dev->vregs = vregs;
+
+    dev->tx_tail = ioread32(dev->vregs + AXIOMREG_IO_SMALL_TX_TAIL);
+    dev->rx_head = ioread32(dev->vregs + AXIOMREG_IO_SMALL_RX_HEAD);
 
     return dev;
 }
@@ -40,11 +46,8 @@ axiom_msg_id_t
 axiom_hw_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
         axiom_port_flag_t port_flag, axiom_payload_t *payload)
 {
-    uint32_t tail;
+    uint32_t tail = dev->tx_tail;
     uint16_t header;
-
-    /* XXX: check the space? */
-    tail = ioread32(dev->vregs + AXIOMREG_IO_SMALL_TX_TAIL);
 
     header = ((dst_id << 8) | port_flag);
     /* write header */
@@ -53,6 +56,12 @@ axiom_hw_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
     iowrite32(*payload, dev->vregs + AXIOMREG_IO_SMALL_TX_BASE + 8*(tail) + 4);
 
     DPRINTF("tail: %x header: %x payload: %x", tail, header, *((uint32_t*)payload));
+
+    dev->tx_tail++;
+    /* module is expensive */
+    if (dev->tx_tail == AXIOMREG_LEN_SMALL_QUEUE) {
+        dev->tx_tail = 0;
+    }
 
     return 0;
 }
@@ -72,17 +81,15 @@ axiom_hw_small_tx_push(axiom_dev_t *dev, axiom_small_len_t count)
 {
     /*TODO: check how many descriptors are pushed */
     iowrite32(count, dev->vregs + AXIOMREG_IO_SMALL_TX_PUSH);
+    dev->tx_tail = ioread32(dev->vregs + AXIOMREG_IO_SMALL_TX_TAIL);
 }
 
 axiom_msg_id_t
 axiom_hw_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
         axiom_port_flag_t *port_flag, axiom_payload_t *payload)
 {
-    uint32_t head;
+    uint32_t head = dev->rx_head;
     uint16_t header;
-
-    /* XXX: check available? */
-    head = ioread32(dev->vregs + AXIOMREG_IO_SMALL_RX_HEAD);
 
     /* read header */
     header = ioread16(dev->vregs + AXIOMREG_IO_SMALL_RX_BASE + 8*(head));
@@ -92,6 +99,12 @@ axiom_hw_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
 
     /* read payload */
     *payload = ioread32(dev->vregs + AXIOMREG_IO_SMALL_RX_BASE + 8*(head) + 4);
+
+    dev->rx_head++;
+    /* module is expensive */
+    if (dev->rx_head == AXIOMREG_LEN_SMALL_QUEUE) {
+        dev->rx_head = 0;
+    }
 
     return 0;
 }
@@ -111,6 +124,7 @@ axiom_hw_small_rx_pop(axiom_dev_t *dev, axiom_small_len_t count)
 {
     /*TODO: check how many descriptors are poped */
     iowrite32(count, dev->vregs + AXIOMREG_IO_SMALL_RX_POP);
+    dev->rx_head = ioread32(dev->vregs + AXIOMREG_IO_SMALL_RX_HEAD);
 }
 
 uint32_t

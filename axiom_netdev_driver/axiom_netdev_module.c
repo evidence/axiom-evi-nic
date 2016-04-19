@@ -111,63 +111,101 @@ inline static int axiomnet_small_send(struct axiomnet_hw_ring *ring,
     return ret;
 }
 
-inline static unsigned int axiomnet_small_rx_avail(struct axiomnet_hw_ring *ring)
-{
-    /*TODO: try to minimize the register read */
-    return axiom_hw_small_rx_avail(ring->drvdata->dev_api);
-}
-
-inline static int axiomnet_small_recv(struct axiomnet_hw_ring *ring,
-        axiom_small_msg_t *msg)
-{
-    int ret = 0;
-
-    if (axiom_hw_recv_small(ring->drvdata->dev_api, &msg->header.rx.src,
-                &msg->header.rx.port_flag.raw, &msg->payload)) {
-        ret = -1;
-    }
-
-    /* TODO: implement batch */
-    axiom_hw_small_rx_pop(ring->drvdata->dev_api, 1);
-
-    return ret;
-}
-
 static void axiom_small_rx_dequeue(struct axiomnet_drvdata *drvdata)
 {
     struct axiomnet_hw_ring *ring = &drvdata->small_rx_ring;
     struct axiomnet_sw_queue *sw_queue = &ring->sw_queue;
     unsigned long flags;
-
-    unsigned int avail = axiomnet_small_rx_avail(ring);
-    unsigned int received = 0;
+    uint32_t avail, received = 0;
+    int port;
     eviq_pnt_t queue_slot;
+    DPRINTF("start");
 
-    while (avail > 0) { /* something to read */
-        axiom_small_msg_t *msg;
+    spin_lock_irqsave(&sw_queue->queue_lock, flags);
 
-        spin_lock_irqsave(&sw_queue->queue_lock, flags);
+    /* external cycle to recheck new batch */
+    while ((avail = axiom_hw_small_rx_avail(ring->drvdata->dev_api)) > 0) {
 
-        queue_slot = eviq_free_head(&sw_queue->evi_queue);
-        if (queue_slot == EVIQ_NONE) {
-            break;
+        while (avail > 0) { /* something to read */
+            axiom_small_msg_t *msg;
+
+            queue_slot = eviq_free_head(&sw_queue->evi_queue);
+            if (queue_slot == EVIQ_NONE) {
+                break;
+            }
+
+            msg = &sw_queue->queue_desc[queue_slot];
+
+            axiom_hw_recv_small(ring->drvdata->dev_api, &msg->header.rx.src,
+                    &msg->header.rx.port_flag.raw, &msg->payload);
+            port = msg->header.rx.port_flag.field.port;
+
+            eviq_insert(&sw_queue->evi_queue, port);
+            DPRINTF("queue insert - avail: %d queue_slot: %d port: %d", avail,
+                    queue_slot, port);
+
+            avail--;
+            received++;
         }
 
-        msg = &sw_queue->queue_desc[queue_slot];
-
-        axiom_hw_recv_small(ring->drvdata->dev_api, &msg->header.rx.src,
-                &msg->header.rx.port_flag.raw, &msg->payload);
-
-        eviq_insert(&sw_queue->evi_queue, queue_slot);
-
-        spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
-
-
-        avail--;
-        received++;
+        if (received > 0)
+            axiom_hw_small_rx_pop(ring->drvdata->dev_api, received);
     }
 
-    axiom_hw_small_rx_pop(ring->drvdata->dev_api, received);
+    spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
+    DPRINTF("end - received: %d", received);
+}
+
+inline static int axiomnet_small_rx_avail(struct axiomnet_hw_ring *ring,
+        int port)
+{
+    int avail;
+
+    /* fetch new packets */
+    axiom_small_rx_dequeue(ring->drvdata);
+
+    avail = eviq_queue_avail(&ring->sw_queue.evi_queue, port);
+    DPRINTF("queue - avail %d port: %d", avail, port);
+
+    return avail;
+}
+
+inline static int axiomnet_small_recv(struct axiomnet_hw_ring *ring, int port,
+        char __user *buffer, size_t len)
+{
+    struct axiomnet_sw_queue *sw_queue = &ring->sw_queue;
+    axiom_small_msg_t *small_msg;
+    eviq_pnt_t queue_slot;
+    unsigned long flags;
+
+    DPRINTF("start");
+
+    if (len != sizeof(*small_msg)) {
+        return -EFBIG;
+    }
+
+    spin_lock_irqsave(&sw_queue->queue_lock, flags);
+    queue_slot = eviq_remove(&sw_queue->evi_queue, port);
+
+    /* XXX: impossible! */
+    if (queue_slot == EVIQ_NONE) {
+        len = -EFAULT;
+        goto err;
+    }
+    DPRINTF("queue remove - queue_slot: %d port: %d", queue_slot, port);
+
+    small_msg = &sw_queue->queue_desc[queue_slot];
+
+    if (copy_to_user(buffer, small_msg, sizeof(*small_msg))) {
+        len = -EFAULT;
+        goto err;
+    }
+
+err:
+    spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
+
+    DPRINTF("end len:%d", len);
+    return len;
 }
 
 static void axiomnet_sw_queue_free(struct axiomnet_sw_queue *queue)
@@ -396,6 +434,9 @@ static int axiomnet_open(struct inode *inode, struct file *filep)
     if (priv == NULL)
         return -ENOMEM;
 
+    /* set invalid port */
+    priv->bind_port = AXIOMNET_PORT_INVALID;
+
     mutex_lock(&drvdata->lock);
     if (drvdata->used >= AXIOMNET_MAX_OPEN) {
         err = -EBUSY;
@@ -445,13 +486,21 @@ static ssize_t axiomnet_read(struct file *filep, char __user *buffer, size_t len
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_hw_ring *ring = &drvdata->small_rx_ring;
-    axiom_small_msg_t small_msg;
+    int port = priv->bind_port;
 
     DPRINTF("start");
+
+    /* check bind */
+    if (port == AXIOMNET_PORT_INVALID) {
+        EPRINTF("port not assigned");
+        return -EFAULT;
+    }
+
+    /* TODO: use 1 mutex per port */
     if (mutex_lock_interruptible(&ring->mutex))
         return -ERESTARTSYS;
 
-    while (axiomnet_small_rx_avail(ring) == 0) { /* nothing to read */
+    while (axiomnet_small_rx_avail(ring, port) == 0) { /* nothing to read */
         mutex_unlock(&ring->mutex);
 
         /* no blocking write */
@@ -460,34 +509,20 @@ static ssize_t axiomnet_read(struct file *filep, char __user *buffer, size_t len
 
         /* put the process in the wait_queue to wait new space (irq) */
         if (wait_event_interruptible(ring->wait_queue,
-                    axiomnet_small_rx_avail(ring) > 0))
+                    axiomnet_small_rx_avail(ring, port) != 0))
             return -ERESTARTSYS;
 
         if (mutex_lock_interruptible(&ring->mutex))
             return -ERESTARTSYS;
     }
 
-    /* XXX: we support only small message for now */
-    if (len != sizeof(small_msg)) {
-        len = -EFBIG;
-        goto err;
-    }
-
     /* copy packet from the ring */
-    if (axiomnet_small_recv(ring, &small_msg)) {
-        len = -EFAULT;
-        goto err;
-    }
-
-    if (copy_to_user(buffer, &small_msg, sizeof(small_msg))) {
-        len = -EFAULT;
-        goto err;
-    }
+    len = axiomnet_small_recv(ring, port, buffer, len);
 
     /* TODO: flush rx ring */
     /* TODO: implement flush (fops) and ioctl to enable/disable auto flush */
 
-err:
+//err:
     mutex_unlock(&ring->mutex);
 
     DPRINTF("end");
@@ -515,7 +550,7 @@ static ssize_t axiomnet_write(struct file *filep, const char __user *buffer,
 
         /* put the process in the wait_queue to wait new space (irq) */
         if (wait_event_interruptible(ring->wait_queue,
-                    axiomnet_small_tx_avail(ring) > 0))
+                    axiomnet_small_tx_avail(ring) != 0))
             return -ERESTARTSYS;
 
         if (mutex_lock_interruptible(&ring->mutex))
@@ -618,6 +653,7 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
     case AXNET_BIND:
         get_user(buf_uint8, (uint8_t __user*)arg);
         priv->bind_port = buf_uint8;
+        DPRINTF("bind port: %x", priv->bind_port);
         break;
     default:
         ret = -EINVAL;

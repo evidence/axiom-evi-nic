@@ -15,6 +15,8 @@
 #define AXIOMNET_QUEUE_NUM              8
 #define AXIOMNET_QUEUE_FREE_LEN         (256 * AXIOMNET_QUEUE_NUM)
 
+#define AXIOMNET_PORT_INVALID   -1
+
 struct axiomnet_sw_queue {
     spinlock_t queue_lock;
 

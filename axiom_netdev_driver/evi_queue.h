@@ -79,7 +79,7 @@ err:
     return -1;
 }
 
-inline static eviq_pnt_t
+inline static int
 eviq_free_avail(evi_queue_t *q)
 {
     return (q->free != EVIQ_NONE);
@@ -121,10 +121,16 @@ eviq_insert(evi_queue_t *q, int queue_id)
     return slot;
 }
 
-inline static eviq_pnt_t
+inline static int
 eviq_queue_avail(evi_queue_t *q, int queue_id)
 {
     return (q->head[queue_id] != EVIQ_NONE);
+}
+
+inline static eviq_pnt_t
+eviq_queue_head(evi_queue_t *q, int queue_id)
+{
+    return q->head[queue_id];
 }
 
 inline static eviq_pnt_t
