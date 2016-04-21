@@ -22,16 +22,26 @@ int verbose = 0;
 
 static void usage(void)
 {
-    printf("usage: ./axiom_switch [[-f file_name] | [-r -n number]\n");
-    printf("                                      | [-h]] \n\n");
-    printf("-f, --file      file_name           toplogy file \n");
-    printf("-r, --ring                          ring topology \n");
-    printf("-m, --mesh                          mesh toplogy \n");
-    printf("-x              number_of_rows      number of rows \n");
-    printf("-y              number_of_columns   number of columns \n");
-    printf("-n,             number              number of nodes\n");
-    printf("-v, --verbose                       verbose output\n");
-    printf("-h, --help                          print this help\n\n");
+    printf("usage: axiom_switch [arguments] -f file_name | -r -n nodes |\n");
+    printf("                                -m -n nodes | -m -x cols -y rows\n");
+    printf("AXIOM switch: emulate network topology to interconnect multiple\n");
+    printf("              QEMU AXIOM VMs to each other.\n\n");
+    printf("Arguments:\n");
+    printf("-f, --file      file_name   file that contains the topology\n");
+    printf("                            The file must have one line per node,\n");
+    printf("                            each line (0...N-1) must contain 4 integer,\n");
+    printf("                            line_x: IF0 IF1 IF2 IF3\n");
+    printf("                            eg. line_2:  3  1  0  255\n");
+    printf("                            node_2 is connected on its interface IF0 with node_3,\n");
+    printf("                            on IF1 with node_1, on IF2 with node_0\n");
+    printf("                            and IF3 is disconnected (255 = NULL_NODE)\n");
+    printf("-r, --ring                  create a ring topology \n");
+    printf("-n, --nodes     nodes       number of nodes (ring or 2-D mesh)\n");
+    printf("-m, --mesh                  create a 2-D torus mesh toplogy \n");
+    printf("-x, --columns   cols        number of columns (2-D mesh)\n");
+    printf("-y, --rows      rows        number of rows (2-D mesh)\n");
+    printf("-v, --verbose               verbose output\n");
+    printf("-h, --help                  print this help\n\n");
 }
 
 static int
@@ -126,9 +136,9 @@ int main (int argc, char *argv[])
         {"file", required_argument, 0, 'f'},
         {"ring", no_argument, 0, 'r'},
         {"mesh", no_argument, 0, 'm'},
-        {"x", required_argument, 0, 'x'},
-        {"y", required_argument, 0, 'y'},
-        {"n", required_argument, 0, 'n'},
+        {"columns", required_argument, 0, 'x'},
+        {"rows", required_argument, 0, 'y'},
+        {"nodes", required_argument, 0, 'n'},
         {"verbose", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
@@ -164,7 +174,7 @@ int main (int argc, char *argv[])
                 break;
 
             case 'x' :
-                if (sscanf(optarg, "%" SCNu8, &row) != 1) {
+                if (sscanf(optarg, "%" SCNu8, &columns) != 1) {
                     usage();
                     exit(-1);
                 } else {
@@ -173,7 +183,7 @@ int main (int argc, char *argv[])
                 break;
 
             case 'y' :
-                if (sscanf(optarg, "%" SCNu8, &columns) != 1) {
+                if (sscanf(optarg, "%" SCNu8, &row) != 1) {
                     usage();
                     exit(-1);
                 } else {
