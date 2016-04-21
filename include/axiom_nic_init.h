@@ -15,7 +15,7 @@
 #include "axiom_nic_small_commands.h"
 
 /********************************* Types **************************************/
-typedef uint8_t		axiom_init_cmd_t;	/* Discovery command */
+typedef uint8_t		axiom_init_cmd_t;	/* init command */
 
 
 
@@ -28,8 +28,8 @@ typedef struct axiom_init_payload {
 
 typedef struct axiom_ping_payload {
     uint8_t  command;                    /* Command of ping-pong messages */
-    uint16_t packet_id;                  /* Packet id */
     uint8_t  spare;                      /* Spare */
+    uint16_t packet_id;                  /* Packet id */
 } axiom_ping_payload_t;
 
 
@@ -40,17 +40,12 @@ typedef struct axiom_traceroute_payload {
     uint8_t  step;                       /* Step of the message route */
 } axiom_traceroute_payload_t;
 
+
 typedef struct axiom_netperf_payload {
     uint8_t  command;                    /* Command of netperf messages */
-    uint16_t total_bytes;                /* Total number of bytes to send */
-    uint8_t  spare;                      /* Spare */
+    uint8_t  offset;                     /* Packet offset */
+    uint16_t data;                       /* Packet data */
 } axiom_netperf_payload_t;
-
-typedef struct axiom_netperf_time_payload {
-    uint8_t  command;                   /* Command of netperf time messages */
-    uint8_t  byte_order;                /* Message order  */
-    uint16_t time;                      /* 16 bits of timer to send */
-} axiom_netperf_time_payload_t;
 
 /*
  * @brief This function sends a init message.
