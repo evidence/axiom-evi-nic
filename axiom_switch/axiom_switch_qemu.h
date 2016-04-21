@@ -18,8 +18,7 @@ axsw_qemu_send(int fd, axiom_small_eth_t *small_eth)
 
     /* send ethernet packet */
     ret = send(fd, small_eth, sizeof(*small_eth), 0);
-    if (ret != sizeof(*small_eth))
-    {
+    if (ret != sizeof(*small_eth)) {
         EPRINTF("message send error - return: %d errno: %d", ret, errno);
         return -1;
     }
@@ -57,7 +56,8 @@ axsw_qemu_recv(int fd, axiom_small_eth_t *small_eth)
     }
 
     if (ret != axiom_msg_length) {
-        EPRINTF("unexpected length - expected: %d received: %d", axiom_msg_length, ret);
+        EPRINTF("unexpected length - expected: %d received: %d",
+                axiom_msg_length, ret);
         goto skip;
     }
 
@@ -90,7 +90,8 @@ axsw_qemu_send_ifinfo(int fd, axiom_if_id_t if_id, int connected)
         ((uint8_t *)&small_eth.small_msg.payload)[0] =
             AXIOMREG_IFINFO_CONNECTED | AXIOMREG_IFINFO_RX | AXIOMREG_IFINFO_TX;
     }
-    DPRINTF("if_id: %x if_info: %x", if_id, ((uint8_t *)&small_eth.small_msg.payload)[0]);
+    DPRINTF("if_id: %x if_info: %x", if_id,
+            ((uint8_t *)&small_eth.small_msg.payload)[0]);
 
     return axsw_qemu_send(fd, &small_eth);
 }

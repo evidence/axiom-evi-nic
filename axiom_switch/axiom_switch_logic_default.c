@@ -48,7 +48,7 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
 
     /* find the recipient receiving interface */
     neighbour_if = axsw_logic_find_neighbour_if(logic, src_vm,
-                                                neighbour_msg->small_msg.header.tx.dst);
+            neighbour_msg->small_msg.header.tx.dst);
     if (neighbour_if < 0) {
         return -1;
     }
@@ -96,11 +96,12 @@ axsw_forward_small(axsw_logic_t *logic, axiom_small_eth_t *small_msg,
     return axsw_logic_find_small_sd(logic, dst_node);
 }
 
-static void
-print_computed_toplogy(axsw_logic_t *logic)  {
+void
+axsw_print_topology(axsw_logic_t *logic)
+{
    int i, j;
 
-   printf("*** Start Toplogy ***\n");
+   printf("--- AXIOM switch topology ---\n");
    printf("Node");
    for (j = 0; j < logic->start_topology.num_interfaces; j++) {
        printf("\tIF%d", j);
@@ -118,7 +119,8 @@ print_computed_toplogy(axsw_logic_t *logic)  {
 
 
 int
-axsw_logic_forward(axsw_logic_t *logic, int src_sd, axiom_small_eth_t *axiom_packet)
+axsw_logic_forward(axsw_logic_t *logic, int src_sd,
+        axiom_small_eth_t *axiom_packet)
 {
     int dst_sd;
 
@@ -129,7 +131,8 @@ axsw_logic_forward(axsw_logic_t *logic, int src_sd, axiom_small_eth_t *axiom_pac
 
     DPRINTF("src_sd: %d", src_sd);
 
-    if (axiom_packet->small_msg.header.tx.port_flag.field.flag & AXIOM_SMALL_FLAG_NEIGHBOUR) {
+    if (axiom_packet->small_msg.header.tx.port_flag.field.flag &
+            AXIOM_SMALL_FLAG_NEIGHBOUR) {
         /* neighbour message */
         dst_sd = axsw_forward_neighbour(logic, axiom_packet, src_sd);
     } else {
@@ -147,10 +150,11 @@ axsw_logic_forward(axsw_logic_t *logic, int src_sd, axiom_small_eth_t *axiom_pac
     return dst_sd;
 }
 
-/* functions for toplogy management */
-/* Initializes start_toplogy with no connected nodes */
+/* functions for topology management */
+/* Initializes start_topology with no connected nodes */
 void
-axsw_init_topology(axsw_logic_t *logic) {
+axsw_init_topology(axsw_logic_t *logic)
+{
     int i,j;
 
     for (i = 0; i < AXIOM_MAX_NODES; i++) {
@@ -164,8 +168,8 @@ axsw_init_topology(axsw_logic_t *logic) {
 
 /* Initialize a ring of 'num_nodes' nodes */
 void
-axsw_make_ring_toplogy(axsw_logic_t *logic, int num_nodes) {
-
+axsw_make_ring_topology(axsw_logic_t *logic, int num_nodes)
+{
     int i;
 
     /* first direction */
@@ -183,7 +187,6 @@ axsw_make_ring_toplogy(axsw_logic_t *logic, int num_nodes) {
     logic->start_topology.num_nodes =  num_nodes;
     logic->start_topology.num_interfaces =  AXTP_NUM_INTERFACES;
 
-    print_computed_toplogy(logic);
 }
 
 /* functions for checking if the inserted number of nodes */
@@ -191,21 +194,17 @@ axsw_make_ring_toplogy(axsw_logic_t *logic, int num_nodes) {
 int axsw_check_mesh_number_of_nodes(int number_of_nodes, uint8_t* row,
                                     uint8_t* columns)
 {
-    {
-        int i;
-        int sq = (int)sqrt((double)number_of_nodes);
+    int i;
+    int sq = (int)sqrt((double)number_of_nodes);
 
-        for (i = sq; i >= 2; i--)
-        {
-            if (number_of_nodes % i == 0)
-            {
-               *row = i;
-               *columns = number_of_nodes / (*row);
-               return 0;
-            }
+    for (i = sq; i >= 2; i--) {
+        if (number_of_nodes % i == 0) {
+            *row = i;
+            *columns = number_of_nodes / (*row);
+            return 0;
         }
-        return -1;
     }
+    return -1;
 }
 
 /* Initialize a ring of 'num_nodes' nodes */
@@ -219,78 +218,64 @@ int axsw_check_mesh_number_of_nodes(int number_of_nodes, uint8_t* row,
  *                      |IF3
  */
 void
-axsw_make_mesh_toplogy(axsw_logic_t *logic, int num_nodes,
+axsw_make_mesh_topology(axsw_logic_t *logic, int num_nodes,
                         uint8_t row, uint8_t columns)
 {
     int i, node_index;
 
-    for (node_index = 0; node_index < num_nodes; node_index++)
-    {
+    for (node_index = 0; node_index < num_nodes; node_index++) {
         /* **************** IF0 of each node ******************/
         /* general rule for IF0 */
         logic->start_topology.topology[node_index][0] =  node_index + 1;
-        for (i = 0; i < row; i++)
-        {
-            if (node_index == ((i*columns)+(columns-1)))
-            {
+        for (i = 0; i < row; i++) {
+            if (node_index == ((i*columns)+(columns-1))) {
                 /* IF0 rule for nodes of the last column of the topology */
                 logic->start_topology.topology[node_index][0] = (i*columns);
             }
         }
 
         /* **************** IF1 of each node ******************/
-        if (node_index < columns)
-        {
+        if (node_index < columns) {
             /* IF1 rule for nodes of the first row of the topology */
             logic->start_topology.topology[node_index][1] =
-                                        ((row-1)*columns)+node_index;
-        }
-        else
-        {
+                ((row-1)*columns)+node_index;
+        } else {
             /* general rule for IF1 */
-            logic->start_topology.topology[node_index][1] =
-                                                node_index - columns;
+            logic->start_topology.topology[node_index][1] = node_index - columns;
         }
 
         /* **************** IF2 of each node ******************/
-        if (node_index != 0)
-        {
+        if (node_index != 0) {
             /* general rule for IF2 */
             logic->start_topology.topology[node_index][2] =  node_index - 1;
         }
-        for (i = 0; i < row; i++)
-        {
-            if (node_index == (i*columns))
-            {
+
+        for (i = 0; i < row; i++) {
+            if (node_index == (i*columns)) {
                 /* IF2 rule for nodes of the first column of the topology */
                 logic->start_topology.topology[node_index][2] =
-                                                (node_index + columns -1);
+                    (node_index + columns -1);
             }
         }
 
         /* **************** IF3 of each node ******************/
         /* IF3 rule for nodes of the last row of the topology */
-        if ((node_index >= ((row-1)*columns)) && (node_index < num_nodes))
-        {
+        if ((node_index >= ((row-1)*columns)) && (node_index < num_nodes)) {
             logic->start_topology.topology[node_index][3] =
-                                            node_index - ((row-1)*columns);
-        }
-        else
-        {
+                node_index - ((row-1)*columns);
+        } else {
             /* general rule for IF3 */
             logic->start_topology.topology[node_index][3] =
-                                                        node_index + columns;
+                node_index + columns;
         }
     }
 
     logic->start_topology.num_nodes =  num_nodes;
     logic->start_topology.num_interfaces =  AXTP_NUM_INTERFACES;
-
-    print_computed_toplogy(logic);
 }
 
 
-/* Initializes start_toplogy with the file input topology
+/* Initializes start_topology with the file input topology
    and returns the number of nodes into */
 int
 axsw_topology_from_file(axsw_logic_t *logic, char *filename) {
@@ -303,16 +288,14 @@ axsw_topology_from_file(axsw_logic_t *logic, char *filename) {
 
     file = fopen(filename, "r");
     if (file == NULL)  {
-        printf ("File not existent \n");
+        printf("File not existent \n");
         return -1;
     }
 
     while ((read = getline(&line, &len, file)) != -1) {
-       /* printf("%s", line); */
-
        line_count++;
        if (line_count > AXIOM_MAX_NODES) {
-           printf ("The topology contains more than %d nodes\n", AXIOM_MAX_NODES);
+           printf("The topology contains more than %d nodes\n", AXIOM_MAX_NODES);
            return -1;
        }
        if_index = 0;
@@ -323,21 +306,23 @@ axsw_topology_from_file(axsw_logic_t *logic, char *filename) {
                /* Upon finding a digit, read it */
                long val = strtol(p, &p, 10);
                if ((val ==  LONG_MIN) || (val ==  LONG_MAX)) {
-                   printf ("Error in converting nodes id read from file\n");
+                   printf("Error in converting nodes id read from file\n");
                    return -1;
                }
                if ((val < 0) || (val > AXIOM_MAX_NODES)) {
-                   printf ("The topology contains nodes with id greater than %d\n", AXIOM_MAX_NODES);
+                   printf("The topology contains nodes with id greater than %d\n",
+                           AXIOM_MAX_NODES);
                    return -1;
                }
                if (if_index >= AXTP_NUM_INTERFACES) {
-                   printf ("The topology contains nodes with more than  than %d interfaces\n", AXTP_NUM_INTERFACES);
+                   printf("The topology contains nodes with more than  than %d \
+                           interfaces\n", AXTP_NUM_INTERFACES);
                    return -1;
                }
-               logic->start_topology.topology[line_count-1][if_index] = (uint8_t)val;
+               logic->start_topology.topology[line_count-1][if_index] =
+                   (uint8_t)val;
                if_index++;
-           }
-           else {
+           } else {
                /* move on to the next character of the line */
                p++;
            }
@@ -347,8 +332,6 @@ axsw_topology_from_file(axsw_logic_t *logic, char *filename) {
     logic->start_topology.num_nodes = line_count;
     free(line);
     fclose(file);
-
-    print_computed_toplogy(logic);
 
     return line_count;
 }

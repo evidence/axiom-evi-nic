@@ -37,7 +37,7 @@ static void usage(void)
     printf("                            and IF3 is disconnected (255 = NULL_NODE)\n");
     printf("-r, --ring                  create a ring topology \n");
     printf("-n, --nodes     nodes       number of nodes (ring or 2-D mesh)\n");
-    printf("-m, --mesh                  create a 2-D torus mesh toplogy \n");
+    printf("-m, --mesh                  create a 2-D torus mesh topology \n");
     printf("-x, --columns   cols        number of columns (2-D mesh)\n");
     printf("-y, --rows      rows        number of rows (2-D mesh)\n");
     printf("-v, --verbose               verbose output\n");
@@ -208,61 +208,51 @@ int main (int argc, char *argv[])
     if (file_ok == 1) {
         /* init the topology structure */
         num_ports = axsw_topology_from_file(&logic_status, filename);
-        if (num_ports < 0)
-        {
-            printf("Error in reading toplogy from file\n");
+        if (num_ports < 0) {
+            printf("Error in reading topology from file\n");
             exit(-1);
         }
-    }
-    else
-    {
+    } else {
         /* check ring parameter */
         if (ring_ok == 1) {
-            if ((row_ok == 1) || (columns_ok == 1))
-            {
+            if ((row_ok == 1) || (columns_ok == 1)) {
                 printf("Please, for RING topology insert only -n option\n");
                 exit (-1);
             }
-            /* make ring toplogy with the inserted nuber of nodes */
+            /* make ring topology with the inserted nuber of nodes */
             if (n_ok == 1) {
                 if ((n < 2) || (n > AXIOM_MAX_NODES)) {
-                    printf("Please, for RING topology insert a simulation number between 2 and %d\n",
+                    printf("Please, for RING topology insert a number of nodes \
+                            between 2 and %d\n",
                             AXIOM_MAX_NODES);
                     exit (-1);
-                }
-                else
-                {
+                } else {
                     num_ports = n;
                     /* init the selected topology */
-                    axsw_make_ring_toplogy(&logic_status, n);
+                    axsw_make_ring_topology(&logic_status, n);
                 }
-            }
-            else {
+            } else {
                usage();
                exit(-1);
             }
-        }
-        else if (mesh_ok == 1)
-        {
-            /* make mesh toplogy with the inserted nuber of nodes */
-            if ((n_ok == 1) && ((row_ok == 1) || (columns_ok == 1)))
-            {
+        } else if (mesh_ok == 1) {
+            /* make mesh topology with the inserted nuber of nodes */
+            if ((n_ok == 1) && ((row_ok == 1) || (columns_ok == 1))) {
                 printf("Too many options inserted for MESH topology \n");
                 exit(-1);
             }
 
-            /* make mesh toplogy with the inserted nuber of nodes */
-            if (n_ok == 1)
-            {
-                if ((n < 4) || (n > AXIOM_MAX_NODES))
-                {
-                    printf("Please, for MESH topology insert a simulation number between 4 and %d\n",
+            /* make mesh topology with the inserted nuber of nodes */
+            if (n_ok == 1) {
+                if ((n < 4) || (n > AXIOM_MAX_NODES)) {
+                    printf("Please, for MESH topology insert a number of nodes \
+                            between 4 and %d\n",
                             AXIOM_MAX_NODES);
                     exit (-1);
                 }
+
                 ret = axsw_check_mesh_number_of_nodes(n, &row, &columns);
-                if (ret == -1)
-                {
+                if (ret == -1){
                     printf ("The inserted number of nodes is a prime number\n");
                     printf ("MESH topology not possible \n");
                     exit (-1);
@@ -270,29 +260,24 @@ int main (int argc, char *argv[])
 
                 num_ports = n;
                 /* init the selected topology */
-                axsw_make_mesh_toplogy(&logic_status, n, row, columns);
+                axsw_make_mesh_topology(&logic_status, n, row, columns);
 
-            }
-            else if ((row_ok == 1) && (columns_ok == 1)) {
+            } else if ((row_ok == 1) && (columns_ok == 1)) {
                 num_ports = row*columns;
                 /* init the selected topology */
-                axsw_make_mesh_toplogy(&logic_status, num_ports, row, columns);
-            }
-            else
-            {
+                axsw_make_mesh_topology(&logic_status, num_ports, row, columns);
+            } else {
                usage();
                exit(-1);
             }
-
-        }
-        else
-        {
+        } else {
            usage();
            exit(-1);
         }
     }
 
     axsw_logic_init(&logic_status, num_ports);
+    axsw_print_topology(&logic_status);
     axsw_event_loop_init(&el_status);
 
     /* listening sockets creation */
@@ -366,7 +351,8 @@ int main (int argc, char *argv[])
 
                 for (if_id = 0; if_id < AXIOM_MAX_INTERFACES; if_id++) {
                     int connected = 0;
-                    if (axsw_logic_find_neighbour_if(&logic_status, vm_index, if_id) >= 0) {
+                    if (axsw_logic_find_neighbour_if(&logic_status, vm_index,
+                                if_id) >= 0) {
                         connected = 1;
                     }
 
@@ -393,11 +379,13 @@ int main (int argc, char *argv[])
                 }
 
                 /* forward the received message */
-                dst_sd = axsw_logic_forward(&logic_status, fd, &axiom_small_eth_msg);
+                dst_sd = axsw_logic_forward(&logic_status, fd,
+                        &axiom_small_eth_msg);
                 if (dst_sd < 0)
                     continue;
 
-                IPRINTF(verbose, "Packet forwarded - destination sd: %d", dst_sd);
+                IPRINTF(verbose, "Packet forwarded - destination sd: %d",
+                        dst_sd);
                 /* send ethernet packet */
                 ret = axsw_qemu_send(dst_sd, &axiom_small_eth_msg);
                 if (ret < 0) {

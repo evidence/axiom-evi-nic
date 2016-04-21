@@ -78,8 +78,7 @@ axsw_logic_find_neighbour_if(axsw_logic_t *logic, int src_vm, int source_if)
     int ret_if_index;
 
     ret_if_index = logic->start_topology.if_topology[src_vm][source_if];
-    if (ret_if_index != AXTP_NULL_NODE)
-    {
+    if (ret_if_index != AXTP_NULL_NODE) {
         return ret_if_index;
     }
 
@@ -142,15 +141,14 @@ axsw_logic_clean_vm_sd(axsw_logic_t *logic, int sd)
 
 }
 
-/* functions for toplogy management */
+/* functions for topology management */
 void axsw_init_topology(axsw_logic_t *logic);
-void axsw_make_ring_toplogy(axsw_logic_t *logic,
-                            int num_nodes);
+void axsw_print_topology(axsw_logic_t *logic);
+void axsw_make_ring_topology(axsw_logic_t *logic, int num_nodes);
 int axsw_check_mesh_number_of_nodes(int number_of_nodes, uint8_t* row,
-                                    uint8_t* columns);
-void
-axsw_make_mesh_toplogy(axsw_logic_t *logic, int num_nodes,
-                        uint8_t row, uint8_t columns);
+        uint8_t* columns);
+void axsw_make_mesh_topology(axsw_logic_t *logic, int num_nodes, uint8_t row,
+        uint8_t columns);
 int axsw_topology_from_file(axsw_logic_t *logic, char *filename);
 
 #endif /* AXIOM_SWITCH_LOGIC_h */
