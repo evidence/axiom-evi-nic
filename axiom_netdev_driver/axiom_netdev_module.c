@@ -116,7 +116,7 @@ static void axiom_small_rx_dequeue(struct axiomnet_drvdata *drvdata)
     struct axiomnet_hw_ring *ring = &drvdata->small_rx_ring;
     struct axiomnet_sw_queue *sw_queue = &ring->sw_queue;
     unsigned long flags;
-    uint32_t avail, received = 0;
+    uint32_t avail;
     int port;
     eviq_pnt_t queue_slot;
     DPRINTF("start");
@@ -125,6 +125,7 @@ static void axiom_small_rx_dequeue(struct axiomnet_drvdata *drvdata)
 
     /* external cycle to recheck new batch */
     while ((avail = axiom_hw_small_rx_avail(ring->drvdata->dev_api)) > 0) {
+        uint32_t received = 0;
 
         while (avail > 0) { /* something to read */
             axiom_small_msg_t *msg;
