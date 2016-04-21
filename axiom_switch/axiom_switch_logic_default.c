@@ -1,4 +1,3 @@
-
 /*
  * Default implementation of axiom switch logic
  *

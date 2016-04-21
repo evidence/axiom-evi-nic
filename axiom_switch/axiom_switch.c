@@ -20,7 +20,8 @@
 
 int verbose = 0;
 
-static void usage(void)
+static void
+usage(void)
 {
     printf("usage: axiom_switch [arguments] -f file_name | -r -n nodes |\n");
     printf("                                -m -n nodes | -m -x cols -y rows\n");
@@ -118,7 +119,8 @@ listen_socket_find(int *listen_sd, int fds_index, int sd, int *vm_index)
 
 
 
-int main (int argc, char *argv[])
+int
+main (int argc, char *argv[])
 {
     int ret, fds_tail_max_listen, i;
     char filename[100];
