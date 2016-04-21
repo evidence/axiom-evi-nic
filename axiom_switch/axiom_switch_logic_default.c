@@ -114,6 +114,7 @@ axsw_print_topology(axsw_logic_t *logic)
        }
        printf("\n");
    }
+   fflush(stdout);
 }
 
 
