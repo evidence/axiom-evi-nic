@@ -118,7 +118,7 @@ static void axiom_small_rx_dequeue(struct axiomnet_drvdata *drvdata)
     unsigned long flags;
     uint32_t avail;
     int port;
-    eviq_pnt_t queue_slot;
+    eviq_pnt_t queue_slot = EVIQ_NONE;
     DPRINTF("start");
 
     spin_lock_irqsave(&sw_queue->queue_lock, flags);
@@ -151,6 +151,10 @@ static void axiom_small_rx_dequeue(struct axiomnet_drvdata *drvdata)
 
         if (received > 0)
             axiom_hw_small_rx_pop(ring->drvdata->dev_api, received);
+
+        if (queue_slot == EVIQ_NONE) {
+            break;
+        }
     }
 
     spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
