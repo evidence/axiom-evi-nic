@@ -224,8 +224,8 @@ main (int argc, char *argv[])
             /* make ring topology with the inserted nuber of nodes */
             if (n_ok == 1) {
                 if ((n < 2) || (n > AXIOM_MAX_NODES)) {
-                    printf("Please, for RING topology insert a number of nodes \
-                            between 2 and %d\n",
+                    printf("Please, for RING topology insert a number of nodes "
+                           "between 2 and %d\n",
                             AXIOM_MAX_NODES);
                     exit (-1);
                 } else {
@@ -247,8 +247,8 @@ main (int argc, char *argv[])
             /* make mesh topology with the inserted nuber of nodes */
             if (n_ok == 1) {
                 if ((n < 4) || (n > AXIOM_MAX_NODES)) {
-                    printf("Please, for MESH topology insert a number of nodes \
-                            between 4 and %d\n",
+                    printf("Please, for MESH topology insert a number of nodes "
+                           "between 4 and %d\n",
                             AXIOM_MAX_NODES);
                     exit (-1);
                 }
