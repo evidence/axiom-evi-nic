@@ -4,7 +4,7 @@
 /*
  * axiom_nic_api_user.h
  *
- * Version:     v0.3.1
+ * Version:     v0.4
  * Last update: 2016-04-08
  *
  * This file contains the AXIOM types

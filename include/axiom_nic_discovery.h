@@ -4,7 +4,7 @@
 /*
  * axiom_nic_discovery.h
  *
- * Version:     v0.3.1
+ * Version:     v0.4
  * Last update: 2016-03-08
  *
  * This file contains the AXIOM NIC API for the discovery

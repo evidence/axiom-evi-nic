@@ -1,7 +1,7 @@
 /*
  * axiom_topology.h
  *
- * Version:     v0.3.1
+ * Version:     v0.4
  * Last update: 2016-03-25
  *
  * This file contains the AXIOM NIC topology information

@@ -4,7 +4,7 @@
 /*
  * axiom_nic_init.h
  *
- * Version:     v0.3.1
+ * Version:     v0.4
  * Last update: 2016-04-13
  *
  * This file contains the AXIOM NIC types for axiom_init

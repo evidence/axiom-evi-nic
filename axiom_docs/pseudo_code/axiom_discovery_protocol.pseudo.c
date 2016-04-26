@@ -1,7 +1,7 @@
 /*
  * axiom_discovery_protocol.pseudo.c
  *
- * Version:     v0.3.1
+ * Version:     v0.4
  * Last update: 2016-03-08
  *
  * This file contains the pseudo code of AXIOM Discovery Protocol

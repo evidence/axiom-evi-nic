@@ -4,7 +4,7 @@
 /*
  * axiom_nic_routing.h
  *
- * Version:     v0.3.1
+ * Version:     v0.4
  * Last update: 2016-03-18
  *
  * This file contains the AXIOM NIC API for the delivery
