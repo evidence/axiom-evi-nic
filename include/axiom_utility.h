@@ -71,4 +71,16 @@ nsec2msec(uint64_t nsec)
     return ((double)(nsec) / 1000000);
 }
 
+static __inline double
+nsec2sec(uint64_t nsec)
+{
+    return ((double)(nsec) / 1000000000);
+}
+
+static __inline uint64_t
+timespec2nsec(struct timespec ts)
+{
+
+    return ((uint64_t)(ts.tv_nsec) + ((uint64_t)(ts.tv_sec) * 1000000000));
+}
 #endif /* AXIOM_UTILITY_h */
