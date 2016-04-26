@@ -12,7 +12,7 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Evidence SRL");
 MODULE_DESCRIPTION("Axiom Network Device Driver");
-MODULE_VERSION("2016-01-22");
+MODULE_VERSION("v0.4");
 
 typedef struct axiom_dev {
     void __iomem *vregs;
