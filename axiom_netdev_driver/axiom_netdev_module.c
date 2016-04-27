@@ -152,13 +152,15 @@ static void axiom_small_rx_dequeue(struct axiomnet_drvdata *drvdata)
         if (received > 0)
             axiom_hw_small_rx_pop(ring->drvdata->dev_api, received);
 
+        DPRINTF("received: %d", received);
+
         if (queue_slot == EVIQ_NONE) {
             break;
         }
     }
 
     spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
-    DPRINTF("end - received: %d", received);
+    DPRINTF("end");
 }
 
 inline static int axiomnet_small_rx_avail(struct axiomnet_hw_ring *ring,
@@ -209,7 +211,7 @@ inline static int axiomnet_small_recv(struct axiomnet_hw_ring *ring, int port,
 err:
     spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
 
-    DPRINTF("end len:%d", len);
+    DPRINTF("end len:%zu", len);
     return len;
 }
 
