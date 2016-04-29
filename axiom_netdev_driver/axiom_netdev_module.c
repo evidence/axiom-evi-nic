@@ -312,6 +312,7 @@ static int axiomnet_probe(struct platform_device *pdev)
     /* allocate axiom api */
     drvdata->dev_api = axiom_hw_dev_alloc(drvdata->vregs);
     if (drvdata->dev_api == NULL) {
+        dev_err(&pdev->dev, "could not alloc axiom API\n");
         err = -ENOMEM;
         goto free_local;
     }
@@ -331,6 +332,11 @@ static int axiomnet_probe(struct platform_device *pdev)
     /* setup IRQ */
     drvdata->irq = platform_get_irq(pdev, 0);
     err = request_irq(drvdata->irq, axiomnet_irqhandler, IRQF_SHARED, pdev->name, drvdata);
+    if (err) {
+        dev_err(&pdev->dev, "could not get irq(%d) - %d\n", drvdata->irq, err);
+        err = -EIO;
+        goto free_hw_dev;
+    }
 
     /* TODO: check version */
     version = ioread32(drvdata->vregs + AXIOMREG_IO_VERSION);
@@ -346,18 +352,21 @@ static int axiomnet_probe(struct platform_device *pdev)
     /* alloc char device */
     err = axiomnet_alloc_chrdev(drvdata, &chrdev);
     if (err) {
+        dev_err(&pdev->dev, "could not alloc char dev\n");
         goto free_irq;
     }
 
     /* init SMALL TX ring */
     err = axiomnet_hw_ring_init(drvdata, &drvdata->small_tx_ring);
     if (err) {
+        dev_err(&pdev->dev, "could not init TX ring\n");
         goto free_cdev;
     }
 
     /* init SMALL RX ring */
     err = axiomnet_hw_ring_init(drvdata, &drvdata->small_rx_ring);
     if (err) {
+        dev_err(&pdev->dev, "could not init RX ring\n");
         goto free_tx_ring;
     }
 
@@ -389,6 +398,7 @@ free_cdev:
     axiomnet_destroy_chrdev(drvdata, &chrdev);
 free_irq:
     free_irq(drvdata->irq, drvdata);
+free_hw_dev:
     axiom_hw_dev_free(drvdata->dev_api);
 free_local:
     kfree(drvdata);
