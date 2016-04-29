@@ -6,15 +6,16 @@ axiom_netdev-objs := axiom_kernel_api.o axiom_netdev_module.o
 PWD := $(shell pwd)
 MKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-ifeq ($(CCARCH), arm)
+ifdef CCARCH
     BUILDROOT := ${PWD}/../../axiom-evi-buildroot
     KERNELDIR := ${BUILDROOT}/output/build/linux-custom
     DESTDIR := ${BUILDROOT}/output/target
-    CCPREFIX := ${BUILDROOT}/output/host/usr/bin/arm-linux-
-endif
-
-ifdef CCARCH
+    CCPREFIX := ${BUILDROOT}/output/host/usr/bin/$(CCARCH)-linux-
+ifeq ($(CCARCH), aarch64)
+    CROSS_COMPILE := ARCH=arm64 CROSS_COMPILE=$(CCPREFIX)
+else
     CROSS_COMPILE := ARCH=$(CCARCH) CROSS_COMPILE=$(CCPREFIX)
+endif
 else
     KERNELDIR := /lib/modules/$(shell uname -r)/build
     CCPREFIX :=

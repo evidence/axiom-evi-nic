@@ -9,10 +9,10 @@ CLEANFILES = $(APPS) $(LIBS) *.o
 PWD := $(shell pwd)
 #MKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-ifeq ($(CCARCH), arm)
+ifdef CCARCH
     BUILDROOT := ${PWD}/../../axiom-evi-buildroot
     DESTDIR := ${BUILDROOT}/output/target
-    CCPREFIX := ${BUILDROOT}/output/host/usr/bin/arm-linux-
+    CCPREFIX := ${BUILDROOT}/output/host/usr/bin/$(CCARCH)-linux-
 endif
 
 CC := ${CCPREFIX}gcc
