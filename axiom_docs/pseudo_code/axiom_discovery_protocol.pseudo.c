@@ -38,14 +38,14 @@
 /* discover algorithm pseudo-code */
 void discover_phase(axiom_node_id_t *next_id, axiom_node_id_t topology[][NUMBER_OF_INTERFACES])
 {
-    < Read My Node Id (my_node_id) >
+    < Read local Node Id (node_id) >
 
     < Get the number of the connected interfaces > 
 
     < For Each 'i' active interface >
 	
-	< Say over interface 'i':I am node my_node_id give me your node id >
-        axiom_send_raw_neighbour(AXIOM_DSCV_TYPE_REQ_ID, my_node_id, 0, i, 0, 0);
+	< Say over interface 'i':I am node node_id give me your node id >
+        axiom_send_raw_neighbour(AXIOM_DSCV_TYPE_REQ_ID, node_id, 0, i, 0, 0);
 
 	< Wait for the neighbourg response >
 	axiom_recv_raw_neighbour (&msg_type, &src_node_id, &dst_node_id, &src_interface, &dst_interface, &data);
@@ -53,10 +53,10 @@ void discover_phase(axiom_node_id_t *next_id, axiom_node_id_t topology[][NUMBER_
 	< The neighbour has an ID >
 	if (msg_type == AXIOM_DSCV_TYPE_RSP_ID)
 	    
-	    < Immediately update my routing table: the neighbour node is connceted to my 'i' interface >
+	    < Immediately update local routing table: the neighbour node is connceted to local 'i' interface >
             axiom_set_routing(neighbour, i);
 
-	    < Update the topology data structure:  my 'i' interface is connected  the neighbour node
+	    < Update the topology data structure:  local 'i' interface is connected  the neighbour node
                 			           The neighbour node is connected to me on its  'src_interface'>  
 
 
@@ -64,18 +64,18 @@ void discover_phase(axiom_node_id_t *next_id, axiom_node_id_t topology[][NUMBER_
 	if (msg_type == AXIOM_DSCV_TYPE_RSP_NOID)	
 	    
 	    < Say over interface 'i': you are node next_id  >
-            axiom_send_raw_neighbour(AXIOM_DSCV_TYPE_SETID, my_node_id, 0, i, 0, *next_id);
+            axiom_send_raw_neighbour(AXIOM_DSCV_TYPE_SETID, node_id, 0, i, 0, *next_id);
 
-	    < Immediately update my routing table: next_id node is connceted to my 'i' interface >
+	    < Immediately update local routing table: next_id node is connceted to local 'i' interface >
             axiom_set_routing(*next_id, i);	
 
-	    < Update the topology data structure:  my 'i' interface is connected  the new next_id node
+	    < Update the topology data structure:  local 'i' interface is connected  the new next_id node
                 			           next_id node is connected to me on its  'src_interface'>  
 
 	    < Say over interface 'i': start discovery protocol, nextid >
 	    < @Note: this message could be omitted; the next_id node could start its discovery protocol
 		     after receving the AXIOM_DSCV_TYPE_SETID type message >   
-            axiom_send_raw_neighbour(AXIOM_DSCV_TYPE_START, my_node_id, *next_id, i, 0, 0);  
+            axiom_send_raw_neighbour(AXIOM_DSCV_TYPE_START, node_id, *next_id, i, 0, 0);  
 
 	    
 	    < wait for the messages with the next_id topology data structure >
@@ -88,15 +88,15 @@ void discover_phase(axiom_node_id_t *next_id, axiom_node_id_t topology[][NUMBER_
 		>
                 axiom_recv_raw_neighbour (&msg_type, &src_node_id, &dst_node_id, &src_interface, &dst_interface, &data);
 
-	    	< request for my id from a node which is executing its discovery algorithm >
+	    	< request for local id from a node which is executing its discovery algorithm >
                 if (msg_type == AXIOM_DSCV_TYPE_REQ_ID)
-                        < Immediately update my routing table: 
-			  'src_node_id' node is connceted to my 'dst_interface' interface
+                        < Immediately update local routing table: 
+			  'src_node_id' node is connceted to local 'dst_interface' interface
 			>
                         axiom_set_routing(src_node_id, dst_interface);
 
-                        < Reply: I am node 'my_node_id', I am on interface 'src_interface' >
-                        axiom_send_raw_neighbour(AXIOM_DSCV_TYPE_RSP_ID, my_node_id, dst_node_id, src_interface, dst_interface, 0);
+                        < Reply: I am node 'node_id', I am on interface 'src_interface' >
+                        axiom_send_raw_neighbour(AXIOM_DSCV_TYPE_RSP_ID, node_id, dst_node_id, src_interface, dst_interface, 0);
 
 		< topology info from the 'i' interface connected Neighbour>
                 else if (msg_type == AXIOM_DSCV_TYPE_TOPOLOGY)
@@ -139,21 +139,21 @@ void master_node_code(axiom_node_id_t topology[][NUMBER_OF_INTERFACES])
  */
 void slave_node_code(axiom_node_id_t topology[][NUMBER_OF_INTERFACES])
 {
-    < Read My Node Id (my_node_id) >
+    < Read local Node Id (node_id) >
 
     < Wait for the neighbour AXIOM_DSCV_TYPE_REQ_ID type message >
     while (msg_type != AXIOM_DSCV_TYPE_REQ_ID)
        
         axiom_recv_raw_neighbour (&msg_type, &src_node_id, &dst_node_id, &src_interface, &dst_interface, &data);
 	
-        < Immediately update my routing table: the neighbour node is connceted to my interface >
-    	axiom_set_routing(neighbour_id, my_interface);
+        < Immediately update local routing table: the neighbour node is connceted to local interface >
+    	axiom_set_routing(neighbour_id, interface);
 
 	< If I already have a node Id >
-	if (my_node_id == 0) 
+	if (node_id == 0) 
 	    
-	    < Reply 'I am node 'my_node_id', I'm on interface 'src_interface' >
-            axiom_send_raw_neighbour(AXIOM_DSCV_TYPE_RSP_ID, my_node_id, dst_node_id, src_interface, dst_interface, 0);
+	    < Reply 'I am node 'node_id', I'm on interface 'src_interface' >
+            axiom_send_raw_neighbour(AXIOM_DSCV_TYPE_RSP_ID, node_id, dst_node_id, src_interface, dst_interface, 0);
 
 	< If I have not an Id >
 	else
@@ -162,7 +162,7 @@ void slave_node_code(axiom_node_id_t topology[][NUMBER_OF_INTERFACES])
             while (msg_type != AXIOM_DSCV_TYPE_START)
                 axiom_recv_raw_neighbour(&msg_type, &src_node_id, &dst_node_id, &src_interface, &dst_interface, &data);
 
-	    next_id = dst_node_id; < that is my id, previously yet recevied into data field>
+	    next_id = dst_node_id; < that is local id, previously yet recevied into data field>
 
 	    < Start the dicovery algorithm >
             discover_phase(&next_id, topology);

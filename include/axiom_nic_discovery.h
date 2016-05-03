@@ -1,13 +1,13 @@
 #ifndef AXIOM_NIC_DISCOVERY_h
 #define AXIOM_NIC_DISCOVERY_h
 
-/*
- * axiom_nic_discovery.h
+/*!
+ * \file axiom_nic_discovery.h
  *
- * Version:     v0.4
- * Last update: 2016-03-08
+ * \version     v0.4
+ * \date        2016-03-08
  *
- * This file contains the AXIOM NIC API for the discovery
+ * This file contains the AXIOM NIC API for the discovery phase
  *
  */
 #include "dprintf.h"
@@ -16,31 +16,40 @@
 #include "axiom_nic_small_commands.h"
 
 /********************************* Types **************************************/
-typedef uint8_t		axiom_discovery_cmd_t;	/* Discovery command */
+typedef uint8_t	  axiom_discovery_cmd_t;    /*!< \brief Discovery command type*/
 
 
 
 /********************************* Packet *************************************/
+
+/*! \brief Message payload for the discovery protocol */
 typedef struct axiom_discovery_payload {
-    uint8_t command;                    /* Command of discovery messages */
-    uint8_t src_node;                   /* Source node id */
-    uint8_t dst_node;                   /* Destination node id */
-    uint8_t src_dst_if;                 /* Source interface | Dest Interface */
+    uint8_t command;    /*!< \brief Command of discovery messages */
+    uint8_t src_node;   /*!< \brief Source node id */
+    uint8_t dst_node;   /*!< \brief Destination node id */
+    uint8_t src_dst_if; /*!< \brief Source interface | Dest Interface */
 } axiom_discovery_payload_t;
 
 
 
-/*
- * @brief This function sends a discovery message to a neighbour on a specific
+/******************************* Functions ************************************/
+
+/*!
+ * \brief This function sends a discovery message to a neighbour on a specific
  *        interface.
- * @param dev The axiom devive private data pointer
- * @param src_interface Sender interface identification
- * @param type type of the small message
- * @param data Data to send
- * return Returns ...
+ *
+ * \param dev             The axiom device private data pointer
+ * \param interface       Sender interface where to send the message
+ * \param cmd             Command of discovery message
+ * \param payload_src_id  Source node id to put into the payload
+ * \param payload_dst_id  Destination node id to put into the payload
+ * \param payload_src_if  Soruce interface id to put into the payload
+ * \param payload_dst_if  Destination interface id to put into the payload
+ *
+ * \return Returns XXX
  */
 inline static axiom_msg_id_t
-axiom_send_small_discovery(axiom_dev_t *dev, axiom_if_id_t my_interface,
+axiom_send_small_discovery (axiom_dev_t *dev, axiom_if_id_t interface,
         axiom_discovery_cmd_t cmd, axiom_node_id_t payload_src_id,
         axiom_node_id_t payload_dst_id, axiom_if_id_t payload_src_if,
         axiom_if_id_t payload_dst_if)
@@ -56,7 +65,7 @@ axiom_send_small_discovery(axiom_dev_t *dev, axiom_if_id_t my_interface,
                                 (0x0F & payload_dst_if)) ;
 
 
-    ret = axiom_send_small(dev, my_interface, AXIOM_SMALL_PORT_INIT,
+    ret = axiom_send_small(dev, interface, AXIOM_SMALL_PORT_INIT,
             AXIOM_SMALL_FLAG_NEIGHBOUR, (axiom_payload_t*)(&payload));
 
 
@@ -65,21 +74,25 @@ axiom_send_small_discovery(axiom_dev_t *dev, axiom_if_id_t my_interface,
     return ret;
 }
 
-/*
- * @brief This function receive a discovery message to a neighbour
+/*!
+ * \brief This function receive a discovery message to a neighbour
  *        on a specific interface.
- * @param dev The axiom devive private data pointer
- * @param src_interface Sender interface identification
- * @param type type of the small message
- * @param data Data to send
- * return Returns ...
+ *
+ * \param dev             The axiom device private data pointer
+ * \param interface       Receiver interface where the message is received
+ * \param cmd             Command of discovery message
+ * \param payload_src_id  Source node id from the payload
+ * \param payload_dst_id  Destination node id from the payload
+ * \param payload_src_if  Soruce interface id from the payload
+ * \param payload_dst_if  Destination interface id from the payload
+ *
+ * \return Returns XXX
  */
 inline static axiom_msg_id_t
-axiom_recv_small_discovery(axiom_dev_t *dev, axiom_discovery_cmd_t *cmd,
-                         axiom_node_id_t *src_id, axiom_node_id_t *dst_id,
-                         axiom_if_id_t *my_interface,
-                         axiom_if_id_t *payload_src_if,
-                         axiom_if_id_t *payload_dst_if)
+axiom_recv_small_discovery(axiom_dev_t *dev, axiom_if_id_t *interface,
+        axiom_discovery_cmd_t *cmd, axiom_node_id_t *src_id,
+        axiom_node_id_t *dst_id, axiom_if_id_t *payload_src_if,
+        axiom_if_id_t *payload_dst_if)
 {
     axiom_discovery_payload_t payload;
     axiom_port_t port;
@@ -88,7 +101,7 @@ axiom_recv_small_discovery(axiom_dev_t *dev, axiom_discovery_cmd_t *cmd,
 
     port = AXIOM_SMALL_PORT_INIT;
     flag = AXIOM_SMALL_FLAG_NEIGHBOUR;
-    ret = axiom_recv_small(dev, my_interface, &port, &flag,
+    ret = axiom_recv_small(dev, interface, &port, &flag,
             (axiom_payload_t*)(&payload));
 
     if ((ret == AXIOM_RET_OK) && (port == AXIOM_SMALL_PORT_INIT))

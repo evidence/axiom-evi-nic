@@ -1,6 +1,19 @@
 #ifndef AXIOM_UTILITY_h
 #define AXIOM_UTILITY_h
 
+/*!
+ * \file axiom_utility.h
+ *
+ * \version     v0.4
+ * \date        2016-04-29
+ *
+ * This file contains the AXIOM NIC some utilities functions:
+ *  - timespec utility
+ *  - timeval utility
+ *  - usec/msec utility
+ *
+ */
+
 /************************* AXIOM timespec utility *****************************/
 
 static __inline int

@@ -1,8 +1,46 @@
 #ifndef DPRINTF_H
 #define DPRINTF_H
+/*!
+ * \file dprintf.h
+ *
+ * \version     v0.4
+ * \date        2016-04-29
+ *
+ * This file contains some functions to print debugging information
+ *
+ */
+
+/*! \brief Print ERROR debug messages */
+#define EPRINTF(...) _DPRINTF("*ERROR*", __VA_ARGS__, "")
+/*!
+ * \brief Print INFO debug messages
+ * \param verbose       If it is true, the message is printed
+ */
+#define IPRINTF(verbose, ...)\
+    do {                                                                \
+        if (verbose)                                                    \
+            _DPRINTF("INFO", __VA_ARGS__, "")                           \
+    } while(0);
+/*! \brief Disable print debug messages */
+#define NDPRINTF(...) do {} while(0);
+/*! \brief Disable print ERROR debug messages */
+#define NEPRINTF(...) do {} while(0);
+/*! \brief Disable print INFO debug messages */
+#define NIPRINTF(...) do {} while(0);
+
+
+#ifdef PDEBUG
+#define DPRINTF(...) _DPRINTF("DEBUG", __VA_ARGS__, "")
+#else
+/*! \brief Print debug messages if PDEBUG macro is defined */
+#define DPRINTF(...) do {} while(0);
+#endif
+
+
 
 #define __FILENAME__ \
     (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
 
 #ifdef __KERNEL__
 #include <linux/string.h>
@@ -27,21 +65,5 @@
     } while (0);
 #endif /* __KERNEL */
 
-#define EPRINTF(...) _DPRINTF("*ERROR*", __VA_ARGS__, "")
-#define IPRINTF(verbose, ...)\
-    do {                                                                \
-        if (verbose)                                                    \
-            _DPRINTF("INFO", __VA_ARGS__, "")                           \
-    } while(0);
-#define NDPRINTF(...) do {} while(0);
-#define NEPRINTF(...) do {} while(0);
-#define NIPRINTF(...) do {} while(0);
-
-
-#ifdef PDEBUG
-#define DPRINTF(...) _DPRINTF("DEBUG", __VA_ARGS__, "")
-#else
-#define DPRINTF(...) do {} while(0);
-#endif
 
 #endif /* DPRINTF_H */
