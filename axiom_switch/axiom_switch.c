@@ -1,3 +1,12 @@
+/*!
+ * \file axiom_switch.c
+ *
+ * \version     v0.4
+ * \date        2016-05-03
+ *
+ * This file implements the Axiom Switch: emulate network topology to
+ * interconnect multiple QEMU AXIOM VMs to each other.
+ */
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -131,8 +140,8 @@ main (int argc, char *argv[])
     axsw_logic_t logic_status;
     axsw_event_loop_t el_status;
     int file_ok = 0, ring_ok = 0, mesh_ok = 0, n_ok = 0;
-    int row_ok = 0, columns_ok = 0;
-    uint8_t row, columns;
+    int rows_ok = 0, columns_ok = 0;
+    uint8_t rows, columns;
     int long_index =0;
     int opt = 0;
     static struct option long_options[] = {
@@ -181,12 +190,12 @@ main (int argc, char *argv[])
                     usage();
                     exit(-1);
                 } else {
-                    row_ok = 1;
+                    rows_ok = 1;
                 }
                 break;
 
             case 'y' :
-                if (sscanf(optarg, "%" SCNu8, &row) != 1) {
+                if (sscanf(optarg, "%" SCNu8, &rows) != 1) {
                     usage();
                     exit(-1);
                 } else {
@@ -210,7 +219,7 @@ main (int argc, char *argv[])
     /* check file presence */
     if (file_ok == 1) {
         /* init the topology structure */
-        num_ports = axsw_topology_from_file(&logic_status, filename);
+        num_ports = axsw_make_topology_from_file(&logic_status, filename);
         if (num_ports < 0) {
             printf("Error in reading topology from file\n");
             exit(-1);
@@ -218,7 +227,7 @@ main (int argc, char *argv[])
     } else {
         /* check ring parameter */
         if (ring_ok == 1) {
-            if ((row_ok == 1) || (columns_ok == 1)) {
+            if ((rows_ok == 1) || (columns_ok == 1)) {
                 printf("Please, for RING topology insert only -n option\n");
                 exit (-1);
             }
@@ -240,7 +249,7 @@ main (int argc, char *argv[])
             }
         } else if (mesh_ok == 1) {
             /* make mesh topology with the inserted nuber of nodes */
-            if ((n_ok == 1) && ((row_ok == 1) || (columns_ok == 1))) {
+            if ((n_ok == 1) && ((rows_ok == 1) || (columns_ok == 1))) {
                 printf("Too many options inserted for MESH topology \n");
                 exit(-1);
             }
@@ -254,7 +263,7 @@ main (int argc, char *argv[])
                     exit (-1);
                 }
 
-                ret = axsw_check_mesh_number_of_nodes(n, &row, &columns);
+                ret = axsw_check_mesh(n, &rows, &columns);
                 if (ret == -1){
                     printf ("The inserted number of nodes is a prime number\n");
                     printf ("MESH topology not possible \n");
@@ -263,12 +272,12 @@ main (int argc, char *argv[])
 
                 num_ports = n;
                 /* init the selected topology */
-                axsw_make_mesh_topology(&logic_status, n, row, columns);
+                axsw_make_mesh_topology(&logic_status, rows, columns);
 
-            } else if ((row_ok == 1) && (columns_ok == 1)) {
-                num_ports = row*columns;
+            } else if ((rows_ok == 1) && (columns_ok == 1)) {
+                num_ports = rows * columns;
                 /* init the selected topology */
-                axsw_make_mesh_topology(&logic_status, num_ports, row, columns);
+                axsw_make_mesh_topology(&logic_status, rows, columns);
             } else {
                usage();
                exit(-1);

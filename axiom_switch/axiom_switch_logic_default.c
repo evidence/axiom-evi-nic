@@ -1,6 +1,10 @@
-/*
- * Default implementation of axiom switch logic
+/*!
+ * \file axiom_switch_logic_default.c
  *
+ * \version     v0.4
+ * \date        2016-05-03
+ *
+ * This file contains the default implementation of the logic in the Axiom Switch
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,8 +22,6 @@
 #include "axiom_nic_packets.h"
 #include "axiom_nic_discovery.h"
 
-/* given the received socket and messages, return the receiver socket of the
- * neighbour message */
 static int
 axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
         int src_sd)
@@ -28,7 +30,7 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
     uint8_t dst_if, neighbour_if;
 
     /* get the index of src virtual machine */
-    src_vm = axsw_logic_find_vm_index(logic, src_sd);
+    src_vm = axsw_logic_find_vm_id(logic, src_sd);
     if (src_vm < 0) {
         return -1;
     }
@@ -37,7 +39,7 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
     dst_if = neighbour_msg->small_msg.header.tx.dst;
     dst_vm = logic->start_topology.topology[src_vm][dst_if];
 
-    NDPRINTF("src_vm_index: %d dst_if: %d dst_vm: %d", src_vm, dst_if, dst_vm);
+    NDPRINTF("src_vm_id: %d dst_if: %d dst_vm: %d", src_vm, dst_if, dst_vm);
 
     /* find receiver socket */
     dst_sd = axsw_logic_find_neighbour_sd(logic, dst_vm);
@@ -76,8 +78,6 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
     return dst_sd;
 }
 
-
-/* given the received messages, return the recipient socket of the small message */
 static int
 axsw_forward_small(axsw_logic_t *logic, axiom_small_eth_t *small_msg,
         int src_sd)
