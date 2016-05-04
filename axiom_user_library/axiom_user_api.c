@@ -1,3 +1,11 @@
+/*!
+ * \file axiom_user_api.c
+ *
+ * \version     v0.4
+ * \date        2016-05-03
+ *
+ * This file contains the implementation of Axiom NIC API for the user-space
+ */
 #include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -14,11 +22,14 @@
 #include "axiom_nic_packets.h"
 #include "axiom_netdev_user.h"
 
+/*! \brief Axiom char dev default name */
 #define AXIOM_DEV_FILENAME      "/dev/axiom0"
 
+/*!
+ * \brief axiom arguments for the axiom_open() function
+ */
 typedef struct axiom_dev {
-    int fd;
-
+    int fd; /*!< \brief file descriptor of the AXIOM char dev */
 } axiom_dev_t;
 
 
