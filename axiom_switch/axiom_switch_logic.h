@@ -17,10 +17,6 @@ axsw_logic_init(axsw_logic_t *logic, int num_ports) {
     }
     axsw_if_topology_init(&logic->start_topology, num_ports);
 }
-/* This function return the destination socket to forward the message */
-int axsw_logic_forward(axsw_logic_t *logic, int src_sd,
-        axiom_small_eth_t *axiom_packet);
-
 
 /* find the socket descriptor, given its associated node id */
 inline static int
@@ -111,14 +107,8 @@ axsw_logic_clean_vm_sd(axsw_logic_t *logic, int sd)
 
 }
 
-/* functions for topology management */
-void axsw_init_topology(axsw_logic_t *logic);
-void axsw_print_topology(axsw_logic_t *logic);
-void axsw_make_ring_topology(axsw_logic_t *logic, int num_nodes);
-int axsw_check_mesh_number_of_nodes(int number_of_nodes, uint8_t* row,
-        uint8_t* columns);
-void axsw_make_mesh_topology(axsw_logic_t *logic, int num_nodes, uint8_t row,
-        uint8_t columns);
-int axsw_topology_from_file(axsw_logic_t *logic, char *filename);
+/* This function return the destination socket to forward the message */
+int axsw_logic_forward(axsw_logic_t *logic, int src_sd,
+        axiom_small_eth_t *axiom_packet);
 
 #endif /* AXIOM_SWITCH_LOGIC_h */

@@ -15,6 +15,7 @@
 #include "axiom_switch.h"
 #include "axiom_switch_packets.h"
 #include "axiom_switch_logic.h"
+#include "axiom_switch_topology.h"
 #include "axiom_switch_event_loop.h"
 #include "axiom_switch_qemu.h"
 
