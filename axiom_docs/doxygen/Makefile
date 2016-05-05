@@ -6,12 +6,10 @@ ARCHIVE_DIR := archive
 PDF_OUTPUT := $(GIT_DESC)-doxygen.pdf
 HTML_OUTPUT := $(GIT_DESC)-doxygen-html
 
-
 .PHONY: all clean doxygen archive pdf
 
 
-
-all: pdf
+all: doxygen
 
 doxygen:
 	doxygen $(DOXYGEN_CONF)
