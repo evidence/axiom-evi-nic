@@ -1,7 +1,7 @@
 /*!
  * \file axiom_kernel_api.c
  *
- * \version     v0.4
+ * \version     v0.5
  * \date        2016-05-03
  *
  * This file contains the Axiom NIC hardware API implementation.
@@ -20,7 +20,7 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Evidence SRL");
 MODULE_DESCRIPTION("Axiom Network Device Driver");
-MODULE_VERSION("v0.4");
+MODULE_VERSION("v0.5");
 
 /*! \brief AXIOM HW device status */
 typedef struct axiom_dev {

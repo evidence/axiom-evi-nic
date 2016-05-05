@@ -3,7 +3,7 @@
 /*!
  * \file evi_queue.h
  *
- * \version     v0.4
+ * \version     v0.5
  * \date        2016-05-03
  *
  * This file contains the EVI queue manager. It can handle multiple queue of

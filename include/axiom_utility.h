@@ -4,7 +4,7 @@
 /*!
  * \file axiom_utility.h
  *
- * \version     v0.4
+ * \version     v0.5
  * \date        2016-04-29
  *
  * This file contains the AXIOM NIC some utilities functions:

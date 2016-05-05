@@ -1,7 +1,7 @@
 /*!
  * \file axiom_switch_topology.c
  *
- * \version     v0.4
+ * \version     v0.5
  * \date        2016-05-03
  *
  * This file implements the API to manage the topology in the Axiom Switch
