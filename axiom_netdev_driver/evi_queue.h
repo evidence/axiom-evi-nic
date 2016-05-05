@@ -1,7 +1,16 @@
 #ifndef EVI_QUEUE_h
 #define EVI_QUEUE_h
+/*!
+ * \file evi_queue.h
+ *
+ * \version     v0.4
+ * \date        2016-05-03
+ *
+ * This file contains the EVI queue manager. It can handle multiple queue of
+ * filled elements and one queue of free elements.
+ */
 
-#define EVIQ_NONE       -1
+#define EVIQ_NONE       -1              /*!< \brief none elements */
 
 #ifdef __KERNEL__
 #define EVI_MALLOC(_1)  (kmalloc(_1, GFP_KERNEL))
@@ -13,18 +22,27 @@
 #define EVI_PRINTF(...)  (printf(__VA_ARGS__))
 #endif /* __KERNEL__ */
 
+/*! \brief Pointer used in the EVI queue manager */
 typedef int16_t eviq_pnt_t;
 
+/*! \brief EVI queue status */
 typedef struct evi_queue {
-    eviq_pnt_t *head;
-    eviq_pnt_t *tail;
-    eviq_pnt_t free;
-    eviq_pnt_t *next;
+    int queues;         /*!< number of queue handled */
+    int free_elems;     /*!< number of initial free elements */
 
-    int queues;
-    int free_elems;
+    eviq_pnt_t *head;   /*!< \brief array of the queue head */
+    eviq_pnt_t *tail;   /*!< \brief array of the queue tail */
+
+    eviq_pnt_t free;    /*!< \brief queue of free elems */
+
+    eviq_pnt_t *next;   /*!< \brief array for all elements to chain them */
 } evi_queue_t;
 
+/*!
+ * \brief Release the resorces for the EVI queue status
+ *
+ * \param q             EVI queue status pointer
+ */
 static void
 eviq_release(evi_queue_t *q)
 {
@@ -38,6 +56,15 @@ eviq_release(evi_queue_t *q)
     q->head = q->tail = q->next = NULL;
 }
 
+/*!
+ * \brief Init the EVI queue status
+ *
+ * \param q             EVI queue status pointer
+ * \param queues        Number of queues
+ * \param free_elems    Number of initial free elements
+ *
+ * \return 0 on success, otherwise -1
+ */
 static int
 eviq_init(evi_queue_t *q, int queues, int free_elems)
 {
@@ -79,18 +106,40 @@ err:
     return -1;
 }
 
+/*!
+ * \brief Chek if there are free elements in the free queue
+ *
+ * \param q             EVI queue status pointer
+ *
+ * \return 0 if there are not space, otherwise an integer != 0
+ */
 inline static int
 eviq_free_avail(evi_queue_t *q)
 {
     return (q->free != EVIQ_NONE);
 }
 
+/*!
+ * \brief Get the head of free queue
+ *
+ * \param q             EVI queue status pointer
+ *
+ * \return head of the free queue
+ */
 inline static eviq_pnt_t
 eviq_free_head(evi_queue_t *q)
 {
     return q->free;
 }
 
+/*!
+ * \brief Insert one element at the tail of the specified queue
+ *
+ * \param q             EVI queue status pointer
+ * \param queue_id      Queue identifier
+ *
+ * \return eviq_pnt_t to the slot on success, otherwise -1
+ */
 inline static eviq_pnt_t
 eviq_insert(evi_queue_t *q, int queue_id)
 {
@@ -121,18 +170,42 @@ eviq_insert(evi_queue_t *q, int queue_id)
     return slot;
 }
 
+/*!
+ * \brief Chek if there are elements in the specified queue
+ *
+ * \param q             EVI queue status pointer
+ * \param queue_id      Queue identifier
+ *
+ * \return 0 if there are not elements available, otherwise an integer != 0
+ */
 inline static int
 eviq_queue_avail(evi_queue_t *q, int queue_id)
 {
     return (q->head[queue_id] != EVIQ_NONE);
 }
 
+/*!
+ * \brief Get the head of the specified queue
+ *
+ * \param q             EVI queue status pointer
+ * \param queue_id      Queue identifier
+ *
+ * \return head of the specified queue
+ */
 inline static eviq_pnt_t
 eviq_queue_head(evi_queue_t *q, int queue_id)
 {
     return q->head[queue_id];
 }
 
+/*!
+ * \brief Remove one element at the head from the specified queue
+ *
+ * \param q             EVI queue status pointer
+ * \param queue_id      Queue identifier
+ *
+ * \return eviq_pnt_t to the slot removed on success, otherwise -1
+ */
 inline static eviq_pnt_t
 eviq_remove(evi_queue_t *q, int queue_id)
 {

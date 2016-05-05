@@ -1,3 +1,11 @@
+/*!
+ * \file axiom_netdev_module.c
+ *
+ * \version     v0.4
+ * \date        2016-05-03
+ *
+ * This file contains the implementation of the Axiom NIC kernel module.
+ */
 #include <asm/uaccess.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -28,23 +36,24 @@ MODULE_AUTHOR("Evidence SRL");
 MODULE_DESCRIPTION("Axiom Network Device Driver");
 MODULE_VERSION("v0.4");
 
+/*! \brief verbose module parameter */
 int verbose = 0;
 module_param(verbose, int, 0);
 MODULE_PARM_DESC(debug, "versbose level (0=none,...,16=all)");
 
-/* bitmat to handle chardev minor (devnum) */
-static DEFINE_SPINLOCK(map_lock);
+/*! \brief bitmap to handle chardev minor (devnum) */
 static DECLARE_BITMAP(dev_map, AXIOMNET_DEV_MAX);
+/*! \brief bitmap spinloc */
+static DEFINE_SPINLOCK(map_lock);
 
 struct axiomnet_chrdev chrdev;
-
-
-
 
 static int axiomnet_alloc_chrdev(struct axiomnet_drvdata *drvdata,
         struct axiomnet_chrdev *chrdev);
 static void axiomnet_destroy_chrdev(struct axiomnet_drvdata *drvdata,
         struct axiomnet_chrdev *chrdev);
+
+
 
 /*********************** AxiomNet Device Driver ******************************/
 
@@ -231,14 +240,14 @@ static int axiomnet_sw_queue_alloc(struct axiomnet_sw_queue *queue)
 
     spin_lock_init(&queue->queue_lock);
 
-    err = eviq_init(&queue->evi_queue, AXIOMNET_QUEUE_NUM,
-            AXIOMNET_QUEUE_FREE_LEN);
+    err = eviq_init(&queue->evi_queue, AXIOMNET_SW_QUEUE_NUM,
+            AXIOMNET_SW_QUEUE_FREE_LEN);
     if (err) {
         return -ENOMEM;
     }
 
 
-    queue->queue_desc = kcalloc(AXIOMNET_QUEUE_FREE_LEN, sizeof(*(queue->queue_desc)),
+    queue->queue_desc = kcalloc(AXIOMNET_SW_QUEUE_FREE_LEN, sizeof(*(queue->queue_desc)),
             GFP_KERNEL);
     if (queue->queue_desc == NULL) {
         err = -ENOMEM;
@@ -476,6 +485,7 @@ err:
     DPRINTF("error: %d", err);
     return err;
 }
+
 static int axiomnet_release(struct inode *inode, struct file *filep)
 {
     unsigned int minor = iminor(inode);
@@ -602,7 +612,6 @@ err:
 
 }
 
-
 static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         unsigned long arg)
 {
@@ -675,7 +684,6 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
     default:
         ret = -EINVAL;
     }
-
 
     DPRINTF("end");
     return ret;

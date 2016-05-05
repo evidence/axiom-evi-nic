@@ -1,3 +1,11 @@
+/*!
+ * \file axiom_kernel_api.c
+ *
+ * \version     v0.4
+ * \date        2016-05-03
+ *
+ * This file contains the Axiom NIC hardware API implementation.
+ */
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/io.h>
@@ -14,11 +22,12 @@ MODULE_AUTHOR("Evidence SRL");
 MODULE_DESCRIPTION("Axiom Network Device Driver");
 MODULE_VERSION("v0.4");
 
+/*! \brief AXIOM HW device status */
 typedef struct axiom_dev {
-    void __iomem *vregs;
+    void __iomem *vregs;        /*!< \brief Memory mapped IO registers */
 
-    uint32_t tx_tail;
-    uint32_t rx_head;
+    uint32_t tx_tail;           /*!< \brief SMALL TX tail value (read on push)*/
+    uint32_t rx_head;           /*!< \brief SMALL RX head value (read on pop)*/
 } axiom_dev_t;
 
 axiom_dev_t *
