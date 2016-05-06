@@ -4,7 +4,7 @@
 This repository contains the following folder:
 
  * axiom_docs
-    + contains the NIC documentation (eg. datasheet, flow-charts, pseudo-code)
+    + contains the NIC documentation (datasheet, doxygen, flow-charts, pseudo-code)
  * axiom_netdev_driver
     + contains the Linux device driver for the Axiom NIC
  * axiom_user_library
