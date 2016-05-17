@@ -66,7 +66,7 @@ axiom_send_small_discovery (axiom_dev_t *dev, axiom_if_id_t interface,
 
 
     ret = axiom_send_small(dev, interface, AXIOM_SMALL_PORT_INIT,
-            AXIOM_SMALL_TYPE_NEIGHBOUR, (axiom_payload_t*)(&payload));
+            AXIOM_TYPE_NEIGHBOUR, (axiom_payload_t*)(&payload));
 
 
     DPRINTF("ret: %x payload: %x", ret, (*(uint32_t*)&payload));
@@ -100,7 +100,7 @@ axiom_recv_small_discovery(axiom_dev_t *dev, axiom_if_id_t *interface,
     axiom_msg_id_t ret;
 
     port = AXIOM_SMALL_PORT_INIT;
-    type = AXIOM_SMALL_TYPE_NEIGHBOUR;
+    type = AXIOM_TYPE_NEIGHBOUR;
     ret = axiom_recv_small(dev, interface, &port, &type,
             (axiom_payload_t*)(&payload));
 

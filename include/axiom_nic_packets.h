@@ -24,14 +24,14 @@
 #define AXIOM_SMALL_PORT_LENGTH         8
 
 
-/*************************** AXIOM SMALL TYPES ********************************/
+/*************************** AXIOM packet TYPES *******************************/
 
 /*! \brief Axiom type DATA (message contains RAW data) */
-#define AXIOM_SMALL_TYPE_DATA           0
+#define AXIOM_TYPE_RAW_DATA             0
 /*! \brief Axiom type NEIGHBOUR (message contains RAW data to neighbour) */
-#define AXIOM_SMALL_TYPE_NEIGHBOUR      1
+#define AXIOM_TYPE_NEIGHBOUR            1
 /*! \brief Axiom type ACK (message contains an ACK) */
-#define AXIOM_SMALL_TYPE_ACK            2
+#define AXIOM_TYPE_ACK                  2
 
 
 /*************************** Packets structure ********************************/

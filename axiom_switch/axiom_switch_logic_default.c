@@ -109,7 +109,7 @@ axsw_logic_forward(axsw_logic_t *logic, int src_sd,
     DPRINTF("src_sd: %d", src_sd);
 
     if (axiom_packet->small_msg.header.tx.port_type.field.type ==
-            AXIOM_SMALL_TYPE_NEIGHBOUR) {
+            AXIOM_TYPE_NEIGHBOUR) {
         /* neighbour message */
         dst_sd = axsw_forward_neighbour(logic, axiom_packet, src_sd);
     } else {
