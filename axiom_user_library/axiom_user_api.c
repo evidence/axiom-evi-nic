@@ -107,7 +107,7 @@ axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
 
 axiom_msg_id_t
 axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
-        axiom_port_t port, axiom_flag_t flag, axiom_payload_t *payload)
+        axiom_port_t port, axiom_type_t type, axiom_payload_t *payload)
 {
     axiom_small_msg_t small_msg;
     int ret;
@@ -115,8 +115,8 @@ axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
     if (!dev || dev->fd <= 0)
         return AXIOM_RET_ERROR;
 
-    small_msg.header.tx.port_flag.field.port = (port & 0x7);
-    small_msg.header.tx.port_flag.field.flag = (flag & 0x7);
+    small_msg.header.tx.port_type.field.port = (port & 0x7);
+    small_msg.header.tx.port_type.field.type = (type & 0x7);
     small_msg.header.tx.dst = dst_id;
     small_msg.payload = *payload;
 
@@ -132,7 +132,7 @@ axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
 
 axiom_msg_id_t
 axiom_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
-        axiom_port_t *port, axiom_flag_t *flag, axiom_payload_t *payload)
+        axiom_port_t *port, axiom_type_t *type, axiom_payload_t *payload)
 {
     axiom_small_msg_t small_msg;
     int ret;
@@ -146,8 +146,8 @@ axiom_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
     }
 
     *src_id = small_msg.header.rx.src;
-    *port = (small_msg.header.rx.port_flag.field.port & 0x7);
-    *flag = (small_msg.header.rx.port_flag.field.flag & 0x7);
+    *port = (small_msg.header.rx.port_type.field.port & 0x7);
+    *type = (small_msg.header.rx.port_type.field.type & 0x7);
     *payload = small_msg.payload;
 
     return AXIOM_RET_OK;

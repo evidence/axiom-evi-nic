@@ -19,7 +19,7 @@
  * \param dev           The axiom device private data pointer
  * \param dst_id        The remote node id that will receive the small data or
  *                      local interface that will send the small data
- * \param port_flag     port and flags of the small message
+ * \param port_type     port and type of the small message
  * \param payload       data to be sent
  *
  * \return Returns a unique positive message id on success, -1 otherwise.
@@ -27,7 +27,7 @@
  */
 axiom_msg_id_t
 axiom_hw_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
-        axiom_port_flag_t port_flag, axiom_payload_t *payload);
+        axiom_port_type_t port_type, axiom_payload_t *payload);
 
 /*!
  * \brief This function returns the space available in the small TX queue.
@@ -54,7 +54,7 @@ axiom_hw_small_tx_push(axiom_dev_t *dev, axiom_small_len_t count);
  * \param dev           The axiom device private data pointer
  * \param src_id        The source node id that sent the small data or local
  *                      interface that received the small data
- * \param port_flag     port and flags of the small message
+ * \param port_type     port and type of the small message
  * \param payload       data received
  *
  * \return Returns a unique positive message id on success, -1 otherwise.
@@ -62,7 +62,7 @@ axiom_hw_small_tx_push(axiom_dev_t *dev, axiom_small_len_t count);
  */
 axiom_msg_id_t
 axiom_hw_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
-        axiom_port_flag_t *port_flag, axiom_payload_t *payload);
+        axiom_port_type_t *port_type, axiom_payload_t *payload);
 
 /*!
  * \brief This function returns the messages available in the small RX queue.

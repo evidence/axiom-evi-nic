@@ -71,7 +71,7 @@ axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
  * \param dst_id        The remote node id that will receive the small data or
  *                      local interface that will send the small data
  * \param port          port of the small message
- * \param flag          flags of the small message
+ * \param type          type of the small message
  * \param payload       data to be sent
  *
  * \return Returns a unique positive message id on success, -1 otherwise.
@@ -79,7 +79,7 @@ axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
  */
 axiom_msg_id_t
 axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
-        axiom_port_t port, axiom_flag_t flag, axiom_payload_t *payload);
+        axiom_port_t port, axiom_type_t type, axiom_payload_t *payload);
 
 /*!
  * \brief This function receives small data to a remote node.
@@ -88,7 +88,7 @@ axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
  * \param src_id        The source node id that sent the small data or local
  *                      interface that received the small data
  * \param port          port of the small message
- * \param flag          flags of the small message
+ * \param type          type of the small message
  * \param payload       data received
  *
  * \return Returns a unique positive message id on success, -1 otherwise.
@@ -96,7 +96,7 @@ axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
  */
 axiom_msg_id_t
 axiom_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
-        axiom_port_t *port, axiom_flag_t *flag, axiom_payload_t *payload);
+        axiom_port_t *port, axiom_type_t *type, axiom_payload_t *payload);
 
 /*!
  * \brief This function writes data to a remote node memory.

@@ -437,8 +437,7 @@
 	\hline DESTINATION & 15:8 & wo & 0x0 & Receiver node id or local interface to send message to the neighbour \\
 	\hline reserved & 7:6 & wo & 0x0 & Reserved. Writes are ignored, read data is zero.\\
 	\hline PORT & 5:3 & wo & 0x0 & SMALL message port.\\
-        \hline FLAGS: TBD & 2:1 & wo & 0x0 & SMALL message flags. TBD\\
-        \hline FLAGS: NEIGHBOUR& 0 & wo & 0x0 & SMALL message flags: NEIGHBOUR. When set to 1b, the message will go to the neighbor node\\
+        \hline TYPE: TBD & 2:0 & wo & 0x0 & SMALL message types. (NEIGHBOUR, etc.)\\
 \end{regdetails}
 
 \subsubsection{SMALL\_RX\_HEAD} \label{reg:small_rx_head}
@@ -533,8 +532,7 @@
 	\hline SOURCE & 15:8 & ro & 0x0 & Sender node id or local interface where neighbour message is received\\
 	\hline reserved & 7:6 & ro & 0x0 & Reserved. Writes are ignored, read data is zero.\\
 	\hline PORT & 5:3 & ro & 0x0 & SMALL message port.\\
-        \hline FLAGS: TBD & 2:1 & ro & 0x0 & SMALL message flags. (NEIGHBOUR, etc.)\\
-        \hline FLAGS: NEIGHBOUR& 0 & ro & 0x0 & SMALL message flags: NEIGHBOUR. When set to 1b, the message comes from the neighbor node\\
+        \hline TYPE: TBD & 2:0 & ro & 0x0 & SMALL message types. (NEIGHBOUR, etc.)\\
 \end{regdetails}
 
 \end{document}

@@ -66,7 +66,7 @@ axiom_send_small_discovery (axiom_dev_t *dev, axiom_if_id_t interface,
 
 
     ret = axiom_send_small(dev, interface, AXIOM_SMALL_PORT_INIT,
-            AXIOM_SMALL_FLAG_NEIGHBOUR, (axiom_payload_t*)(&payload));
+            AXIOM_SMALL_TYPE_NEIGHBOUR, (axiom_payload_t*)(&payload));
 
 
     DPRINTF("ret: %x payload: %x", ret, (*(uint32_t*)&payload));
@@ -96,12 +96,12 @@ axiom_recv_small_discovery(axiom_dev_t *dev, axiom_if_id_t *interface,
 {
     axiom_discovery_payload_t payload;
     axiom_port_t port;
-    axiom_flag_t flag;
+    axiom_type_t type;
     axiom_msg_id_t ret;
 
     port = AXIOM_SMALL_PORT_INIT;
-    flag = AXIOM_SMALL_FLAG_NEIGHBOUR;
-    ret = axiom_recv_small(dev, interface, &port, &flag,
+    type = AXIOM_SMALL_TYPE_NEIGHBOUR;
+    ret = axiom_recv_small(dev, interface, &port, &type,
             (axiom_payload_t*)(&payload));
 
     if ((ret == AXIOM_RET_OK) && (port == AXIOM_SMALL_PORT_INIT))
@@ -116,7 +116,7 @@ axiom_recv_small_discovery(axiom_dev_t *dev, axiom_if_id_t *interface,
         return AXIOM_RET_OK;
     }
 
-    EPRINTF("ret: %x port: %x flag: %x payload: %x", ret, port, flag,
+    EPRINTF("ret: %x port: %x type: %x payload: %x", ret, port, type,
             (*(uint32_t*)&payload));
     return AXIOM_RET_ERROR;
 }

@@ -29,10 +29,10 @@
 /********************************* Types **************************************/
 /*! \brief AXIOM port of SMALL messages */
 typedef uint8_t	            axiom_port_t;
-/*! \brief AXIOM flags of SMALL messages */
-typedef uint8_t	            axiom_flag_t;
-/*! \brief AXIOM port/flag of SMALL messages */
-typedef uint8_t	            axiom_port_flag_t;
+/*! \brief AXIOM type of SMALL messages */
+typedef uint8_t	            axiom_type_t;
+/*! \brief AXIOM port/type of SMALL messages */
+typedef uint8_t	            axiom_port_type_t;
 /*! \brief AXIOM queue length type */
 typedef uint32_t            axiom_small_len_t;
 /*! \brief AXIOM node identifier */

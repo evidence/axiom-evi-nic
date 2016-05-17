@@ -24,14 +24,14 @@
 #define AXIOM_SMALL_PORT_LENGTH         8
 
 
-/*************************** AXIOM SMALL FLAGS ********************************/
+/*************************** AXIOM SMALL TYPES ********************************/
 
-/*! \brief Axiom flag DATA (message contains RAW data) */
-#define AXIOM_SMALL_FLAG_DATA           0x0
-/*! \brief Axiom flag NEIGHBOUR (message contains RAW data to neighbour) */
-#define AXIOM_SMALL_FLAG_NEIGHBOUR      0x1
-/*! \brief Axiom flag ACK (message contains an ACK) */
-#define AXIOM_SMALL_FLAG_ACK            0x2
+/*! \brief Axiom type DATA (message contains RAW data) */
+#define AXIOM_SMALL_TYPE_DATA           0
+/*! \brief Axiom type NEIGHBOUR (message contains RAW data to neighbour) */
+#define AXIOM_SMALL_TYPE_NEIGHBOUR      1
+/*! \brief Axiom type ACK (message contains an ACK) */
+#define AXIOM_SMALL_TYPE_ACK            2
 
 
 /*************************** Packets structure ********************************/
@@ -45,9 +45,9 @@ typedef struct axiom_small_tx_hdr {
         struct {
             uint8_t reserved : 2;
             uint8_t port : 3;
-            uint8_t flag : 3;
+            uint8_t type : 3;
         } field;
-    } port_flag;        /*!< \brief port and flag fields */
+    } port_type;        /*!< \brief port and type fields */
     uint8_t dst;	/*!< \brief destination (for tx) identificator */
     uint8_t spare[2];
 } axiom_small_tx_hdr_t;
@@ -61,9 +61,9 @@ typedef struct axiom_small_rx_hdr {
         struct {
             uint8_t reserved : 2;
             uint8_t port : 3;
-            uint8_t flag : 3;
+            uint8_t type : 3;
         } field;
-    } port_flag;        /*!< \brief port and flag fields */
+    } port_type;        /*!< \brief port and type fields */
     uint8_t src;	/*!< \brief source (for rx) identificator */
     uint8_t spare[2];
 } axiom_small_rx_hdr_t;

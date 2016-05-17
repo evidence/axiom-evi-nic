@@ -110,7 +110,7 @@ inline static int axiomnet_small_send(struct axiomnet_hw_ring *ring,
     int ret = 0;
 
     if (axiom_hw_send_small(ring->drvdata->dev_api, msg->header.tx.dst,
-                msg->header.tx.port_flag.raw, &msg->payload)) {
+                msg->header.tx.port_type.raw, &msg->payload)) {
         ret = -1;
     }
 
@@ -147,8 +147,8 @@ static void axiom_small_rx_dequeue(struct axiomnet_drvdata *drvdata)
             msg = &sw_queue->queue_desc[queue_slot];
 
             axiom_hw_recv_small(ring->drvdata->dev_api, &msg->header.rx.src,
-                    &msg->header.rx.port_flag.raw, &msg->payload);
-            port = msg->header.rx.port_flag.field.port;
+                    &msg->header.rx.port_type.raw, &msg->payload);
+            port = msg->header.rx.port_type.field.port;
 
             eviq_insert(&sw_queue->evi_queue, port);
             DPRINTF("queue insert - avail: %d queue_slot: %d port: %d", avail,
@@ -386,8 +386,8 @@ static int axiomnet_probe(struct platform_device *pdev)
     //    iowrite32(AXIOMREG_CONTROL_LOOPBACK, drvdata->vregs + AXIOMREG_IO_CONTROL);
         axiom_small_msg_t small_msg;
         small_msg.header.tx.dst = 134;
-        small_msg.header.tx.port_flag.field.port = 0;
-        small_msg.header.tx.port_flag.field.flag = 0;
+        small_msg.header.tx.port_type.field.port = 0;
+        small_msg.header.tx.port_type.field.type = 0;
         iowrite32(*((uint32_t*)(&small_msg)), drvdata->vregs +
                 AXIOMREG_IO_SMALL_TX_BASE + 8*(0));
         iowrite32(*((uint32_t*)(&small_msg) + 1), drvdata->vregs +

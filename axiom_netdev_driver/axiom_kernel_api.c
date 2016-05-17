@@ -53,12 +53,12 @@ axiom_hw_dev_free(axiom_dev_t *dev)
 
 axiom_msg_id_t
 axiom_hw_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
-        axiom_port_flag_t port_flag, axiom_payload_t *payload)
+        axiom_port_type_t port_type, axiom_payload_t *payload)
 {
     uint32_t tail = dev->tx_tail;
     uint16_t header;
 
-    header = ((dst_id << 8) | port_flag);
+    header = ((dst_id << 8) | port_type);
     /* write header */
     iowrite16(header, dev->vregs + AXIOMREG_IO_SMALL_TX_BASE + 8*(tail));
     /* write payload */
@@ -95,7 +95,7 @@ axiom_hw_small_tx_push(axiom_dev_t *dev, axiom_small_len_t count)
 
 axiom_msg_id_t
 axiom_hw_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
-        axiom_port_flag_t *port_flag, axiom_payload_t *payload)
+        axiom_port_type_t *port_type, axiom_payload_t *payload)
 {
     uint32_t head = dev->rx_head;
     uint16_t header;
@@ -104,7 +104,7 @@ axiom_hw_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
     header = ioread16(dev->vregs + AXIOMREG_IO_SMALL_RX_BASE + 8*(head));
 
     *src_id = ((header >> 8) & 0xFF);
-    *port_flag = (header & 0xFF);
+    *port_type = (header & 0xFF);
 
     /* read payload */
     *payload = ioread32(dev->vregs + AXIOMREG_IO_SMALL_RX_BASE + 8*(head) + 4);

@@ -61,18 +61,18 @@ typedef struct axiom_netperf_payload {
  *
  * \param dev           The axiom device private data pointer
  * \param dst           Local interface or remote id identification
- * \param flag          Flags of the small message
+ * \param type          Type of the small message
  * \param payload       Payload to send
  *
  * \return Returns XXX
  */
 inline static axiom_msg_id_t
-axiom_send_small_init(axiom_dev_t *dev, axiom_node_id_t dst, axiom_flag_t flag,
+axiom_send_small_init(axiom_dev_t *dev, axiom_node_id_t dst, axiom_type_t type,
         axiom_payload_t *payload)
 {
     axiom_msg_id_t ret;
 
-    ret = axiom_send_small(dev, dst, AXIOM_SMALL_PORT_INIT, flag, payload);
+    ret = axiom_send_small(dev, dst, AXIOM_SMALL_PORT_INIT, type, payload);
 
     DPRINTF("ret: %x payload: %x", ret, (*(uint32_t*)&payload));
 
@@ -84,25 +84,25 @@ axiom_send_small_init(axiom_dev_t *dev, axiom_node_id_t dst, axiom_flag_t flag,
  *
  * \param dev           The axiom device private data pointer
  * \param src           Local interface or remote id identification
- * \param flag          Flags of the small message
+ * \param type          Type of the small message
  * \param cmd           Command of the small message
  * \param payload       Payload received
  *
  * \return Returns XXX
  */
 inline static axiom_msg_id_t
-axiom_recv_small_init(axiom_dev_t *dev, axiom_node_id_t *src, axiom_flag_t *flag,
+axiom_recv_small_init(axiom_dev_t *dev, axiom_node_id_t *src, axiom_type_t *type,
         axiom_init_cmd_t *cmd, axiom_payload_t *payload)
 {
     axiom_port_t port = AXIOM_SMALL_PORT_INIT;
     axiom_msg_id_t ret;
     axiom_init_payload_t *init_payload;
 
-    ret = axiom_recv_small(dev, src, &port, flag, payload);
+    ret = axiom_recv_small(dev, src, &port, type, payload);
 
     if ((ret != AXIOM_RET_OK) || (port != AXIOM_SMALL_PORT_INIT))
     {
-        EPRINTF("ret: %x port: %x flag: %x payload: %x", ret, port, *flag,
+        EPRINTF("ret: %x port: %x type: %x payload: %x", ret, port, *type,
                 (*payload));
         return AXIOM_RET_ERROR;
     }
