@@ -446,67 +446,6 @@ static struct platform_driver axiomnet_driver = {
 
 /************************ AxiomNet Char Device  ******************************/
 
-static int axiomnet_open(struct inode *inode, struct file *filep)
-{
-    int err = 0;
-    unsigned int minor = iminor(inode);
-    struct axiomnet_drvdata *drvdata = chrdev.drvdata_a[minor];
-    struct axiomnet_priv *priv;
-
-    DPRINTF("start minor: %u drvdata: %p", minor, drvdata);
-
-    /* allocate per-open structure and fill it out */
-    priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-    if (priv == NULL)
-        return -ENOMEM;
-
-    /* set invalid port */
-    priv->bind_port = AXIOMNET_PORT_INVALID;
-
-    mutex_lock(&drvdata->lock);
-    if (drvdata->used >= AXIOMNET_MAX_OPEN) {
-        err = -EBUSY;
-        goto err;
-    }
-    drvdata->used++;
-    mutex_unlock(&drvdata->lock);
-
-    priv->drvdata = drvdata;
-
-    filep->private_data = priv;
-
-    DPRINTF("end");
-    return 0;
-
-err:
-    mutex_unlock(&drvdata->lock);
-    pr_err("unable to open char dev [error %d]\n", err);
-    kfree(priv);
-    DPRINTF("error: %d", err);
-    return err;
-}
-
-static int axiomnet_release(struct inode *inode, struct file *filep)
-{
-    unsigned int minor = iminor(inode);
-    struct axiomnet_drvdata *drvdata = chrdev.drvdata_a[minor];
-    struct axiomnet_priv *priv = filep->private_data;
-
-    DPRINTF("start");
-
-    mutex_lock(&drvdata->lock);
-
-    drvdata->used--;
-
-    mutex_unlock(&drvdata->lock);
-
-    filep->private_data = NULL;
-    kfree(priv);
-
-    DPRINTF("end");
-    return 0;
-}
-
 static ssize_t axiomnet_read(struct file *filep, char __user *buffer, size_t len,
         loff_t *offset)
 {
@@ -612,6 +551,52 @@ err:
 
 }
 
+static long axiomnet_bind(struct axiomnet_priv *priv, int port) {
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    long ret = 0;
+
+    if (port >= AXIOM_SMALL_PORT_LENGTH) {
+        return -EFBIG;
+    }
+
+    mutex_lock(&drvdata->lock);
+
+    DPRINTF("port: 0x%x port_used: 0x%x", port, drvdata->port_used);
+
+    /* check if port is already bound */
+    if (((1 << port) & drvdata->port_used)) {
+        EPRINTF("Port %d already bound", port);
+        ret = -EBUSY;
+        goto exit;
+    }
+
+    priv->bind_port = port;
+    drvdata->port_used |= (1 << (uint8_t)port);
+
+    DPRINTF("port: 0x%x port_used: 0x%x", port, drvdata->port_used);
+
+exit:
+    mutex_unlock(&drvdata->lock);
+
+    return ret;
+}
+
+static void axiomnet_unbind(struct axiomnet_priv *priv) {
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+
+    /* check if the process bound some port */
+    if (priv->bind_port == AXIOMNET_PORT_INVALID ||
+            priv->bind_port >= AXIOM_SMALL_PORT_LENGTH) {
+        return;
+    }
+
+    mutex_lock(&drvdata->lock);
+    drvdata->port_used &= ~(1 << (uint8_t)(priv->bind_port));
+    mutex_unlock(&drvdata->lock);
+
+    priv->bind_port = AXIOMNET_PORT_INVALID;
+}
+
 static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         unsigned long arg)
 {
@@ -678,7 +663,7 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         break;
     case AXNET_BIND:
         get_user(buf_uint8, (uint8_t __user*)arg);
-        priv->bind_port = buf_uint8;
+        ret = axiomnet_bind(priv, buf_uint8);
         DPRINTF("bind port: %x", priv->bind_port);
         break;
     default:
@@ -721,6 +706,69 @@ err:
     pr_err("unable to mmap registers [error %d]\n", err);
     DPRINTF("error: %d", err);
     return err;
+}
+
+static int axiomnet_open(struct inode *inode, struct file *filep)
+{
+    int err = 0;
+    unsigned int minor = iminor(inode);
+    struct axiomnet_drvdata *drvdata = chrdev.drvdata_a[minor];
+    struct axiomnet_priv *priv;
+
+    DPRINTF("start minor: %u drvdata: %p", minor, drvdata);
+
+    /* allocate per-open structure and fill it out */
+    priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+    if (priv == NULL)
+        return -ENOMEM;
+
+    /* set invalid port */
+    priv->bind_port = AXIOMNET_PORT_INVALID;
+
+    mutex_lock(&drvdata->lock);
+    if (drvdata->used >= AXIOMNET_MAX_OPEN) {
+        err = -EBUSY;
+        goto err;
+    }
+    drvdata->used++;
+    mutex_unlock(&drvdata->lock);
+
+    priv->drvdata = drvdata;
+
+    filep->private_data = priv;
+
+    DPRINTF("end");
+    return 0;
+
+err:
+    mutex_unlock(&drvdata->lock);
+    pr_err("unable to open char dev [error %d]\n", err);
+    kfree(priv);
+    DPRINTF("error: %d", err);
+    return err;
+}
+
+static int axiomnet_release(struct inode *inode, struct file *filep)
+{
+    unsigned int minor = iminor(inode);
+    struct axiomnet_drvdata *drvdata = chrdev.drvdata_a[minor];
+    struct axiomnet_priv *priv = filep->private_data;
+
+    DPRINTF("start");
+
+    axiomnet_unbind(priv);
+
+    mutex_lock(&drvdata->lock);
+
+    drvdata->used--;
+
+    mutex_unlock(&drvdata->lock);
+
+    filep->private_data = NULL;
+    kfree(priv);
+
+    DPRINTF("end");
+    return 0;
 }
 
 static struct file_operations axiomnet_fops =

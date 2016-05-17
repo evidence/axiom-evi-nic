@@ -20,6 +20,8 @@
 #define AXIOM_SMALL_PORT_INIT           0
 /*! \brief Axiom network utilities port number */
 #define AXIOM_SMALL_PORT_NETUTILS       1
+/*! \brief Max number of port available */
+#define AXIOM_SMALL_PORT_LENGTH         8
 
 
 /*************************** AXIOM SMALL FLAGS ********************************/

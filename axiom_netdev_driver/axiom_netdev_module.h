@@ -51,19 +51,24 @@ struct axiomnet_hw_ring {
 struct axiomnet_drvdata {
     struct device *dev;                 /*!< \brief parent device */
     axiom_dev_t *dev_api;               /*!< \brief AXIOM dev HW API*/
+
     /* IO registers */
     void __iomem *vregs;                /*!< \brief Memory mapped IO registers:
                                                     virtual kernel address */
     struct resource *regs_res;          /*!< \brief IO resource */
+
     /* IRQ */
     int irq;                            /*!< \brief IRQ descriptor */
+
     /*!\brief SMALL TX hardware ring */
     struct axiomnet_hw_ring small_tx_ring;
     /*!\brief SMALL RX hardware ring */
     struct axiomnet_hw_ring small_rx_ring;
+
     int devnum;                         /*!< \brief CharDev minor number */
     struct mutex lock;                  /*!< \brief Axiom driver mutex */
     int used;                           /*!< \brief Current number of open() */
+    uint8_t port_used;                  /*!< \brief Current port bound */
 };
 
 /*! \brief AXIOM char device status */
