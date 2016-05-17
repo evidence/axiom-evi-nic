@@ -20,18 +20,30 @@
 #define AXIOM_SMALL_PORT_INIT           0
 /*! \brief Axiom network utilities port number */
 #define AXIOM_SMALL_PORT_NETUTILS       1
+
 /*! \brief Max number of port available */
 #define AXIOM_SMALL_PORT_LENGTH         8
 
 
 /*************************** AXIOM packet TYPES *******************************/
 
-/*! \brief Axiom type DATA (message contains RAW data) */
+/*! \brief Axiom type RAW DATA (message contains RAW data) */
 #define AXIOM_TYPE_RAW_DATA             0
 /*! \brief Axiom type NEIGHBOUR (message contains RAW data to neighbour) */
 #define AXIOM_TYPE_NEIGHBOUR            1
+/*! \brief Axiom type LONG DATA (message contains LONG data) */
+#define AXIOM_TYPE_LONG_DATA            2
+/*! \brief Axiom type RDMA WRITE (message contains RDMA write) */
+#define AXIOM_TYPE_RDMA_WRITE           3
+/*! \brief Axiom type RDMA REQ (message contains RDMA request) */
+#define AXIOM_TYPE_RDMA_REQ             4
+/*! \brief Axiom type RDMA RESPONSE (message contains RDMA response) */
+#define AXIOM_TYPE_RDMA_REQ             5
 /*! \brief Axiom type ACK (message contains an ACK) */
-#define AXIOM_TYPE_ACK                  2
+#define AXIOM_TYPE_ACK                  6
+
+/*! \brief Max number of type available */
+#define AXIOM_TYPE_LENGTH               8
 
 
 /*************************** Packets structure ********************************/
