@@ -551,6 +551,22 @@ err:
 
 }
 
+static void axiomnet_unbind(struct axiomnet_priv *priv) {
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+
+    /* check if the process bound some port */
+    if (priv->bind_port == AXIOMNET_PORT_INVALID ||
+            priv->bind_port >= AXIOM_SMALL_PORT_LENGTH) {
+        return;
+    }
+
+    mutex_lock(&drvdata->lock);
+    drvdata->port_used &= ~(1 << (uint8_t)(priv->bind_port));
+    mutex_unlock(&drvdata->lock);
+
+    priv->bind_port = AXIOMNET_PORT_INVALID;
+}
+
 static long axiomnet_bind(struct axiomnet_priv *priv, int port) {
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     long ret = 0;
@@ -582,22 +598,6 @@ exit:
     mutex_unlock(&drvdata->lock);
 
     return ret;
-}
-
-static void axiomnet_unbind(struct axiomnet_priv *priv) {
-    struct axiomnet_drvdata *drvdata = priv->drvdata;
-
-    /* check if the process bound some port */
-    if (priv->bind_port == AXIOMNET_PORT_INVALID ||
-            priv->bind_port >= AXIOM_SMALL_PORT_LENGTH) {
-        return;
-    }
-
-    mutex_lock(&drvdata->lock);
-    drvdata->port_used &= ~(1 << (uint8_t)(priv->bind_port));
-    mutex_unlock(&drvdata->lock);
-
-    priv->bind_port = AXIOMNET_PORT_INVALID;
 }
 
 static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
