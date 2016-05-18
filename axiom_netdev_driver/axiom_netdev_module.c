@@ -109,13 +109,13 @@ inline static int axiomnet_small_send(struct axiomnet_hw_ring *ring,
 {
     int ret = 0;
 
+    /* TODO: implement batch */
     if (axiom_hw_send_small(ring->drvdata->dev_api, msg->header.tx.dst,
                 msg->header.tx.port_type.raw, &msg->payload)) {
         ret = -1;
     }
 
-    /* TODO: implement batch */
-    axiom_hw_small_tx_push(ring->drvdata->dev_api, 1);
+    axiom_hw_small_tx_push(ring->drvdata->dev_api);
 
     return ret;
 }
@@ -159,7 +159,7 @@ static void axiom_small_rx_dequeue(struct axiomnet_drvdata *drvdata)
         }
 
         if (received > 0)
-            axiom_hw_small_rx_pop(ring->drvdata->dev_api, received);
+            axiom_hw_small_rx_pop(ring->drvdata->dev_api);
 
         DPRINTF("received: %d", received);
 

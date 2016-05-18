@@ -86,11 +86,9 @@ axiom_hw_small_tx_avail(axiom_dev_t *dev)
 }
 
 void
-axiom_hw_small_tx_push(axiom_dev_t *dev, axiom_small_len_t count)
+axiom_hw_small_tx_push(axiom_dev_t *dev)
 {
-    /*TODO: check how many descriptors are pushed */
-    iowrite32(count, dev->vregs + AXIOMREG_IO_SMALL_TX_PUSH);
-    dev->tx_tail = ioread32(dev->vregs + AXIOMREG_IO_SMALL_TX_TAIL);
+    iowrite32(dev->tx_tail, dev->vregs + AXIOMREG_IO_SMALL_TX_TAIL);
 }
 
 axiom_msg_id_t
@@ -129,11 +127,9 @@ axiom_hw_small_rx_avail(axiom_dev_t *dev)
 }
 
 void
-axiom_hw_small_rx_pop(axiom_dev_t *dev, axiom_small_len_t count)
+axiom_hw_small_rx_pop(axiom_dev_t *dev)
 {
-    /*TODO: check how many descriptors are poped */
-    iowrite32(count, dev->vregs + AXIOMREG_IO_SMALL_RX_POP);
-    dev->rx_head = ioread32(dev->vregs + AXIOMREG_IO_SMALL_RX_HEAD);
+    iowrite32(dev->rx_head, dev->vregs + AXIOMREG_IO_SMALL_RX_HEAD);
 }
 
 uint32_t

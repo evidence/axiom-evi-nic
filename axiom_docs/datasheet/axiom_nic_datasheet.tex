@@ -80,13 +80,11 @@
         \hline \nameref{mod:queue} & \nameref{reg:small_tx_head} & 0x0300 & 32 & ro & SMALL TX queue head\\
 	\hline \nameref{mod:queue} & \nameref{reg:small_tx_tail} & 0x0304 & 32 & ro & SMALL TX queue tail\\
 	\hline \nameref{mod:queue} & \nameref{reg:small_tx_avail} & 0x0308 & 32 & ro & SMALL TX queue descriptors available\\
-	\hline \nameref{mod:queue} & \nameref{reg:small_tx_push} & 0x030C & 32 & wo & SMALL TX queue push\\
         \hline \nameref{mod:queue} & \nameref{reg:small_tx_base} & 0x0800+8*n & 64 & wo & SMALL TX queue base register\\
                                 & n=0...255 & & & & \\
 	\hline \nameref{mod:queue} & \nameref{reg:small_rx_head} & 0x0310 & 32 & ro & SMALL TX queue head\\
 	\hline \nameref{mod:queue} & \nameref{reg:small_rx_tail} & 0x0314 & 32 & ro & SMALL TX queue tail\\
 	\hline \nameref{mod:queue} & \nameref{reg:small_rx_avail} & 0x0318 & 32 & ro & SMALL TX queue descriptors available\\
-	\hline \nameref{mod:queue} & \nameref{reg:small_rx_pop} & 0x031C & 32 & wo & SMALL TX queue pop\\
         \hline \nameref{mod:queue} & \nameref{reg:small_rx_base} & 0x1000+8*n & 64 & ro & SMALL TX queue base register\\
                                 & n=0...255 & & & & \\
 \end{regglobalsummary}
@@ -336,13 +334,11 @@
         \hline \nameref{reg:small_tx_head} & 0x0300 & 32 & ro & 0x0 & SMALL TX queue head\\
 	\hline \nameref{reg:small_tx_tail} & 0x0304 & 32 & ro & 0x0 & SMALL TX queue tail\\
 	\hline \nameref{reg:small_tx_avail} & 0x0308 & 32 & ro & 0x0 & SMALL TX queue descriptors available\\
-	\hline \nameref{reg:small_tx_push} & 0x030C & 32 & wo & 0x0 & SMALL TX queue push\\
         \hline \nameref{reg:small_tx_base} & 0x0800+8*n & 64 & wo & 0x0 & SMALL TX queue base register\\
                                 & n=0...255 & & & & \\
 	\hline \nameref{reg:small_rx_head} & 0x0310 & 32 & ro & 0x0 & SMALL TX queue head\\
 	\hline \nameref{reg:small_rx_tail} & 0x0314 & 32 & ro & 0x0 & SMALL TX queue tail\\
 	\hline \nameref{reg:small_rx_avail} & 0x0318 & 32 & ro & 0x0 & SMALL TX queue descriptors available\\
-	\hline \nameref{reg:small_rx_pop}  & 0x031C & 32 & wo & 0x0 & SMALL TX queue pop\\
         \hline \nameref{reg:small_rx_base} & 0x1000+8*n & 64 & ro & 0x0 & SMALL TX queue base register\\
                                 & n=0...255 & & & & \\
 \end{regsummary}
@@ -379,9 +375,8 @@
 	\hline SMALL\_TX\_TAIL & 7:0 & ro & 0x0 & SMALL TX queue tail.\\
                & & & &  This register contains the tail pointer for the SMALL TX queue.
                         The tail (in the TX queue) points to the first empty descriptor
-                        which the software can fill. Hardware controls this pointer. When the
-                        software writes on \nameref{reg:small_tx_push}, this register
-                        is incremented.\\
+                        which the software can fill. Software controls this
+                        pointer.\\
 \end{regdetails}
 
 \subsubsection{SMALL\_TX\_AVAIL} \label{reg:small_tx_avail}
@@ -398,26 +393,6 @@
 	\hline SMALL\_TX\_AVAIL & 15:0 & ro & 0x0 & SMALL TX queue descriptors available\\
                & & & &  This register contains the number of free descriptor
                         available in the SMALL TX queue, which the software can fill.\\
-\end{regdetails}
-
-\subsubsection{SMALL\_TX\_PUSH} \label{reg:small_tx_push}
-\begin{regdescription}
-	Name			\> SMALL\_TX\_PUSH\\
-	Relative Address	\> 0x0000030C\\
-	Width			\> 32 bits\\
-	Access Type		\> wo\\
-	Init Value		\> 0x00\\
-	Description		\> SMALL TX queue push\\
-\end{regdescription}
-\begin{regdetails}
-	\hline reserved & 31:16 & wo & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-	\hline SMALL\_TX\_PUSH & 15:0 & wo & 0x0 & SMALL TX queue push.\\
-                       & & & & When set to value X, the \nameref{reg:small_tx_tail} is
-                                incremented by X (the hardware prevents the head overtaking).
-                                After that, the new X descriptors are ready
-                                to be sent by the hardware. The software should fill the
-                                descriptors pointed by \nameref{reg:small_tx_tail},
-                                before setting this registers.\\
 \end{regdetails}
 
 \subsubsection{SMALL\_TX\_BASE[n]} \label{reg:small_tx_base}
@@ -455,8 +430,7 @@
                & & & &  This register contains the head pointer for the SMALL RX queue.
                         The head (in the RX queue) points to the first descriptor received by
                         the network card, which the software can read.
-                        Hardware controls this pointer. When the software writes on
-                        \nameref{reg:small_rx_pop}, this register is incremented.\\
+                        Software controls this pointer.\\
 \end{regdetails}
 
 \subsubsection{SMALL\_RX\_TAIL} \label{reg:small_rx_tail}
@@ -492,27 +466,6 @@
 	\hline SMALL\_RX\_AVAIL & 15:0 & ro & 0x0 & SMALL RX queue descriptors available\\
                & & & &  This register contains the number of filled descriptor
                         available in the SMALL RX queue, which the software can read.\\
-\end{regdetails}
-
-\subsubsection{SMALL\_RX\_POP} \label{reg:small_rx_pop}
-\begin{regdescription}
-	Name			\> SMALL\_RX\_POP\\
-	Relative Address	\> 0x0000031C\\
-	Width			\> 32 bits\\
-	Access Type		\> wo\\
-	Init Value		\> 0x00\\
-	Description		\> SMALL RX queue pop\\
-\end{regdescription}
-\begin{regdetails}
-	\hline reserved & 31:16 & wo & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-	\hline SMALL\_RX\_POP & 15:0 & wo & 0x0 & SMALL RX queue pop.\\
-                       & & & & When set to value X, the \nameref{reg:small_rx_head} is
-                                incremented by X (the hardware prevents the tail overtaking).
-                                After that, the new X descriptors are consumed by the
-                                software and ready to be reused by the hardware.
-                                The software should read the
-                                descriptors pointed by \nameref{reg:small_rx_head},
-                                before setting this register.\\
 \end{regdetails}
 
 \subsubsection{SMALL\_RX\_BASE[n]} \label{reg:small_rx_base}

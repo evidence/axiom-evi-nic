@@ -90,8 +90,6 @@
 #define AXIOMREG_IO_SMALL_TX_TAIL       0x0304
 /*! \brief SMALL_TX_AVAIL register - 32 bit r/o */
 #define AXIOMREG_IO_SMALL_TX_AVAIL      0x0308
-/*! \brief SMALL_TX_PUSH register - 32 bit w/o */
-#define AXIOMREG_IO_SMALL_TX_PUSH       0x030C
 /*! \brief SMALL_TX_BASE register - 32 bit w/o x 2 x 256 = 2048 bytes */
 #define AXIOMREG_IO_SMALL_TX_BASE       0x0800
 
@@ -104,8 +102,6 @@
 #define AXIOMREG_IO_SMALL_RX_TAIL       0x0314
 /*! \brief SMALL_RX_AVAIL register - 32 bit r/o */
 #define AXIOMREG_IO_SMALL_RX_AVAIL      0x0318
-/*! \brief SMALL_RX_POP register - 32 bit w/o */
-#define AXIOMREG_IO_SMALL_RX_POP        0x031C
 /*! \brief SMALL_RX_BASE register - 32 bit r/o x 2 x 256 = 2048 bytes */
 #define AXIOMREG_IO_SMALL_RX_BASE       0x1000
 

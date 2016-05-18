@@ -40,13 +40,12 @@ axiom_small_len_t
 axiom_hw_small_tx_avail(axiom_dev_t *dev);
 
 /*!
- * \brief This function pushes descriptors in the small TX queue.
+ * \brief This function the tail of the small TX queue.
  *
  * \param dev           The axiom device private data pointer
- * \param count         Number of descriptor to push
  */
 void
-axiom_hw_small_tx_push(axiom_dev_t *dev, axiom_small_len_t count);
+axiom_hw_small_tx_push(axiom_dev_t *dev);
 
 /*!
  * \brief This function receives small data to a remote node.
@@ -75,13 +74,12 @@ axiom_small_len_t
 axiom_hw_small_rx_avail(axiom_dev_t *dev);
 
 /*!
- * \brief This function pops descriptors from the small RX queue.
+ * \brief This function updates the head of RX queue.
  *
  * \param dev           The axiom device private data pointer
- * \param count         Number of descriptor to pop
  */
 void
-axiom_hw_small_rx_pop(axiom_dev_t *dev, axiom_small_len_t count);
+axiom_hw_small_rx_pop(axiom_dev_t *dev);
 
 /*!
  * \brief This function writes data to a remote node memory.
