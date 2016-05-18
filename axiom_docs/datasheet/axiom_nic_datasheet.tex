@@ -16,27 +16,31 @@
 	\end{tabbing}}
 
 \NewEnviron{regglobalsummary}
-	{\begin{tabularx}{\textwidth}{|l|l|l|l|l|X|}
-	        \hline \textbf{Module} & \textbf{Register Name} & \textbf{Address} & \textbf{Width} & \textbf{Type} &  \textbf{Description} \\
+	{\begin{tabularx}{\textwidth}{|l|l|l|l|X|}
+	        \hline \textbf{Register Name} & \textbf{Address} &
+	        \textbf{Width} & \textbf{Type} & \textbf{Description} \\
 		\BODY
 	\hline
 	\end{tabularx}}
 
 \NewEnviron{regsummary}
 	{\begin{tabularx}{\textwidth}{|l|l|l|l|l|X|}
-	        \hline \textbf{Register Name} & \textbf{Address} & \textbf{Width} & \textbf{Type} & \textbf{Init Val} & \textbf{Description} \\
+	        \hline \textbf{Register Name} & \textbf{Address} &
+	        \textbf{Width} & \textbf{Type} & \textbf{Init Val} &
+	        \textbf{Description} \\
 		\BODY
 	\hline
 	\end{tabularx}}
 
 \NewEnviron{regdetails}
 	{\begin{tabularx}{\textwidth}{|l|l|l|l|X|}
-	        \hline \textbf{Field Name} & \textbf{Bit(s)} & \textbf{Type} & \textbf{Init Val} & \textbf{Description} \\
+	        \hline \textbf{Field Name} & \textbf{Bit(s)} & \textbf{Type} &
+	        \textbf{Init Val} & \textbf{Description} \\
 	 	\BODY
 	\hline 
 	\end{tabularx}}
 
-\newcommand{\versionapi}{v0.5}
+\newcommand{\versionapi}{v0.6-RC1}
 
 % Title Page
 \title{Axiom NIC Datasheet}
@@ -50,43 +54,65 @@
 %\chapter{Axiom NIC}
 \section{AXIOM NIC Registers}
 \begin{regdescription}
-	Total size      \> 6144 bytes\\
+	Total size      \> 77824 bytes\\
 \end{regdescription}
 
 \subsection{Register summary}
 \begin{regglobalsummary}
-        \hline \textbf{\nameref{mod:status}} & & & & & \\
-                                             & & & & & \\
-        \hline \nameref{mod:status} & \nameref{reg:version} & 0x0000 & 32 & ro & Version register\\
-	\hline \nameref{mod:status} & \nameref{reg:status} & 0x0004 & 32 & ro & Status register\\
-	\hline \nameref{mod:status} & \nameref{reg:ifnumber} & 0x0008 & 32 & ro & Number of interface\\
-        \hline \nameref{mod:status} & \nameref{reg:ifinfo_base} & 0x0010+n, & 8 & ro & Interface status table\\
-                               & n=0...3 & & & & \\
-        \hline \textbf{\nameref{mod:control}} & & & & & \\
-                                              & & & & & \\
-	\hline \nameref{mod:control} & \nameref{reg:control} & 0x0040 & 32 & rw & Control register \\
-	\hline \nameref{mod:control} & \nameref{reg:nodeid} & 0x0044 & 32 & rw & Node ID register \\
-        \hline \textbf{\nameref{mod:interrupt}} & & & & & \\
-                                                & & & & & \\
-	\hline \nameref{mod:interrupt} & \nameref{reg:ackirq} & 0x0060 & 32 & wo & ACK Interrupt Register\\
-	\hline \nameref{mod:interrupt} & \nameref{reg:mskirq} & 0x0064 & 32 & rw & Mask Interrupt Register\\
-	\hline \nameref{mod:interrupt} & \nameref{reg:pndirq} & 0x0068 & 32 & ro & Pending Interrupt Register\\
-        \hline \textbf{\nameref{mod:routing}} & & & & & \\
-                                              & & & & & \\
-        \hline \nameref{mod:routing} & \nameref{reg:routing_base} & 0x0100+n & 8 & rw & Routing table base register\\
-                            & n=0...255 & & & & \\
-        \hline \textbf{\nameref{mod:queue}} & & & & & \\
-                                            & & & & & \\
-        \hline \nameref{mod:queue} & \nameref{reg:small_tx_head} & 0x0300 & 32 & ro & SMALL TX queue head\\
-	\hline \nameref{mod:queue} & \nameref{reg:small_tx_tail} & 0x0304 & 32 & ro & SMALL TX queue tail\\
-	\hline \nameref{mod:queue} & \nameref{reg:small_tx_avail} & 0x0308 & 32 & ro & SMALL TX queue descriptors available\\
-        \hline \nameref{mod:queue} & \nameref{reg:small_tx_base} & 0x0800+8*n & 64 & wo & SMALL TX queue base register\\
-                                & n=0...255 & & & & \\
-	\hline \nameref{mod:queue} & \nameref{reg:small_rx_head} & 0x0310 & 32 & ro & SMALL TX queue head\\
-	\hline \nameref{mod:queue} & \nameref{reg:small_rx_tail} & 0x0314 & 32 & ro & SMALL TX queue tail\\
-	\hline \nameref{mod:queue} & \nameref{reg:small_rx_avail} & 0x0318 & 32 & ro & SMALL TX queue descriptors available\\
-        \hline \nameref{mod:queue} & \nameref{reg:small_rx_base} & 0x1000+8*n & 64 & ro & SMALL TX queue base register\\
-                                & n=0...255 & & & & \\
+        \hline \textbf{\nameref{mod:status}} & & & & \\
+                                             & & & & \\
+        \hline \nameref{reg:version} & 0x00000000 & 32 & ro & Version register\\
+        \hline \nameref{reg:status} & 0x00000004 & 32 & ro & Status register\\
+	\hline \nameref{reg:ifnumber} & 0x00000008 & 32 & ro & Number of
+	interface\\
+        \hline \nameref{reg:ifinfo_base} & 0x00000010+n, & 8 & ro & Interface
+        status table\\ & n=0...3 & & & \\
+        \hline \textbf{\nameref{mod:control}} & & & & \\
+                                              & & & & \\
+	\hline \nameref{reg:control} & 0x00000040 & 32 & rw & Control register\\
+	\hline \nameref{reg:nodeid} & 0x00000044 & 32 & rw & Node ID register \\
+        \hline \textbf{\nameref{mod:interrupt}} & & & & \\
+                                                & & & & \\
+	\hline \nameref{reg:ackirq} & 0x00000060 & 32 & wo & ACK Interrupt
+	Register\\
+	\hline \nameref{reg:mskirq} & 0x00000064 & 32 & rw & Mask Interrupt
+	Register\\
+	\hline \nameref{reg:pndirq} & 0x00000068 & 32 & ro & Pending Interrupt
+	Register\\
+        \hline \textbf{\nameref{mod:routing}} & & & & \\
+                                              & & & & \\
+        \hline \nameref{reg:routing_base} & 0x00000100+n & 8 & rw & Routing
+        table base register\\ & n=0...255 & & & \\
+        \hline \textbf{\nameref{mod:queue}} & & & & \\
+                                            & & & & \\
+        \hline \nameref{reg:queue_tx_head} & 0x00000300 & 32 & ro & TX queue
+        head\\
+	\hline \nameref{reg:queue_tx_tail} & 0x00000304 & 32 & rw & TX queue
+	tail\\
+	\hline \nameref{reg:queue_tx_avail} & 0x00000308 & 32 & ro & TX queue
+	descriptors available\\
+        \hline \nameref{reg:queue_tx_hdr_base} & 0x00000800+4*n & 32 & wo & TX
+        headers queue base register\\ & n=0...255 & & & \\
+        \hline \nameref{reg:queue_tx_pld_base} & 0x00003000+128*n & 1024 & wo &
+        TX payloads queue base register\\ & n=0...255 & & & \\
+	\hline \nameref{reg:queue_rx_head} & 0x00000310 & 32 & rw & RX queue
+	head\\
+	\hline \nameref{reg:queue_rx_tail} & 0x00000314 & 32 & ro & RX queue
+	tail\\
+	\hline \nameref{reg:queue_rx_avail} & 0x00000318 & 32 & ro & RX queue
+	descriptors available\\
+        \hline \nameref{reg:queue_rx_hdr_base} & 0x00000C00+4*n & 32 & ro & RX
+        headers queue base register\\ & n=0...255 & & & \\
+        \hline \nameref{reg:queue_rx_pld_base} & 0x0000B000+128*n & 1024 & ro &
+        RX payloads queue base register\\ & n=0...255 & & & \\
+        \hline \nameref{reg:queue_rdma_head} & 0x00000320 & 32 & ro & RDMA queue
+        head\\
+	\hline \nameref{reg:queue_rdma_tail} & 0x00000324 & 32 & rw & RDMA queue
+	tail\\
+	\hline \nameref{reg:queue_rdma_avail} & 0x00000328 & 32 & ro & RDMA
+	queue descriptors available\\
+        \hline \nameref{reg:queue_rdma_hdr_base} & 0x00001000+12*n & 96 & wo &
+        RDMA headers queue base register\\ & n=0...255 & & & \\
 \end{regglobalsummary}
 
 
@@ -98,10 +124,14 @@
 
 \subsection{Register summary}
 \begin{regsummary}
-	\hline \nameref{reg:version} & 0x0000 & 32 & ro & 0x0 & Version register\\
-	\hline \nameref{reg:status} & 0x0004 & 32 & ro & 0x0 & Status register\\
-	\hline \nameref{reg:ifnumber} & 0x0008 & 32 & ro & 0x0 & Number of interface\\
-        \hline \nameref{reg:ifinfo_base} & 0x0010+n, & 8 & ro & 0x0 & Interface status table\\
+	\hline \nameref{reg:version} & 0x00000000 & 32 & ro & 0x0 & Version
+	register\\
+	\hline \nameref{reg:status} & 0x00000004 & 32 & ro & 0x0 & Status
+	register\\
+	\hline \nameref{reg:ifnumber} & 0x00000008 & 32 & ro & 0x0 & Number of
+	interface\\
+        \hline \nameref{reg:ifinfo_base} & 0x00000010+n, & 8 & ro & 0x0 &
+        Interface status table\\
                                & n=0...7 & & & & \\
 \end{regsummary}
 
@@ -116,7 +146,8 @@
 	Description		\> Version register\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 31:16 & ro & 0x0 & Reserved. Writes are ignored, read data is zero.\\
+	\hline reserved & 31:16 & ro & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
 	\hline BITSTREAM & 15:8 & ro & 0x0 & Bitstream version\\
 	\hline BOARD & 7:0 & ro & 0x0 & Axiom board model\\
 \end{regdetails}
@@ -132,7 +163,8 @@
 	Description		\> Status register\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 31:1 & ro & 0x0 & Reserved. Writes are ignored, read data is zero.\\
+	\hline reserved & 31:1 & ro & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
 	\hline TBD & 0 & rw & 0x0 & TBD\\
 \end{regdetails}
 
@@ -147,8 +179,10 @@
 	Description		\> Number of interface\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 31:3 & ro & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-	\hline IFNUMBER & 2:0 & ro & 0x2 & Number of interface which are present on a node.\\
+	\hline reserved & 31:3 & ro & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline IFNUMBER & 2:0 & ro & 0x2 & Number of interface which are present
+	on a node.\\
 \end{regdetails}
 
 
@@ -162,7 +196,8 @@
 	Description		\> Interface status table\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 7:3 & ro & 0x0 & Reserved. Writes are ignored, read data is zero.\\
+	\hline reserved & 7:3 & ro & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
 	\hline CONNECTED & 2 & ro & 0x0 & Interface connected status.\\
                & & & & 1b = interface is physically connected to another board.\\
                & & & & 0b = interface is disconnected.\\
@@ -182,8 +217,10 @@
 
 \subsection{Register summary}
 \begin{regsummary}
-	\hline \nameref{reg:control} & 0x0040 & 32 & rw & 0x0 & Control register \\
-	\hline \nameref{reg:nodeid} & 0x0044 & 32 & rw & 0x0 & Node ID register \\
+	\hline \nameref{reg:control} & 0x00000040 & 32 & rw & 0x0 & Control
+	register \\
+	\hline \nameref{reg:nodeid} & 0x00000044 & 32 & rw & 0x0 & Node ID
+	register \\
 \end{regsummary}
 
 
@@ -194,12 +231,15 @@
 	Width			\> 32 bits\\
 	Access Type		\> rw\\
 	Init Value		\> 0x00000000\\
-	Description		\> Control register. Used to enable local transmission ACKs\\
+	Description		\> Control register. Used to enable local
+	                           transmission ACKs\\
 	                        \> and/or the PHY loopback mode configuration.\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 31:1 & rw & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-	\hline LOOPBACK & 0 & rw & 0x0 & When set to 1b, all the interfaces are in loopback mode.\\
+	\hline reserved & 31:1 & rw & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline LOOPBACK & 0 & rw & 0x0 & When set to 1b, all the interfaces are
+	in loopback mode.\\
 \end{regdetails}
 
 
@@ -209,7 +249,7 @@
 	Relative Address	\> 0x00000044\\
 	Width			\> 32 bits\\
 	Access Type		\> rw\\
-	Init Value		\> 0x00\\
+	Init Value		\> 0x00000000\\
 	Description		\> Node ID register\\
 \end{regdescription}
 \begin{regdetails}
@@ -226,9 +266,12 @@
 
 \subsection{Register summary}
 \begin{regsummary}
-	\hline \nameref{reg:ackirq} & 0x0060 & 32 & wo & 0x0 & ACK Interrupt Register\\
-	\hline \nameref{reg:mskirq} & 0x0064 & 32 & rw & 0x0 & Mask Interrupt Register\\
-	\hline \nameref{reg:pndirq} & 0x0068 & 32 & ro & 0x0 & Pending Interrupt Register\\
+	\hline \nameref{reg:ackirq} & 0x00000060 & 32 & wo & 0x0 & ACK Interrupt
+	Register\\
+	\hline \nameref{reg:mskirq} & 0x00000064 & 32 & rw & 0x0 & Mask
+	Interrupt Register\\
+	\hline \nameref{reg:pndirq} & 0x00000068 & 32 & ro & 0x0 & Pending
+	Interrupt Register\\
 \end{regsummary}
 
 \subsubsection{ACKIRQ} \label{reg:ackirq}
@@ -238,14 +281,15 @@
 	Width			\> 32 bits\\
 	Access Type		\> wo\\
 	Init Value		\> 0x00000000\\
-	Description		\> ACK Interrupt Register. Used to send an ack for the interrupts\\
+	Description		\> ACK Interrupt Register. Used to send an ack
+	                           for the interrupts\\
 \end{regdescription}
 \begin{regdetails}
 	\hline reserved & 31:2 & wo & 0x0 & Reserved. Writes are ignored.\\
-	\hline IRQ\_SMALL\_TX & 1 & wo & 0x0 & Interrupt SMALL TX queue.\\
-               & & & & When set to 1b, the SMALL TX interrupt is acknowledged.\\
-	\hline IRQ\_SMALL\_RX & 0 & wo & 0x0 & Interrupt SMALL RX queue.\\
-               & & & & When set to 1b, the SMALL RX interrupt is acknowledged.\\
+	\hline IRQ\_QUEUE\_TX & 1 & wo & 0x0 & Interrupt TX queue.\\
+               & & & & When set to 1b, the TX interrupt is acknowledged.\\
+	\hline IRQ\_QUEUE\_RX & 0 & wo & 0x0 & Interrupt RX queue.\\
+               & & & & When set to 1b, the RX interrupt is acknowledged.\\
 \end{regdetails}
 
 \subsubsection{MSKIRQ} \label{reg:mskirq}
@@ -255,16 +299,18 @@
 	Width			\> 32 bits\\
 	Access Type		\> rw\\
 	Init Value		\> 0x00000000\\
-	Description		\> Mask Interrupt Register. Used to enable/disable interrupts\\
+	Description		\> Mask Interrupt Register. Used to
+	                           enable/disable interrupts\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 31:2 & rw & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-	\hline IRQ\_SMALL\_TX & 1 & rw & 0x0 & Interrupt SMALL TX queue.\\
-               & & & & 1b = SMALL TX interrupt is enabled.\\
-               & & & & 0b = SMALL TX interrupt is disabled.\\
-	\hline IRQ\_SMALL\_RX & 0 & rw & 0x0 & Interrupt SMALL RX queue.\\
-               & & & & 1b = SMALL RX interrupt is enabled.\\
-               & & & & 0b = SMALL RX interrupt is disabled.\\
+	\hline reserved & 31:2 & rw & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline IRQ\_QUEUE\_TX & 1 & rw & 0x0 & Interrupt TX queue.\\
+               & & & & 1b = TX interrupt is enabled.\\
+               & & & & 0b = TX interrupt is disabled.\\
+	\hline IRQ\_QUEUE\_RX & 0 & rw & 0x0 & Interrupt RX queue.\\
+               & & & & 1b = RX interrupt is enabled.\\
+               & & & & 0b = RX interrupt is disabled.\\
 \end{regdetails}
 
 \subsubsection{PNDIRQ} \label{reg:pndirq}
@@ -274,16 +320,21 @@
 	Width			\> 32 bits\\
 	Access Type		\> ro\\
 	Init Value		\> 0x00000000\\
-	Description		\> Pending Interrupt Register. Used to report the cause of the interrupt\\
+	Description		\> Pending Interrupt Register. Used to report
+	                           the cause of the interrupt\\
 \end{regdescription}
 \begin{regdetails}
 	\hline reserved & 31:2 & ro & 0x0 & Reserved. Read data is zero.\\
-	\hline IRQ\_SMALL\_TX & 1 & ro & 0x0 & Interrupt SMALL TX queue.\\
-               & & & & This bit is set to 1b when the SMALL TX queue generates an interrupt.\\
-               & & & & This bit is reset to 0b when the SMALL TX queue interrupt is acknowledged.\\
-	\hline IRQ\_SMALL\_RX & 0 & ro & 0x0 & Interrupt SMALL RX queue.\\
-               & & & & This bit is set to 1b when the SMALL RX queue generates an interrupt.\\
-               & & & & This bit is reset to 0b when the SMALL RX queue interrupt is acknowledged.\\
+	\hline IRQ\_QUEUE\_TX & 1 & ro & 0x0 & Interrupt TX queue.\\
+               & & & & This bit is set to 1b when the TX queue generates
+               an interrupt.\\
+               & & & & This bit is reset to 0b when the TX queue interrupt
+               is acknowledged.\\
+	\hline IRQ\_QUEUE\_RX & 0 & ro & 0x0 & Interrupt RX queue.\\
+               & & & & This bit is set to 1b when the RX queue generates
+               an interrupt.\\
+               & & & & This bit is reset to 0b when the RX queue interrupt
+               is acknowledged.\\
 \end{regdetails}
 
 
@@ -296,27 +347,35 @@
 
 \subsection{Register summary}
 \begin{regsummary}
-    \hline \nameref{reg:routing_base} & 0x0100+n & 8 & rw & 0x00 & Routing table base register\\
+    \hline \nameref{reg:routing_base} & 0x00000100+n & 8 & rw & 0x00 & Routing
+    table base register\\
                             & n=0...255 & & & & \\
 \end{regsummary}
 
 \subsubsection{ROUTING\_BASE[n]} \label{reg:routing_base}
 \begin{regdescription}
-	Name			\> SMALL\_RX\_BASE[n]\\
+	Name			\> QUEUE\_RX\_BASE[n]\\
 	Relative Address	\> 0x00000100+n, n=0...255\\
 	Width (single row)	\> 8 bits\\
 	Access Type		\> rw\\
-	Init Value		\> 0x00\\
+	Init Value		\> 0x00000000\\
 	Description		\> Routing table base register\\
-	                        \> This array of registers represents the routing table.\\
-	                        \> The array index represents the destination node id.\\
+	                        \> This array of registers represents the
+	                        routing table.\\
+	                        \> The array index represents the destination
+	                        node id.\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 7:4 & rw & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-        \hline ENABLED\_IF\_3 & 3 & rw & 0x0 & When set to 1b, the node n (array index) is reachable through the interface 3.\\
-        \hline ENABLED\_IF\_2 & 2 & rw & 0x0 & When set to 1b, the node n (array index) is reachable through the interface 2.\\
-        \hline ENABLED\_IF\_1 & 1 & rw & 0x0 & When set to 1b, the node n (array index) is reachable through the interface 1.\\
-        \hline ENABLED\_IF\_0 & 0 & rw & 0x0 & When set to 1b, the node n (array index) is reachable through the interface 0.\\
+	\hline reserved & 7:4 & rw & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+        \hline ENABLED\_IF\_3 & 3 & rw & 0x0 & When set to 1b, the node n (array
+        index) is reachable through the interface 3.\\
+        \hline ENABLED\_IF\_2 & 2 & rw & 0x0 & When set to 1b, the node n (array
+        index) is reachable through the interface 2.\\
+        \hline ENABLED\_IF\_1 & 1 & rw & 0x0 & When set to 1b, the node n (array
+        index) is reachable through the interface 1.\\
+        \hline ENABLED\_IF\_0 & 0 & rw & 0x0 & When set to 1b, the node n (array
+        index) is reachable through the interface 0.\\
 \end{regdetails}
 
 
@@ -331,161 +390,314 @@
 
 \subsection{Register summary}
 \begin{regsummary}
-        \hline \nameref{reg:small_tx_head} & 0x0300 & 32 & ro & 0x0 & SMALL TX queue head\\
-	\hline \nameref{reg:small_tx_tail} & 0x0304 & 32 & ro & 0x0 & SMALL TX queue tail\\
-	\hline \nameref{reg:small_tx_avail} & 0x0308 & 32 & ro & 0x0 & SMALL TX queue descriptors available\\
-        \hline \nameref{reg:small_tx_base} & 0x0800+8*n & 64 & wo & 0x0 & SMALL TX queue base register\\
-                                & n=0...255 & & & & \\
-	\hline \nameref{reg:small_rx_head} & 0x0310 & 32 & ro & 0x0 & SMALL TX queue head\\
-	\hline \nameref{reg:small_rx_tail} & 0x0314 & 32 & ro & 0x0 & SMALL TX queue tail\\
-	\hline \nameref{reg:small_rx_avail} & 0x0318 & 32 & ro & 0x0 & SMALL TX queue descriptors available\\
-        \hline \nameref{reg:small_rx_base} & 0x1000+8*n & 64 & ro & 0x0 & SMALL TX queue base register\\
-                                & n=0...255 & & & & \\
+        \hline \nameref{reg:queue_tx_head} & 0x00000300 & 32 & ro & 0x0 & TX
+        queue head\\
+	\hline \nameref{reg:queue_tx_tail} & 0x00000304 & 32 & rw & 0x0 & TX
+	queue tail\\
+	\hline \nameref{reg:queue_tx_avail} & 0x00000308 & 32 & ro & 0x0 & TX
+	queue descriptors available\\
+        \hline \nameref{reg:queue_tx_hdr_base} & 0x00000800+4*n & 32 & wo & 0x0
+        & TX headers queue base register\\ & n=0...255 & & & & \\
+        \hline \nameref{reg:queue_tx_pld_base} & 0x00003000+128*n & 1024 & wo &
+        0x0 & TX payloads queue base register\\ & n=0...255 & & & & \\
+	\hline \nameref{reg:queue_rx_head} & 0x00000310 & 32 & rw & 0x0 & RX
+	queue head\\
+	\hline \nameref{reg:queue_rx_tail} & 0x00000314 & 32 & ro & 0x0 & RX
+	queue tail\\
+	\hline \nameref{reg:queue_rx_avail} & 0x00000318 & 32 & ro & 0x0 & RX
+	queue descriptors available\\
+        \hline \nameref{reg:queue_rx_hdr_base} & 0x00000C00+4*n & 32 & ro & 0x0
+        & RX headers queue base register\\ & n=0...255 & & & & \\
+        \hline \nameref{reg:queue_rx_pld_base} & 0x0000B000+128*n & 1024 & ro &
+        0x0 & RX headers queue base register\\ & n=0...255 & & & & \\
+        \hline \nameref{reg:queue_rdma_head} & 0x00000320 & 32 & ro & 0x0 & RDMA
+        queue head\\
+	\hline \nameref{reg:queue_rdma_tail} & 0x00000324 & 32 & rw & 0x0 & RDMA
+	queue tail\\
+	\hline \nameref{reg:queue_rdma_avail} & 0x00000328 & 32 & ro & 0x0 &
+	RDMA queue descriptors available\\
+        \hline \nameref{reg:queue_rdma_hdr_base} & 0x00001000+12*n & 96 & wo &
+        0x0 & RDMA headers queue base register\\ & n=0...255 & & & & \\
 \end{regsummary}
 
-\subsubsection{SMALL\_TX\_HEAD} \label{reg:small_tx_head}
+\subsubsection{QUEUE\_TX\_HEAD} \label{reg:queue_tx_head}
 \begin{regdescription}
-	Name			\> SMALL\_TX\_HEAD\\
+	Name			\> QUEUE\_TX\_HEAD\\
 	Relative Address	\> 0x00000300\\
 	Width			\> 32 bits\\
 	Access Type		\> ro\\
-	Init Value		\> 0x00\\
-	Description		\> SMALL TX queue head\\
+	Init Value		\> 0x00000000\\
+	Description		\> TX queue head\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 31:8 & ro & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-	\hline SMALL\_TX\_HEAD & 7:0 & ro & 0x0 & SMALL TX queue head.\\
-               & & & &  This register contains the head pointer for the SMALL TX queue.
-                        The head (in the TX queue) points to the first descriptor to be sent by
-                        the network card. Hardware controls this pointer. When the descriptor
-                        pointed by the head is sent, this register is incremented.\\
+	\hline reserved & 31:8 & ro & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline QUEUE\_TX\_HEAD & 7:0 & ro & 0x0 & TX queue head.\\
+               & & & &  This register contains the head pointer for the TX
+               queue. The head (in the TX queue) points to the first descriptor
+               to be sent by the network card. Hardware controls this pointer.
+               When the descriptor pointed by the head is sent, this register is
+               incremented.\\
 \end{regdetails}
 
-\subsubsection{SMALL\_TX\_TAIL} \label{reg:small_tx_tail}
+\subsubsection{QUEUE\_TX\_TAIL} \label{reg:queue_tx_tail}
 \begin{regdescription}
-	Name			\> SMALL\_TX\_TAIL\\
+	Name			\> QUEUE\_TX\_TAIL\\
 	Relative Address	\> 0x00000304\\
 	Width			\> 32 bits\\
-	Access Type		\> ro\\
-	Init Value		\> 0x00\\
-	Description		\> SMALL TX queue tail\\
+	Access Type		\> rw\\
+	Init Value		\> 0x00000000\\
+	Description		\> TX queue tail\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 31:8 & ro & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-	\hline SMALL\_TX\_TAIL & 7:0 & ro & 0x0 & SMALL TX queue tail.\\
-               & & & &  This register contains the tail pointer for the SMALL TX queue.
-                        The tail (in the TX queue) points to the first empty descriptor
-                        which the software can fill. Software controls this
-                        pointer.\\
+	\hline reserved & 31:8 & rw & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline QUEUE\_TX\_TAIL & 7:0 & rw & 0x0 & TX queue tail.\\
+               & & & &  This register contains the tail pointer for the TX
+               queue. The tail (in the TX queue) points to the first empty
+               descriptor which the software can fill. Software controls this
+               pointer.\\
 \end{regdetails}
 
-\subsubsection{SMALL\_TX\_AVAIL} \label{reg:small_tx_avail}
+\subsubsection{QUEUE\_TX\_AVAIL} \label{reg:queue_tx_avail}
 \begin{regdescription}
-	Name			\> SMALL\_TX\_AVAIL\\
+	Name			\> QUEUE\_TX\_AVAIL\\
 	Relative Address	\> 0x00000308\\
 	Width			\> 32 bits\\
 	Access Type		\> ro\\
-	Init Value		\> 0x00\\
-	Description		\> SMALL TX queue descriptors available\\
+	Init Value		\> 0x00000000\\
+	Description		\> TX queue descriptors available\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 31:16 & ro & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-	\hline SMALL\_TX\_AVAIL & 15:0 & ro & 0x0 & SMALL TX queue descriptors available\\
+	\hline reserved & 31:16 & ro & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline QUEUE\_TX\_AVAIL & 15:0 & ro & 0x0 & TX queue descriptors
+	available\\
                & & & &  This register contains the number of free descriptor
-                        available in the SMALL TX queue, which the software can fill.\\
+               available in the TX queue, which the software can fill.\\
 \end{regdetails}
 
-\subsubsection{SMALL\_TX\_BASE[n]} \label{reg:small_tx_base}
+\subsubsection{QUEUE\_TX\_HDR\_BASE[n]} \label{reg:queue_tx_hdr_base}
 \begin{regdescription}
-	Name			\> SMALL\_TX\_BASE[n]\\
-	Relative Address	\> 0x00000800+8*n, n=0...255\\
-	Width (single row)	\> 64 bits\\
+	Name			\> QUEUE\_TX\_HDR\_BASE[n]\\
+	Relative Address	\> 0x00000800+4*n, n=0...255\\
+	Width (single row)	\> 32 bits\\
 	Access Type		\> wo\\
-	Init Value		\> 0x00\\
-	Description		\> SMALL TX queue base register\\
-	                        \> This array of registers represents the queue of SMALL TX descriptors.\\
-	                        \> Each descriptor is 64-bit.\\
+	Init Value		\> 0x00000000\\
+	Description		\> TX headers queue base register\\
+	                        \> This array of registers represents the
+	                        headers queue of TX descriptors.\\
 \end{regdescription}
 \begin{regdetails}
-	\hline PAYLOAD & 63:32 & wo & 0x0 & Data to be sent. \\
-	\hline reserved & 31:16 & wo & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-	\hline DESTINATION & 15:8 & wo & 0x0 & Receiver node id or local interface to send message to the neighbour \\
-	\hline reserved & 7:6 & wo & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-	\hline PORT & 5:3 & wo & 0x0 & SMALL message port.\\
-        \hline TYPE: TBD & 2:0 & wo & 0x0 & SMALL message types. (NEIGHBOUR, etc.)\\
+	\hline reserved & 31:23 & wo & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline PAYLOAD\_SIZE & 22:16 & wo & 0x0 & Payload size of this message\\
+	\hline DESTINATION & 15:8 & wo & 0x0 & Receiver node id or local
+	interface to send message to the neighbour \\
+	\hline reserved & 7:6 & wo & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline PORT & 5:3 & wo & 0x0 & Message port.\\
+        \hline TYPE & 2:0 & wo & 0x0 & Message types.\\
+                    & & & & (SMALL\_DATA = 0, SMALL\_NEIGHBOUR = 1, LONG\_DATA =
+                    2, RDMA\_WRITE = 3, RDMA\_REQ = 4, RDMA\_RESPONSE = 5,
+                    ACK = 6)\\
 \end{regdetails}
 
-\subsubsection{SMALL\_RX\_HEAD} \label{reg:small_rx_head}
+\subsubsection{QUEUE\_TX\_PLD\_BASE[n]} \label{reg:queue_tx_pld_base}
 \begin{regdescription}
-	Name			\> SMALL\_RX\_HEAD\\
+	Name			\> QUEUE\_TX\_PLD\_BASE[n]\\
+	Relative Address	\> 0x00003000+128*n, n=0...255\\
+	Width (single row)	\> 1024 bits\\
+	Access Type		\> wo\\
+	Init Value		\> 0x00000000\\
+	Description		\> TX payloads queue base register\\
+	                        \> This array of registers represents the
+	                        payloads queue of TX descriptors.\\
+\end{regdescription}
+\begin{regdetails}
+	\hline PAYLOAD & 1023:0 & ro & 0x0 & Payload of this message\\
+\end{regdetails}
+
+\subsubsection{QUEUE\_RX\_HEAD} \label{reg:queue_rx_head}
+\begin{regdescription}
+	Name			\> QUEUE\_RX\_HEAD\\
 	Relative Address	\> 0x00000310\\
 	Width			\> 32 bits\\
-	Access Type		\> ro\\
-	Init Value		\> 0x00\\
-	Description		\> SMALL RX queue head\\
+	Access Type		\> rw\\
+	Init Value		\> 0x00000000\\
+	Description		\> RX queue head\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 31:8 & ro & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-	\hline SMALL\_RX\_HEAD & 7:0 & ro & 0x0 & SMALL RX queue head.\\
-               & & & &  This register contains the head pointer for the SMALL RX queue.
-                        The head (in the RX queue) points to the first descriptor received by
-                        the network card, which the software can read.
-                        Software controls this pointer.\\
+	\hline reserved & 31:8 & rw & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline QUEUE\_RX\_HEAD & 7:0 & rw & 0x0 & RX queue head.\\
+               & & & &  This register contains the head pointer for the RX
+               queue. The head (in the RX queue) points to the first descriptor
+               received by the network card, which the software can read.
+               Software controls this pointer.\\
 \end{regdetails}
 
-\subsubsection{SMALL\_RX\_TAIL} \label{reg:small_rx_tail}
+\subsubsection{QUEUE\_RX\_TAIL} \label{reg:queue_rx_tail}
 \begin{regdescription}
-	Name			\> SMALL\_RX\_TAIL\\
+	Name			\> QUEUE\_RX\_TAIL\\
 	Relative Address	\> 0x00000314\\
 	Width			\> 32 bits\\
 	Access Type		\> ro\\
-	Init Value		\> 0x00\\
-	Description		\> SMALL RX queue tail\\
+	Init Value		\> 0x00000000\\
+	Description		\> RX queue tail\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 31:8 & ro & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-	\hline SMALL\_RX\_TAIL & 7:0 & ro & 0x0 & SMALL RX queue tail.\\
-               & & & &  This register contains the tail pointer for the SMALL RX queue.
-                        The tail (in the RX queue) points to the first empty descriptor
-                        which the hardware can fill. Hardware controls this pointer.
-                        When the descriptor pointed by the tail is filled by the hardware,
-                        this register is incremented.\\
+	\hline reserved & 31:8 & ro & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline QUEUE\_RX\_TAIL & 7:0 & ro & 0x0 & RX queue tail.\\
+               & & & &  This register contains the tail pointer for the RX
+               queue. The tail (in the RX queue) points to the first empty
+               descriptor which the hardware can fill. Hardware controls this
+               pointer. When the descriptor pointed by the tail is filled by
+               the hardware, this register is incremented.\\
 \end{regdetails}
 
-\subsubsection{SMALL\_RX\_AVAIL} \label{reg:small_rx_avail}
+\subsubsection{QUEUE\_RX\_AVAIL} \label{reg:queue_rx_avail}
 \begin{regdescription}
-	Name			\> SMALL\_RX\_AVAIL\\
+	Name			\> QUEUE\_RX\_AVAIL\\
 	Relative Address	\> 0x00000318\\
 	Width			\> 32 bits\\
 	Access Type		\> ro\\
-	Init Value		\> 0x00\\
-	Description		\> SMALL RX queue descriptors available\\
+	Init Value		\> 0x00000000\\
+	Description		\> RX queue descriptors available\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 31:16 & wo & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-	\hline SMALL\_RX\_AVAIL & 15:0 & ro & 0x0 & SMALL RX queue descriptors available\\
+	\hline reserved & 31:16 & wo & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline QUEUE\_RX\_AVAIL & 15:0 & ro & 0x0 & RX queue descriptors
+	available\\
                & & & &  This register contains the number of filled descriptor
-                        available in the SMALL RX queue, which the software can read.\\
+               available in the RX queue, which the software can read.\\
 \end{regdetails}
 
-\subsubsection{SMALL\_RX\_BASE[n]} \label{reg:small_rx_base}
+\subsubsection{QUEUE\_RX\_HDR\_BASE[n]} \label{reg:queue_rx_hdr_base}
 \begin{regdescription}
-	Name			\> SMALL\_RX\_BASE[n]\\
-	Relative Address	\> 0x00001000+8*n, n=0...255\\
-	Width (single row)	\> 64 bits\\
+	Name			\> QUEUE\_RX\_HDR\_BASE[n]\\
+	Relative Address	\> 0x00000C00+4*n, n=0...255\\
+	Width (single row)	\> 32 bits\\
 	Access Type		\> ro\\
-	Init Value		\> 0x00\\
-	Description		\> SMALL RX queue base register\\
-	                        \> This array of registers represents the queue of SMALL RX descriptors.\\
-	                        \> Each descriptor is 64-bit.\\
+	Init Value		\> 0x00000000\\
+	Description		\> RX headers queue base register\\
+	                        \> This array of registers represents the
+	                        headers queue of RX descriptors.\\
 \end{regdescription}
 \begin{regdetails}
-	\hline PAYLOAD & 63:32 & ro & 0x0 & Data received. \\
-	\hline reserved & 31:16 & ro & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-	\hline SOURCE & 15:8 & ro & 0x0 & Sender node id or local interface where neighbour message is received\\
-	\hline reserved & 7:6 & ro & 0x0 & Reserved. Writes are ignored, read data is zero.\\
-	\hline PORT & 5:3 & ro & 0x0 & SMALL message port.\\
-        \hline TYPE: TBD & 2:0 & ro & 0x0 & SMALL message types. (NEIGHBOUR, etc.)\\
+	\hline reserved & 31:23 & ro & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline PAYLOAD\_SIZE & 22:16 & ro & 0x0 & Payload size of this message\\
+	\hline SOURCE & 15:8 & ro & 0x0 & Sender node id or local interface
+	where neighbour message is received\\
+	\hline reserved & 7:6 & ro & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline PORT & 5:3 & ro & 0x0 & Message port.\\
+        \hline TYPE & 2:0 & ro & 0x0 & Message types. \\
+                    & & & & (SMALL\_DATA = 0, SMALL\_NEIGHBOUR = 1, LONG\_DATA =
+                    2, RDMA\_WRITE = 3, RDMA\_REQ = 4, RDMA\_RESPONSE = 5,
+                    ACK = 6)\\
+\end{regdetails}
+
+\subsubsection{QUEUE\_RX\_PLD\_BASE[n]} \label{reg:queue_rx_pld_base}
+\begin{regdescription}
+	Name			\> QUEUE\_RX\_PLD\_BASE[n]\\
+	Relative Address	\> 0x0000B000+128*n, n=0...255\\
+	Width (single row)	\> 1024 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00000000\\
+	Description		\> RX payloads queue base register\\
+	                        \> This array of registers represents the
+	                        payloads queue of RX descriptors.\\
+\end{regdescription}
+\begin{regdetails}
+	\hline PAYLOAD & 1023:0 & ro & 0x0 & Payload of this message\\
+\end{regdetails}
+
+\subsubsection{QUEUE\_RDMA\_HEAD} \label{reg:queue_rdma_head}
+\begin{regdescription}
+	Name			\> QUEUE\_RDMA\_HEAD\\
+	Relative Address	\> 0x00000320\\
+	Width			\> 32 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00000000\\
+	Description		\> RDMA queue head\\
+\end{regdescription}
+\begin{regdetails}
+	\hline reserved & 31:8 & ro & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline QUEUE\_RDMA\_HEAD & 7:0 & ro & 0x0 & RDMA queue head.\\
+               & & & &  This register contains the head pointer for the RDMA
+               queue. The head (in the RDMA queue) points to the first
+               descriptor to be used by the network card. Hardware controls this
+               pointer.  When the descriptor pointed by the head is used, this
+               register is incremented.\\
+\end{regdetails}
+
+\subsubsection{QUEUE\_RDMA\_TAIL} \label{reg:queue_rdma_tail}
+\begin{regdescription}
+	Name			\> QUEUE\_RDMA\_TAIL\\
+	Relative Address	\> 0x00000324\\
+	Width			\> 32 bits\\
+	Access Type		\> rw\\
+	Init Value		\> 0x00000000\\
+	Description		\> RDMA queue tail\\
+\end{regdescription}
+\begin{regdetails}
+	\hline reserved & 31:8 & rw & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline QUEUE\_RDMA\_TAIL & 7:0 & rw & 0x0 & RDMA queue tail.\\
+               & & & &  This register contains the tail pointer for the RDMA
+               queue. The tail (in the RDMA queue) points to the first empty
+               descriptor which the software can fill. Software controls this
+               pointer.\\
+\end{regdetails}
+
+\subsubsection{QUEUE\_RDMA\_AVAIL} \label{reg:queue_rdma_avail}
+\begin{regdescription}
+	Name			\> QUEUE\_RDMA\_AVAIL\\
+	Relative Address	\> 0x00000328\\
+	Width			\> 32 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00000000\\
+	Description		\> RDMA queue descriptors available\\
+\end{regdescription}
+\begin{regdetails}
+	\hline reserved & 31:16 & ro & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline QUEUE\_RDMA\_AVAIL & 15:0 & ro & 0x0 & RDMA queue descriptors
+	available\\
+               & & & &  This register contains the number of free descriptor
+               available in the RDMA queue, which the software can fill.\\
+\end{regdetails}
+
+\subsubsection{QUEUE\_RDMA\_HDR\_BASE[n]} \label{reg:queue_rdma_hdr_base}
+\begin{regdescription}
+	Name			\> QUEUE\_RDMA\_HDR\_BASE[n]\\
+	Relative Address	\> 0x00001000+12*n, n=0...255\\
+	Width (single row)	\> 96 bits\\
+	Access Type		\> wo\\
+	Init Value		\> 0x00000000\\
+	Description		\> RDMA headers queue base register\\
+	                        \> This array of registers represents the
+	                        headers queue of RDMA descriptors.\\
+\end{regdescription}
+\begin{regdetails}
+        \hline DST\_ADDR & 95:64 & wo & 0x0 & Source memory address \\
+        \hline SRC\_ADDR & 63:32 & wo & 0x0 & Destination memory address\\
+	\hline reserved & 31:24 & wo & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline PAYLOAD\_SIZE & 23:16 & wo & 0x0 & Payload size of this RDMA\\
+	\hline DESTINATION & 15:8 & wo & 0x0 & Receiver node id\\
+	\hline reserved & 7:6 & wo & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
+	\hline PORT & 5:3 & wo & 0x0 & RDMA port.\\
+        \hline TYPE & 2:0 & wo & 0x0 & RDMA types.\\
+                    & & & & (SMALL\_DATA = 0, SMALL\_NEIGHBOUR = 1, LONG\_DATA =
+                    2, RDMA\_WRITE = 3, RDMA\_REQ = 4, RDMA\_RESPONSE = 5,
+                    ACK = 6)\\
 \end{regdetails}
 
 \end{document}
