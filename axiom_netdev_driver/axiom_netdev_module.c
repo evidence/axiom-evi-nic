@@ -555,6 +555,9 @@ static long axiomnet_bind(struct axiomnet_priv *priv, int port) {
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     long ret = 0;
 
+    /* unbind previous bind */
+    axiomnet_unbind(priv);
+
     if (port >= AXIOM_SMALL_PORT_LENGTH) {
         return -EFBIG;
     }
