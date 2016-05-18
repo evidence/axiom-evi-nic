@@ -38,7 +38,7 @@
 /*! \brief Axiom type RDMA REQ (message contains RDMA request) */
 #define AXIOM_TYPE_RDMA_REQ             4
 /*! \brief Axiom type RDMA RESPONSE (message contains RDMA response) */
-#define AXIOM_TYPE_RDMA_REQ             5
+#define AXIOM_TYPE_RDMA_RESPONE         5
 /*! \brief Axiom type ACK (message contains an ACK) */
 #define AXIOM_TYPE_ACK                  6
 
