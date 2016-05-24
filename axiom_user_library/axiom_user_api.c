@@ -39,8 +39,10 @@ axiom_open(axiom_args_t *args) {
     axiom_dev_t *dev;
 
     dev = malloc(sizeof(*dev));
-    if (!dev)
+    if (!dev) {
+        EPRINTF("failed to allocate memory");
         return NULL;
+    }
 
     dev->fd = open(AXIOM_DEV_FILENAME, O_RDWR);
     if (dev->fd <0) {
@@ -69,8 +71,10 @@ axiom_bind(axiom_dev_t *dev, axiom_port_t port)
 {
     int ret;
 
-    if (!dev || dev->fd <= 0)
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
         return AXIOM_RET_ERROR;
+    }
 
     ret = ioctl(dev->fd, AXNET_BIND, &port);
 
@@ -89,8 +93,10 @@ axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
     uint8_t enabled_mask;
     int i;
 
-    if (!dev || dev->fd <= 0)
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
         return AXIOM_RET_ERROR;
+    }
 
     ret = axiom_get_routing(dev, dst_id, &enabled_mask);
     if (ret == AXIOM_RET_ERROR)
@@ -113,11 +119,16 @@ axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
     axiom_small_msg_t small_msg;
     int ret;
 
-    if (!dev || dev->fd <= 0)
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
         return AXIOM_RET_ERROR;
+    }
 
-    if (payload_size > AXIOM_SMALL_PAYLOAD_MAX_SIZE)
+    if (payload_size > AXIOM_SMALL_PAYLOAD_MAX_SIZE) {
+        EPRINTF("payload size too big - size: %d [%d]", payload_size,
+                AXIOM_SMALL_PAYLOAD_MAX_SIZE);
         return AXIOM_RET_ERROR;
+    }
 
     small_msg.header.tx.port_type.field.port = (port & 0x7);
     small_msg.header.tx.port_type.field.type = (type & 0x7);
@@ -129,6 +140,7 @@ axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
     /* TODO: maybe we can send only the payload bytes used */
     ret = write(dev->fd, &small_msg, sizeof(small_msg));
     if (ret != sizeof(small_msg)) {
+        EPRINTF("impossible to write() - ret: %d", ret);
         return AXIOM_RET_ERROR;
     }
 
@@ -146,18 +158,26 @@ axiom_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
     axiom_small_msg_t small_msg;
     int ret;
 
-    if (!dev || dev->fd <= 0)
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
         return AXIOM_RET_ERROR;
+    }
 
-    if (*payload_size > AXIOM_SMALL_PAYLOAD_MAX_SIZE)
+    if (*payload_size > AXIOM_SMALL_PAYLOAD_MAX_SIZE) {
+        EPRINTF("payload size too big - size: %d [%d]", *payload_size,
+                AXIOM_SMALL_PAYLOAD_MAX_SIZE);
         return AXIOM_RET_ERROR;
+    }
 
     ret = read(dev->fd, &small_msg, sizeof(small_msg));
     if (ret != sizeof(small_msg))
         return AXIOM_RET_ERROR;
 
-    if (small_msg.header.rx.payload_size > *payload_size)
+    if (small_msg.header.rx.payload_size > *payload_size) {
+        EPRINTF("receive packet bigger[%d] than payload_size[%d] specified",
+                small_msg.header.rx.payload_size, *payload_size);
         return AXIOM_RET_ERROR;
+    }
 
     *src_id = small_msg.header.rx.src;
     *port = (small_msg.header.rx.port_type.field.port & 0x7);
@@ -174,8 +194,10 @@ axiom_read_ni_status(axiom_dev_t *dev)
     int ret;
     uint32_t status;
 
-    if (!dev || dev->fd <= 0)
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
         return -1;
+    }
 
     ret = ioctl(dev->fd, AXNET_GET_STATUS, &status);
 
@@ -191,8 +213,10 @@ axiom_set_ni_control(axiom_dev_t *dev, uint32_t reg_mask)
 {
     int ret;
 
-    if (!dev || dev->fd <= 0)
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
         return;
+    }
 
     ret = ioctl(dev->fd, AXNET_SET_CONTROL, &reg_mask);
 
@@ -207,8 +231,10 @@ axiom_read_ni_control(axiom_dev_t *dev)
     int ret;
     uint32_t control;
 
-    if (!dev || dev->fd <= 0)
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
         return -1;
+    }
 
     ret = ioctl(dev->fd, AXNET_GET_CONTROL, &control);
 
@@ -225,8 +251,10 @@ axiom_set_node_id(axiom_dev_t *dev, axiom_node_id_t node_id)
 {
     int ret;
 
-    if (!dev || dev->fd <= 0)
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
         return;
+    }
 
     ret = ioctl(dev->fd, AXNET_SET_NODEID, &node_id);
 
@@ -241,8 +269,10 @@ axiom_get_node_id(axiom_dev_t *dev)
     int ret;
     axiom_node_id_t node_id;
 
-    if (!dev || dev->fd <= 0)
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
         return -1;
+    }
 
     ret = ioctl(dev->fd, AXNET_GET_NODEID, &node_id);
 
@@ -260,8 +290,10 @@ axiom_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
     int ret;
     axiom_ioctl_routing_t routing;
 
-    if (!dev || dev->fd <= 0)
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
         return AXIOM_RET_ERROR;
+    }
 
     routing.node_id = node_id;
     routing.enabled_mask = enabled_mask;
@@ -283,8 +315,10 @@ axiom_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
     int ret;
     axiom_ioctl_routing_t routing;
 
-    if (!dev || dev->fd <= 0)
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
         return AXIOM_RET_ERROR;
+    }
 
     routing.node_id = node_id;
     routing.enabled_mask = 0;
@@ -306,8 +340,10 @@ axiom_get_if_number(axiom_dev_t *dev, axiom_if_id_t *if_number)
 {
     int ret;
 
-    if (!dev || dev->fd <= 0)
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
         return AXIOM_RET_ERROR;
+    }
 
     ret = ioctl(dev->fd, AXNET_GET_IFNUMBER, if_number);
 
@@ -326,8 +362,10 @@ axiom_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
     int ret;
     uint8_t buf_if = if_number;
 
-    if (!dev || dev->fd <= 0)
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
         return AXIOM_RET_ERROR;
+    }
 
     ret = ioctl(dev->fd, AXNET_GET_IFINFO, &buf_if);
 
