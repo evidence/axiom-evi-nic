@@ -335,6 +335,34 @@ axiom_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
     return AXIOM_RET_OK;
 }
 
+int
+axiom_get_num_nodes(axiom_dev_t *dev)
+{
+    axiom_err_t err;
+    uint8_t enabled_mask;
+    int i;
+    /* init to 1, because the local node is not set in the routing table */
+    int num_nodes = 1;
+
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
+        return -1;
+    }
+
+    for (i = 0; i < AXIOM_MAX_NODES; i++) {
+        err = axiom_get_routing(dev, i, &enabled_mask);
+        if (err)
+            break;
+
+        /* count node i, if it is reachable through some interface */
+        if (enabled_mask)
+            num_nodes++;
+    }
+
+    return num_nodes;
+}
+
+
 axiom_err_t
 axiom_get_if_number(axiom_dev_t *dev, axiom_if_id_t *if_number)
 {

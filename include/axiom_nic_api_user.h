@@ -249,6 +249,17 @@ axiom_err_t
 axiom_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
         uint8_t *enabled_mask);
 
+/*!
+ * \brief This function returns the number of nodes in the network, including
+ *        the local node.
+ *
+ * \param dev           The axiom device private data pointer
+ *
+ * \return Returns the number of nodes on success, -1 otherwise.
+ */
+int
+axiom_get_num_nodes(axiom_dev_t *dev);
+
 #if 0
 /*!
  * \brief This function updates the routing table of a node for a particular
