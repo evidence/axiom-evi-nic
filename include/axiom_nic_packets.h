@@ -27,26 +27,34 @@
 
 /*************************** AXIOM packet TYPES *******************************/
 
-/*! \brief Axiom type RAW DATA (message contains RAW data) */
-#define AXIOM_TYPE_RAW_DATA             0
-/*! \brief Axiom type NEIGHBOUR (message contains RAW data to neighbour) */
-#define AXIOM_TYPE_NEIGHBOUR            1
-/*! \brief Axiom type LONG DATA (message contains LONG data) */
+/*! \brief Axiom type SMALL DATA (contains SMALL data) */
+#define AXIOM_TYPE_SMALL_DATA           0
+/*! \brief Axiom type SMALL NEIGHBOUR (contains SMALL data to neighbour) */
+#define AXIOM_TYPE_SMALL_NEIGHBOUR      1
+/*! \brief Axiom type LONG DATA (contains LONG data) */
 #define AXIOM_TYPE_LONG_DATA            2
-/*! \brief Axiom type RDMA WRITE (message contains RDMA write) */
+/*! \brief Axiom type RDMA WRITE (contains RDMA write) */
 #define AXIOM_TYPE_RDMA_WRITE           3
-/*! \brief Axiom type RDMA REQ (message contains RDMA request) */
+/*! \brief Axiom type RDMA REQ (contains RDMA request) */
 #define AXIOM_TYPE_RDMA_REQ             4
-/*! \brief Axiom type RDMA RESPONSE (message contains RDMA response) */
+/*! \brief Axiom type RDMA RESPONSE (contains RDMA response - HW reserved) */
 #define AXIOM_TYPE_RDMA_RESPONE         5
-/*! \brief Axiom type ACK (message contains an ACK) */
-#define AXIOM_TYPE_ACK                  6
+/*! \brief Axiom type INIT (contains an INIT - HW reserved) */
+#define AXIOM_TYPE_INIT                 6
+/*! \brief Axiom type ACK (contains an ACK - HW reserved) */
+#define AXIOM_TYPE_ACK                  7
 
 /*! \brief Max number of type available */
 #define AXIOM_TYPE_LENGTH               8
 
 
 /*************************** Packets structure ********************************/
+
+/*! \brief Header size in the small message */
+#define AXIOM_SMALL_HEADER_SIZE         4
+/*! \brief Max payload size in the small message */
+#define AXIOM_SMALL_PAYLOAD_MAX_SIZE    128
+
 
 /*!
  * \brief Header packet structure for TX small messages
@@ -59,9 +67,10 @@ typedef struct axiom_small_tx_hdr {
             uint8_t port : 3;
             uint8_t type : 3;
         } field;
-    } port_type;        /*!< \brief port and type fields */
-    uint8_t dst;	/*!< \brief destination (for tx) identificator */
-    uint8_t spare[2];
+    } port_type;                /*!< \brief port and type fields */
+    uint8_t dst;	        /*!< \brief destination (for tx) identificator*/
+    uint8_t payload_size;       /*!< \brief size of payload */
+    uint8_t spare[1];
 } axiom_small_tx_hdr_t;
 
 /*!
@@ -75,21 +84,43 @@ typedef struct axiom_small_rx_hdr {
             uint8_t port : 3;
             uint8_t type : 3;
         } field;
-    } port_type;        /*!< \brief port and type fields */
-    uint8_t src;	/*!< \brief source (for rx) identificator */
-    uint8_t spare[2];
+    } port_type;                /*!< \brief port and type fields */
+    uint8_t src;	        /*!< \brief source (for rx) identificator */
+    uint8_t payload_size;       /*!< \brief size of payload */
+    uint8_t spare[1];
 } axiom_small_rx_hdr_t;
 
+
 /*!
- * \brief SMALL messages structure
+ * \brief Header packet union for SMALL messages
+ */
+typedef union axiom_small_hdr {
+    axiom_small_tx_hdr_t tx;
+    axiom_small_rx_hdr_t rx;
+    uint8_t raw[4];
+    uint32_t raw32;
+} axiom_small_hdr_t;
+
+
+/*! \brief AXIOM payload type */
+typedef struct axiom_payload {
+    uint8_t raw[AXIOM_SMALL_PAYLOAD_MAX_SIZE];
+} axiom_payload_t;
+
+/*!
+ * \brief SMALL messages with payload embedded
  */
 typedef struct axiom_small_msg {
-    union {
-        axiom_small_tx_hdr_t tx;
-        axiom_small_rx_hdr_t rx;
-	} header;       /*!< \brief message header */
-    uint32_t payload;	/*!< \brief message payload */
+    axiom_small_hdr_t header;   /*!< \brief message header */
+    axiom_payload_t payload;    /*!< \brief message payload */
 } axiom_small_msg_t;
 
+/*!
+ * \brief SMALL messages descriptor with a pointer to the payload
+ */
+typedef struct axiom_small_desc {
+    axiom_small_hdr_t header;   /*!< \brief message header */
+    void *payload;              /*!< \brief pointer to the message payload */
+} axiom_small_desc_t;
 
 #endif /* !AXIOM_NIC_PACKETS_H */

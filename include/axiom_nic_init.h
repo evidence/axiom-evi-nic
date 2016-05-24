@@ -68,11 +68,12 @@ typedef struct axiom_netperf_payload {
  */
 inline static axiom_msg_id_t
 axiom_send_small_init(axiom_dev_t *dev, axiom_node_id_t dst, axiom_type_t type,
-        axiom_payload_t *payload)
+        axiom_init_payload_t *payload)
 {
     axiom_msg_id_t ret;
 
-    ret = axiom_send_small(dev, dst, AXIOM_SMALL_PORT_INIT, type, payload);
+    ret = axiom_send_small(dev, dst, AXIOM_SMALL_PORT_INIT, type,
+            sizeof(*payload), payload);
 
     DPRINTF("ret: %x payload: %x", ret, (*(uint32_t*)&payload));
 
@@ -92,24 +93,22 @@ axiom_send_small_init(axiom_dev_t *dev, axiom_node_id_t dst, axiom_type_t type,
  */
 inline static axiom_msg_id_t
 axiom_recv_small_init(axiom_dev_t *dev, axiom_node_id_t *src, axiom_type_t *type,
-        axiom_init_cmd_t *cmd, axiom_payload_t *payload)
+        axiom_init_cmd_t *cmd, axiom_init_payload_t *payload)
 {
     axiom_port_t port = AXIOM_SMALL_PORT_INIT;
     axiom_msg_id_t ret;
-    axiom_init_payload_t *init_payload;
+    axiom_payload_size_t payload_size = sizeof(*payload);
 
-    ret = axiom_recv_small(dev, src, &port, type, payload);
+    ret = axiom_recv_small(dev, src, &port, type, &payload_size, payload);
 
     if ((ret != AXIOM_RET_OK) || (port != AXIOM_SMALL_PORT_INIT))
     {
-        EPRINTF("ret: %x port: %x type: %x payload: %x", ret, port, *type,
-                (*payload));
+        EPRINTF("ret: %x port: %x type: %x", ret, port, *type);
         return AXIOM_RET_ERROR;
     }
 
     /* payload info */
-    init_payload = ((axiom_init_payload_t *)payload);
-    *cmd = init_payload->command;
+    *cmd = payload->command;
 
     return AXIOM_RET_OK;
 }

@@ -29,6 +29,7 @@ int main (int argc, char *argv[])
     axiom_if_id_t if_number;
     uint8_t if_features, enabled_mask;
     uint32_t status, control, payload;
+    axiom_payload_size_t payload_size;
     axiom_err_t err;
 
     dev = axiom_open(NULL);
@@ -86,14 +87,17 @@ int main (int argc, char *argv[])
     payload = 1234567;
 
     /* loopback */
-    err = axiom_send_small(dev, 22, 1, AXIOM_TYPE_RAW_DATA, &payload);
+    err = axiom_send_small(dev, 22, 1, AXIOM_TYPE_SMALL_DATA, sizeof(payload),
+            &payload);
     IPRINTF(verbose, "send small nodeid = 0x%x port = 0x%x type = 0x%x payload = 0x%x", 22, 1, 0, payload);
 
-    err = axiom_recv_small(dev, &node_id, &port, &type, &payload);
+    payload_size = sizeof(payload);
+    err = axiom_recv_small(dev, &node_id, &port, &type, &payload_size, &payload);
     IPRINTF(verbose, "recv small nodeid = 0x%x port = 0x%x type = 0x%x payload = 0x%x", node_id, port, type, payload);
 
     axiom_set_ni_control(dev, 0x00000000);
-    err = axiom_send_small(dev, 22, 1, AXIOM_TYPE_RAW_DATA, &payload);
+    err = axiom_send_small(dev, 22, 1, AXIOM_TYPE_SMALL_DATA, sizeof(payload),
+            &payload);
     IPRINTF(verbose, "send small nodeid = 0x%x port = 0x%x type = 0x%x payload = 0x%x", 22, 1, 0, payload);
 
 

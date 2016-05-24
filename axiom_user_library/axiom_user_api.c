@@ -106,8 +106,9 @@ axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
 }
 
 axiom_msg_id_t
-axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
-        axiom_port_t port, axiom_type_t type, axiom_payload_t *payload)
+axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
+        axiom_type_t type, axiom_payload_size_t payload_size,
+        void *payload)
 {
     axiom_small_msg_t small_msg;
     int ret;
@@ -115,24 +116,32 @@ axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
     if (!dev || dev->fd <= 0)
         return AXIOM_RET_ERROR;
 
+    if (payload_size > AXIOM_SMALL_PAYLOAD_MAX_SIZE)
+        return AXIOM_RET_ERROR;
+
     small_msg.header.tx.port_type.field.port = (port & 0x7);
     small_msg.header.tx.port_type.field.type = (type & 0x7);
     small_msg.header.tx.dst = dst_id;
-    small_msg.payload = *payload;
+    small_msg.header.tx.payload_size = payload_size;
+    /* TODO: pass to the kernel only the address of the payload */
+    memcpy(&small_msg.payload, payload, payload_size);
 
+    /* TODO: maybe we can send only the payload bytes used */
     ret = write(dev->fd, &small_msg, sizeof(small_msg));
     if (ret != sizeof(small_msg)) {
         return AXIOM_RET_ERROR;
     }
 
-    DPRINTF("dst: %x payload: %x", small_msg.header.tx.dst, small_msg.payload);
+    DPRINTF("dst: %x payload_size: %x", small_msg.header.tx.dst,
+            small_msg.header.tx.payload_size);
 
     return AXIOM_RET_OK;
 }
 
 axiom_msg_id_t
 axiom_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
-        axiom_port_t *port, axiom_type_t *type, axiom_payload_t *payload)
+        axiom_port_t *port, axiom_type_t *type,
+        axiom_payload_size_t *payload_size, void *payload)
 {
     axiom_small_msg_t small_msg;
     int ret;
@@ -140,15 +149,21 @@ axiom_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
     if (!dev || dev->fd <= 0)
         return AXIOM_RET_ERROR;
 
-    ret = read(dev->fd, &small_msg, sizeof(small_msg));
-    if (ret != sizeof(small_msg)) {
+    if (*payload_size > AXIOM_SMALL_PAYLOAD_MAX_SIZE)
         return AXIOM_RET_ERROR;
-    }
+
+    ret = read(dev->fd, &small_msg, sizeof(small_msg));
+    if (ret != sizeof(small_msg))
+        return AXIOM_RET_ERROR;
+
+    if (small_msg.header.rx.payload_size > *payload_size)
+        return AXIOM_RET_ERROR;
 
     *src_id = small_msg.header.rx.src;
     *port = (small_msg.header.rx.port_type.field.port & 0x7);
     *type = (small_msg.header.rx.port_type.field.type & 0x7);
-    *payload = small_msg.payload;
+    *payload_size = small_msg.header.rx.payload_size;
+    memcpy(payload, &small_msg.payload, small_msg.header.rx.payload_size);
 
     return AXIOM_RET_OK;
 }

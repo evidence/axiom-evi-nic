@@ -64,6 +64,6 @@ axiom_print_routing_reg(axiom_dev_t *dev);
  * \param dev           The axiom device private data pointer
  */
 void
-axiom_print_small_queue_reg(axiom_dev_t *dev);
+axiom_print_queue_reg(axiom_dev_t *dev);
 
 #endif /* !AXIOM_KERNEL_API_H */

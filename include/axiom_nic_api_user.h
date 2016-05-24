@@ -72,14 +72,16 @@ axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
  *                      local interface that will send the small data
  * \param port          port of the small message
  * \param type          type of the small message
+ * \param payload_size  size of data to be sent
  * \param payload       data to be sent
  *
  * \return Returns a unique positive message id on success, -1 otherwise.
  * XXX: the return type is unsigned!
  */
 axiom_msg_id_t
-axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
-        axiom_port_t port, axiom_type_t type, axiom_payload_t *payload);
+axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
+        axiom_type_t type, axiom_payload_size_t payload_size,
+        void *payload);
 
 /*!
  * \brief This function receives small data to a remote node.
@@ -89,14 +91,16 @@ axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
  *                      interface that received the small data
  * \param port          port of the small message
  * \param type          type of the small message
+ * \param payload_size  size of data received
  * \param payload       data received
  *
  * \return Returns a unique positive message id on success, -1 otherwise.
  * XXX: the return type is unsigned!
  */
 axiom_msg_id_t
-axiom_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
-        axiom_port_t *port, axiom_type_t *type, axiom_payload_t *payload);
+axiom_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
+        axiom_type_t *type, axiom_payload_size_t *payload_size,
+        void *payload);
 
 /*!
  * \brief This function writes data to a remote node memory.

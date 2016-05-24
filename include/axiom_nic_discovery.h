@@ -66,7 +66,7 @@ axiom_send_small_discovery (axiom_dev_t *dev, axiom_if_id_t interface,
 
 
     ret = axiom_send_small(dev, interface, AXIOM_SMALL_PORT_INIT,
-            AXIOM_TYPE_NEIGHBOUR, (axiom_payload_t*)(&payload));
+            AXIOM_TYPE_SMALL_NEIGHBOUR, sizeof(payload), &payload);
 
 
     DPRINTF("ret: %x payload: %x", ret, (*(uint32_t*)&payload));
@@ -98,27 +98,29 @@ axiom_recv_small_discovery(axiom_dev_t *dev, axiom_if_id_t *interface,
     axiom_port_t port;
     axiom_type_t type;
     axiom_msg_id_t ret;
+    axiom_payload_size_t payload_size = sizeof(payload);
 
     port = AXIOM_SMALL_PORT_INIT;
-    type = AXIOM_TYPE_NEIGHBOUR;
-    ret = axiom_recv_small(dev, interface, &port, &type,
-            (axiom_payload_t*)(&payload));
+    type = AXIOM_TYPE_SMALL_NEIGHBOUR;
+    ret = axiom_recv_small(dev, interface, &port, &type, &payload_size,
+            &payload);
 
-    if ((ret == AXIOM_RET_OK) && (port == AXIOM_SMALL_PORT_INIT))
-    {
-        /* payload info */
-        *cmd = payload.command;
-        *src_id    = payload.src_node;
-        *dst_id    = payload.dst_node;
-        *payload_src_if = (payload.src_dst_if >> 4) & 0x0F;
-        *payload_dst_if = (payload.src_dst_if) & 0x0F;
-
-        return AXIOM_RET_OK;
+    if ((ret != AXIOM_RET_OK) || (port != AXIOM_SMALL_PORT_INIT) ||
+            (payload_size != sizeof(payload))) {
+        EPRINTF("ret: %x port: %x[%x] type: %x payload_size: %d[%d] payload: %x",
+                ret, port, AXIOM_SMALL_PORT_INIT, type, payload_size,
+                ((int)sizeof(payload)), (*(uint32_t*)&payload));
+        return AXIOM_RET_ERROR;
     }
 
-    EPRINTF("ret: %x port: %x type: %x payload: %x", ret, port, type,
-            (*(uint32_t*)&payload));
-    return AXIOM_RET_ERROR;
+    /* payload info */
+    *cmd = payload.command;
+    *src_id    = payload.src_node;
+    *dst_id    = payload.dst_node;
+    *payload_src_if = (payload.src_dst_if >> 4) & 0x0F;
+    *payload_dst_if = (payload.src_dst_if) & 0x0F;
+
+    return AXIOM_RET_OK;
 }
 
 #endif /* !AXIOM_NIC_DISCOVERY_h */

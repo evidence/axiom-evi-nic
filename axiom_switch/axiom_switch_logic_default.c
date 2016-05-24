@@ -39,7 +39,7 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
     dst_if = neighbour_msg->small_msg.header.tx.dst;
     dst_vm = logic->start_topology.topology[src_vm][dst_if];
 
-    NDPRINTF("src_vm_id: %d dst_if: %d dst_vm: %d", src_vm, dst_if, dst_vm);
+    DPRINTF("src_vm_id: %d dst_if: %d dst_vm: %d", src_vm, dst_if, dst_vm);
 
     /* find receiver socket */
     dst_sd = axsw_logic_find_neighbour_sd(logic, dst_vm);
@@ -109,7 +109,7 @@ axsw_logic_forward(axsw_logic_t *logic, int src_sd,
     DPRINTF("src_sd: %d", src_sd);
 
     if (axiom_packet->small_msg.header.tx.port_type.field.type ==
-            AXIOM_TYPE_NEIGHBOUR) {
+            AXIOM_TYPE_SMALL_NEIGHBOUR) {
         /* neighbour message */
         dst_sd = axsw_forward_neighbour(logic, axiom_packet, src_sd);
     } else {

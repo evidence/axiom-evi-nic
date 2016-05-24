@@ -56,7 +56,7 @@ axiom_send_small_delivery(axiom_dev_t *dev, axiom_node_id_t dst_node_id,
     payload.if_mask = payload_if_mask;
 
     ret = axiom_send_small(dev, dst_node_id, AXIOM_SMALL_PORT_INIT,
-            0,  (axiom_payload_t*)(&payload));
+            0, sizeof(payload), &payload);
 
     return ret;
 }
@@ -79,14 +79,16 @@ axiom_recv_small_delivery(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
         axiom_if_id_t *payload_if_mask)
 {
     axiom_routing_payload_t payload;
+    axiom_payload_size_t payload_size = sizeof(payload);
     axiom_port_t port;
     axiom_type_t type;
     axiom_msg_id_t ret;
 
     port = AXIOM_SMALL_PORT_INIT;
-    type = AXIOM_TYPE_RAW_DATA;
+    type = AXIOM_TYPE_SMALL_DATA;
     /* receive routing info with small messgees */
-    ret = axiom_recv_small(dev, src_node_id, &port, &type, (axiom_payload_t*)(&payload));
+    ret = axiom_recv_small(dev, src_node_id, &port, &type, &payload_size,
+            &payload);
 
     if ((ret == AXIOM_RET_OK) && (port == AXIOM_SMALL_PORT_INIT))
     {
@@ -123,7 +125,7 @@ axiom_send_small_set_routing(axiom_dev_t *dev, axiom_if_id_t interface,
     payload.if_mask = 0;
 
     ret = axiom_send_small(dev, interface, AXIOM_SMALL_PORT_INIT,
-            AXIOM_TYPE_NEIGHBOUR, (axiom_payload_t*)(&payload));
+            AXIOM_TYPE_SMALL_NEIGHBOUR, sizeof(payload), &payload);
 
     return ret;
 }
@@ -142,14 +144,16 @@ axiom_recv_small_set_routing(axiom_dev_t *dev, axiom_if_id_t *interface,
         axiom_routing_cmd_t *cmd)
 {
     axiom_routing_payload_t payload;
+    axiom_payload_size_t payload_size = sizeof(payload);
     axiom_port_t port;
     axiom_type_t type;
     axiom_msg_id_t ret;
 
     port = AXIOM_SMALL_PORT_INIT;
-    type = AXIOM_TYPE_NEIGHBOUR;
+    type = AXIOM_TYPE_SMALL_NEIGHBOUR;
     /* receive routing info with small messgees */
-    ret = axiom_recv_small(dev, interface, &port, &type, (axiom_payload_t*)(&payload));
+    ret = axiom_recv_small(dev, interface, &port, &type, &payload_size,
+            &payload);
 
     if ((ret == AXIOM_RET_OK) && (port == AXIOM_SMALL_PORT_INIT))
     {
