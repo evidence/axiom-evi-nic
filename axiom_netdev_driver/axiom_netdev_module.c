@@ -542,7 +542,7 @@ static void axiomnet_unbind(struct axiomnet_priv *priv) {
 
     /* check if the process bound some port */
     if (priv->bind_port == AXIOMNET_PORT_INVALID ||
-            priv->bind_port >= AXIOM_SMALL_PORT_LENGTH) {
+            priv->bind_port >= AXIOM_SMALL_PORT_MAX) {
         return;
     }
 
@@ -560,7 +560,7 @@ static long axiomnet_bind(struct axiomnet_priv *priv, int port) {
     /* unbind previous bind */
     axiomnet_unbind(priv);
 
-    if (port >= AXIOM_SMALL_PORT_LENGTH) {
+    if (port >= AXIOM_SMALL_PORT_MAX) {
         return -EFBIG;
     }
 

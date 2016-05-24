@@ -102,7 +102,7 @@ axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
     if (ret == AXIOM_RET_ERROR)
         return ret;
 
-    for (i = 0; i < AXIOM_MAX_INTERFACES; i++) {
+    for (i = 0; i < AXIOM_INTERFACES_MAX; i++) {
         if (enabled_mask & (uint8_t)(1 << i)) {
             *if_number = i;
             return AXIOM_RET_OK;
@@ -349,7 +349,7 @@ axiom_get_num_nodes(axiom_dev_t *dev)
         return -1;
     }
 
-    for (i = 0; i < AXIOM_MAX_NODES; i++) {
+    for (i = 0; i < AXIOM_NODES_MAX; i++) {
         err = axiom_get_routing(dev, i, &enabled_mask);
         if (err)
             break;

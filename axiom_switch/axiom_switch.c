@@ -233,10 +233,10 @@ main (int argc, char *argv[])
             }
             /* make ring topology with the inserted nuber of nodes */
             if (n_ok == 1) {
-                if ((n < 2) || (n > AXIOM_MAX_NODES)) {
+                if ((n < 2) || (n > AXIOM_NODES_MAX)) {
                     printf("Please, for RING topology insert a number of nodes "
                            "between 2 and %d\n",
-                            AXIOM_MAX_NODES);
+                            AXIOM_NODES_MAX);
                     exit (-1);
                 } else {
                     num_ports = n;
@@ -256,10 +256,10 @@ main (int argc, char *argv[])
 
             /* make mesh topology with the inserted nuber of nodes */
             if (n_ok == 1) {
-                if ((n < 4) || (n > AXIOM_MAX_NODES)) {
+                if ((n < 4) || (n > AXIOM_NODES_MAX)) {
                     printf("Please, for MESH topology insert a number of nodes "
                            "between 4 and %d\n",
-                            AXIOM_MAX_NODES);
+                            AXIOM_NODES_MAX);
                     exit (-1);
                 }
 
@@ -361,7 +361,7 @@ main (int argc, char *argv[])
 
                 axsw_logic_set_vm_sd(&logic_status, vm_index, new_sd);
 
-                for (if_id = 0; if_id < AXIOM_MAX_INTERFACES; if_id++) {
+                for (if_id = 0; if_id < AXIOM_INTERFACES_MAX; if_id++) {
                     int connected = 0;
                     if (axsw_logic_find_neighbour_if(&logic_status, vm_index,
                                 if_id) >= 0) {

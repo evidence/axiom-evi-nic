@@ -12,6 +12,7 @@
  *      - SMALL to neighbour
  *
  */
+#include "axiom_nic_limits.h"
 
 
 /************************* Well-known AXIOM port ******************************/
@@ -20,9 +21,6 @@
 #define AXIOM_SMALL_PORT_INIT           0
 /*! \brief Axiom network utilities port number */
 #define AXIOM_SMALL_PORT_NETUTILS       1
-
-/*! \brief Max number of port available */
-#define AXIOM_SMALL_PORT_LENGTH         8
 
 
 /*************************** AXIOM packet TYPES *******************************/
@@ -44,17 +42,8 @@
 /*! \brief Axiom type ACK (contains an ACK - HW reserved) */
 #define AXIOM_TYPE_ACK                  7
 
-/*! \brief Max number of type available */
-#define AXIOM_TYPE_LENGTH               8
-
 
 /*************************** Packets structure ********************************/
-
-/*! \brief Header size in the small message */
-#define AXIOM_SMALL_HEADER_SIZE         4
-/*! \brief Max payload size in the small message */
-#define AXIOM_SMALL_PAYLOAD_MAX_SIZE    128
-
 
 /*!
  * \brief Header packet structure for TX small messages

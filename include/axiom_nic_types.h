@@ -19,13 +19,6 @@
 #define AXIOM_RET_ERROR         1
 
 
-/* **************************** Nodes define *********************************/
-/*! \brief Maximum number of nodes supported by the AXIOM NIC */
-#define AXIOM_MAX_NODES        255
-/*! \brief Maximum number of interfaces supported by the AXIOM NIC */
-#define AXIOM_MAX_INTERFACES   4
-
-
 /********************************* Types **************************************/
 /*! \brief AXIOM port of SMALL messages */
 typedef uint8_t	            axiom_port_t;
