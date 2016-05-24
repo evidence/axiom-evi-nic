@@ -25,7 +25,7 @@ typedef uint8_t		axiom_init_cmd_t;	/*!< \brief init command type*/
 /*! \brief Generic message payload for the axiom-init deamon */
 typedef struct axiom_init_payload {
     uint8_t  command;           /*!< \brief Command of messages */
-    uint8_t  spare[3];
+    uint8_t  spare[127];
 } axiom_init_payload_t;
 
 
@@ -49,8 +49,10 @@ typedef struct axiom_traceroute_payload {
 /*! \brief Message payload for the axiom-netperf application */
 typedef struct axiom_netperf_payload {
     uint8_t  command;           /*!< \brief Command of netperf messages */
-    uint8_t  offset;            /*!< \brief Packet offset */
-    uint16_t data;              /*!< \brief Packet data */
+    uint8_t  padding[7];
+    uint64_t total_bytes;       /*!< \brief Total bytes of the stream */
+    uint64_t elapsed_time;      /*!< \brief Time elapsed to receive data */
+    uint8_t  spare[104];
 } axiom_netperf_payload_t;
 
 
