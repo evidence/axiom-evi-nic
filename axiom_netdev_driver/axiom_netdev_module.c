@@ -104,21 +104,62 @@ inline static unsigned int axiomnet_small_tx_avail(struct axiomnet_hw_ring *ring
     return axiom_hw_small_tx_avail(ring->drvdata->dev_api);
 }
 
-inline static int axiomnet_small_send(struct axiomnet_hw_ring *ring,
-        axiom_small_msg_t *msg)
+inline static ssize_t axiomnet_small_send(struct file *filep,
+        const axiom_small_hdr_t *header, const char __user *payload)
 {
-    int ret = 0;
+    struct axiomnet_priv *priv = filep->private_data;
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    struct axiomnet_hw_ring *ring = &drvdata->small_tx_ring;
+    axiom_payload_t small_payload;
+    ssize_t len;
 
-    /* TODO: implement batch */
-    if (axiom_hw_send_small(ring->drvdata->dev_api, msg->header.tx.dst,
-                msg->header.tx.port_type.raw, msg->header.tx.payload_size,
-                &msg->payload)) {
-        ret = -1;
+    DPRINTF("start");
+
+    if (mutex_lock_interruptible(&ring->mutex))
+        return -ERESTARTSYS;
+
+    while (axiomnet_small_tx_avail(ring) == 0) { /* no space to write */
+        mutex_unlock(&ring->mutex);
+
+        /* no blocking write */
+        if (filep->f_flags & O_NONBLOCK)
+            return -EAGAIN;
+
+        /* put the process in the wait_queue to wait new space (irq) */
+        if (wait_event_interruptible(ring->wait_queue,
+                    axiomnet_small_tx_avail(ring) != 0))
+            return -ERESTARTSYS;
+
+        if (mutex_lock_interruptible(&ring->mutex))
+            return -ERESTARTSYS;
     }
 
+    if (header->tx.payload_size > sizeof(small_payload)) {
+        len = -EFBIG;
+        goto err;
+    }
+
+    if (copy_from_user(&(small_payload), payload, header->tx.payload_size)) {
+        len = -EFAULT;
+        goto err;
+    }
+
+    /* copy packet into the ring */
+    if (axiom_hw_send_small(ring->drvdata->dev_api, header->tx.dst,
+                header->tx.port_type.raw,
+                header->tx.payload_size, &(small_payload))) {
+        len = -EFAULT;
+    }
+    /* TODO: implement batch */
     axiom_hw_small_tx_push(ring->drvdata->dev_api);
 
-    return ret;
+    len = sizeof(*header) + header->tx.payload_size;
+err:
+    mutex_unlock(&ring->mutex);
+
+    DPRINTF("end");
+
+    return len;
 }
 
 static void axiom_small_rx_dequeue(struct axiomnet_drvdata *drvdata)
@@ -188,9 +229,15 @@ inline static int axiomnet_small_rx_avail(struct axiomnet_hw_ring *ring,
     return avail;
 }
 
-inline static int axiomnet_small_recv(struct axiomnet_hw_ring *ring, int port,
-        char __user *buffer, size_t len)
+inline static ssize_t axiomnet_small_recv(struct file *filep,
+        axiom_small_hdr_t *header, char __user *payload)
 {
+    struct axiomnet_priv *priv = filep->private_data;
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    struct axiomnet_hw_ring *ring = &drvdata->small_rx_ring;
+    int port = priv->bind_port;
+    ssize_t len;
+
     struct axiomnet_sw_queue *sw_queue = &ring->sw_queue;
     axiom_small_msg_t *small_msg;
     eviq_pnt_t queue_slot;
@@ -198,10 +245,33 @@ inline static int axiomnet_small_recv(struct axiomnet_hw_ring *ring, int port,
 
     DPRINTF("start");
 
-    if (len != sizeof(*small_msg)) {
-        return -EFBIG;
+    /* check bind */
+    if (port == AXIOMNET_PORT_INVALID) {
+        EPRINTF("port not assigned");
+        return -EFAULT;
     }
 
+    /* TODO: use 1 mutex per port */
+    if (mutex_lock_interruptible(&ring->mutex))
+        return -ERESTARTSYS;
+
+    while (axiomnet_small_rx_avail(ring, port) == 0) { /* nothing to read */
+        mutex_unlock(&ring->mutex);
+
+        /* no blocking write */
+        if (filep->f_flags & O_NONBLOCK)
+            return -EAGAIN;
+
+        /* put the process in the wait_queue to wait new space (irq) */
+        if (wait_event_interruptible(ring->wait_queue,
+                    axiomnet_small_rx_avail(ring, port) != 0))
+            return -ERESTARTSYS;
+
+        if (mutex_lock_interruptible(&ring->mutex))
+            return -ERESTARTSYS;
+    }
+
+    /* copy packet from the ring */
     spin_lock_irqsave(&sw_queue->queue_lock, flags);
     queue_slot = eviq_remove(&sw_queue->evi_queue, port);
 
@@ -214,13 +284,25 @@ inline static int axiomnet_small_recv(struct axiomnet_hw_ring *ring, int port,
 
     small_msg = &sw_queue->queue_desc[queue_slot];
 
-    if (copy_to_user(buffer, small_msg, sizeof(*small_msg))) {
+    if (header->rx.payload_size < small_msg->header.rx.payload_size) {
+        len = -EFBIG;
+        goto err;
+    }
+
+    memcpy(header, &(small_msg->header), sizeof(*header));
+
+    if (copy_to_user(payload, &(small_msg->payload),
+                small_msg->header.rx.payload_size)) {
         len = -EFAULT;
         goto err;
     }
 
+    len = sizeof(*header) + small_msg->header.rx.payload_size;
+
 err:
     spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
+
+    mutex_unlock(&ring->mutex);
 
     DPRINTF("end len:%zu", len);
     return len;
@@ -435,105 +517,51 @@ static struct platform_driver axiomnet_driver = {
 static ssize_t axiomnet_read(struct file *filep, char __user *buffer, size_t len,
         loff_t *offset)
 {
-    struct axiomnet_priv *priv = filep->private_data;
-    struct axiomnet_drvdata *drvdata = priv->drvdata;
-    struct axiomnet_hw_ring *ring = &drvdata->small_rx_ring;
-    int port = priv->bind_port;
+    axiom_small_hdr_t header;
+    ssize_t ret;
 
     DPRINTF("start");
 
-    /* check bind */
-    if (port == AXIOMNET_PORT_INVALID) {
-        EPRINTF("port not assigned");
+    /* XXX: we support only small message for now */
+    header.rx.payload_size = len - sizeof(axiom_small_hdr_t);
+
+    ret = axiomnet_small_recv(filep, &header, buffer +
+            sizeof(axiom_small_hdr_t));
+
+    if (copy_to_user(buffer, &header, sizeof(header))) {
         return -EFAULT;
     }
-
-    /* TODO: use 1 mutex per port */
-    if (mutex_lock_interruptible(&ring->mutex))
-        return -ERESTARTSYS;
-
-    while (axiomnet_small_rx_avail(ring, port) == 0) { /* nothing to read */
-        mutex_unlock(&ring->mutex);
-
-        /* no blocking write */
-        if (filep->f_flags & O_NONBLOCK)
-            return -EAGAIN;
-
-        /* put the process in the wait_queue to wait new space (irq) */
-        if (wait_event_interruptible(ring->wait_queue,
-                    axiomnet_small_rx_avail(ring, port) != 0))
-            return -ERESTARTSYS;
-
-        if (mutex_lock_interruptible(&ring->mutex))
-            return -ERESTARTSYS;
-    }
-
-    /* copy packet from the ring */
-    len = axiomnet_small_recv(ring, port, buffer, len);
 
     /* TODO: flush rx ring */
     /* TODO: implement flush (fops) and ioctl to enable/disable auto flush */
 
-//err:
-    mutex_unlock(&ring->mutex);
-
     DPRINTF("end");
-    return len;
+    return ret;
 }
 
 static ssize_t axiomnet_write(struct file *filep, const char __user *buffer,
         size_t len, loff_t *offset)
 {
-    struct axiomnet_priv *priv = filep->private_data;
-    struct axiomnet_drvdata *drvdata = priv->drvdata;
-    struct axiomnet_hw_ring *ring = &drvdata->small_tx_ring;
-    axiom_small_msg_t small_msg;
+    axiom_small_hdr_t header;
+    ssize_t ret;
 
     DPRINTF("start");
-    if (mutex_lock_interruptible(&ring->mutex))
-        return -ERESTARTSYS;
-
-    while (axiomnet_small_tx_avail(ring) == 0) { /* no space to write */
-        mutex_unlock(&ring->mutex);
-
-        /* no blocking write */
-        if (filep->f_flags & O_NONBLOCK)
-            return -EAGAIN;
-
-        /* put the process in the wait_queue to wait new space (irq) */
-        if (wait_event_interruptible(ring->wait_queue,
-                    axiomnet_small_tx_avail(ring) != 0))
-            return -ERESTARTSYS;
-
-        if (mutex_lock_interruptible(&ring->mutex))
-            return -ERESTARTSYS;
-    }
 
     /* XXX: we support only small message for now */
-    if (len != sizeof(small_msg)) {
-        len = -EFBIG;
-        goto err;
+    if (len < sizeof(header)) {
+        return -EFAULT;
     }
 
-    if (copy_from_user(&small_msg, buffer, len)) {
-        len = -EFAULT;
-        goto err;
+    if (copy_from_user(&(header), buffer, sizeof(header))) {
+        return -EFAULT;
     }
 
-    /* copy packet into the ring */
-    if (axiomnet_small_send(ring, &small_msg)) {
-        len = -EFAULT;
-        goto err;
-    }
 
-    /* TODO: flush tx ring */
-    /* TODO: implement flush (fops) and ioctl to enable/disable auto flush */
-
-err:
-    mutex_unlock(&ring->mutex);
+    ret = axiomnet_small_send(filep, &header, buffer +
+            sizeof(axiom_small_hdr_t));
 
     DPRINTF("end");
-    return len;
+    return ret;
 
 }
 
@@ -597,6 +625,7 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
     uint8_t buf_uint8;
     uint8_t buf_uint8_2;
     axiom_ioctl_routing_t buf_routing;
+    axiom_ioctl_small_t buf_small;
 
     DPRINTF("start");
 
@@ -654,6 +683,23 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         get_user(buf_uint8, (uint8_t __user*)arg);
         ret = axiomnet_bind(priv, buf_uint8);
         DPRINTF("bind port: %x", priv->bind_port);
+        break;
+    case AXNET_SEND_SMALL:
+        ret = copy_from_user(&buf_small, argp, sizeof(buf_small));
+        if (ret)
+            return -EFAULT;
+        ret = axiomnet_small_send(filep, &(buf_small.header),
+                buf_small.payload);
+        break;
+    case AXNET_RECV_SMALL:
+        ret = copy_from_user(&buf_small, argp, sizeof(buf_small));
+        if (ret)
+            return -EFAULT;
+        ret = axiomnet_small_recv(filep, &(buf_small.header),
+                buf_small.payload);
+        ret = copy_to_user(argp, &buf_small, sizeof(buf_small));
+        if (ret)
+            return -EFAULT;
         break;
     default:
         ret = -EINVAL;

@@ -104,12 +104,4 @@ typedef struct axiom_small_msg {
     axiom_payload_t payload;    /*!< \brief message payload */
 } axiom_small_msg_t;
 
-/*!
- * \brief SMALL messages descriptor with a pointer to the payload
- */
-typedef struct axiom_small_desc {
-    axiom_small_hdr_t header;   /*!< \brief message header */
-    void *payload;              /*!< \brief pointer to the message payload */
-} axiom_small_desc_t;
-
 #endif /* !AXIOM_NIC_PACKETS_H */
