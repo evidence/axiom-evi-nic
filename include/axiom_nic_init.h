@@ -89,19 +89,20 @@ axiom_send_small_init(axiom_dev_t *dev, axiom_node_id_t dst, axiom_type_t type,
  * \param src           Local interface or remote id identification
  * \param type          Type of the small message
  * \param cmd           Command of the small message
+ * \param payload_size  Size of payload received
  * \param payload       Payload received
  *
  * \return Returns XXX
  */
 inline static axiom_msg_id_t
 axiom_recv_small_init(axiom_dev_t *dev, axiom_node_id_t *src, axiom_type_t *type,
-        axiom_init_cmd_t *cmd, axiom_init_payload_t *payload)
+        axiom_init_cmd_t *cmd, axiom_payload_size_t *payload_size,
+        axiom_init_payload_t *payload)
 {
     axiom_port_t port = AXIOM_SMALL_PORT_INIT;
     axiom_msg_id_t ret;
-    axiom_payload_size_t payload_size = sizeof(*payload);
 
-    ret = axiom_recv_small(dev, src, &port, type, &payload_size, payload);
+    ret = axiom_recv_small(dev, src, &port, type, payload_size, payload);
 
     if ((ret != AXIOM_RET_OK) || (port != AXIOM_SMALL_PORT_INIT))
     {
