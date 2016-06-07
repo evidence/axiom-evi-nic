@@ -23,14 +23,14 @@
  * Axiom switch, exchanging info about the interface (how interface is enabled,
  * etc.)
  */
-#define AXIOM_ETH_TYPE_CTRL       0x8332
+#define AXIOM_ETH_TYPE_CTRL             0x8332
 /*!
- * \brief AXIOM SMALL message type
+ * \brief AXIOM RAW message type
  *
- * This message is used to exchange Axiom SMALL messages between QEMU VMs and
+ * This message is used to exchange Axiom RAW messages between QEMU VMs and
  * the Axiom switch
  */
-#define AXIOM_ETH_TYPE_SMALL      0x8333
+#define AXIOM_ETH_TYPE_RAW              0x8333
 
 
 /************************ Switch Packets structure ****************************/
@@ -45,12 +45,12 @@ typedef struct axiom_eth_hdr {
 
 
 /*!
- * \brief SMALL packet structure encapsulated in the ethernet frame
+ * \brief RAW packet structure encapsulated in the ethernet frame
  */
-typedef struct axiom_small_eth {
+typedef struct axiom_raw_eth {
     axiom_eth_hdr_t eth_hdr;            /*!< \brief Ethernet frame header */
-    axiom_small_msg_t small_msg;        /*!< \brief AXIOM SMALL message */
-} __attribute__((packed)) axiom_small_eth_t;
+    axiom_raw_msg_t raw_msg;            /*!< \brief AXIOM RAW message */
+} __attribute__((packed)) axiom_raw_eth_t;
 
 
 

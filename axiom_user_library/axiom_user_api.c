@@ -114,14 +114,14 @@ axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
 #define USE_IOCTL_SEND_RECV
 
 axiom_msg_id_t
-axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
+axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
         axiom_type_t type, axiom_payload_size_t payload_size,
         void *payload)
 {
 #ifdef USE_IOCTL_SEND_RECV
-    axiom_ioctl_small_t small_msg;
+    axiom_ioctl_raw_t raw_msg;
 #else
-    axiom_small_msg_t small_msg;
+    axiom_raw_msg_t raw_msg;
 #endif
     int ret;
 
@@ -130,51 +130,51 @@ axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
         return AXIOM_RET_ERROR;
     }
 
-    if (payload_size > AXIOM_SMALL_PAYLOAD_MAX_SIZE) {
+    if (payload_size > AXIOM_RAW_PAYLOAD_MAX_SIZE) {
         EPRINTF("payload size too big - size: %d [%d]", payload_size,
-                AXIOM_SMALL_PAYLOAD_MAX_SIZE);
+                AXIOM_RAW_PAYLOAD_MAX_SIZE);
         return AXIOM_RET_ERROR;
     }
 
-    small_msg.header.tx.port_type.field.port = (port & 0x7);
-    small_msg.header.tx.port_type.field.type = (type & 0x7);
-    small_msg.header.tx.dst = dst_id;
-    small_msg.header.tx.payload_size = payload_size;
+    raw_msg.header.tx.port_type.field.port = (port & 0x7);
+    raw_msg.header.tx.port_type.field.type = (type & 0x7);
+    raw_msg.header.tx.dst = dst_id;
+    raw_msg.header.tx.payload_size = payload_size;
 #ifdef USE_IOCTL_SEND_RECV
-    small_msg.payload = payload;
+    raw_msg.payload = payload;
 
-    ret = ioctl(dev->fd, AXNET_SEND_SMALL, &small_msg);
+    ret = ioctl(dev->fd, AXNET_SEND_RAW, &raw_msg);
     if (ret < 0) {
         EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
         return AXIOM_RET_ERROR;
     }
 #else
     /* TODO: pass to the kernel only the address of the payload */
-    memcpy(&small_msg.payload, payload, payload_size);
+    memcpy(&raw_msg.payload, payload, payload_size);
 
     /* TODO: maybe we can send only the payload bytes used */
-    ret = write(dev->fd, &small_msg, sizeof(small_msg));
+    ret = write(dev->fd, &raw_msg, sizeof(raw_msg));
     if (ret < 0) {
         EPRINTF("impossible to write() - ret: %d", ret);
         return AXIOM_RET_ERROR;
     }
 #endif
 
-    DPRINTF("dst: %x payload_size: %x", small_msg.header.tx.dst,
-            small_msg.header.tx.payload_size);
+    DPRINTF("dst: %x payload_size: %x", raw_msg.header.tx.dst,
+            raw_msg.header.tx.payload_size);
 
     return AXIOM_RET_OK;
 }
 
 axiom_msg_id_t
-axiom_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
+axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
         axiom_port_t *port, axiom_type_t *type,
         axiom_payload_size_t *payload_size, void *payload)
 {
 #ifdef USE_IOCTL_SEND_RECV
-    axiom_ioctl_small_t small_msg;
+    axiom_ioctl_raw_t raw_msg;
 #else
-    axiom_small_msg_t small_msg;
+    axiom_raw_msg_t raw_msg;
 #endif
     int ret;
 
@@ -183,40 +183,40 @@ axiom_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
         return AXIOM_RET_ERROR;
     }
 
-    if (*payload_size > AXIOM_SMALL_PAYLOAD_MAX_SIZE) {
+    if (*payload_size > AXIOM_RAW_PAYLOAD_MAX_SIZE) {
         EPRINTF("payload size too big - size: %d [%d]", *payload_size,
-                AXIOM_SMALL_PAYLOAD_MAX_SIZE);
+                AXIOM_RAW_PAYLOAD_MAX_SIZE);
         return AXIOM_RET_ERROR;
     }
 
 #ifdef USE_IOCTL_SEND_RECV
-    small_msg.header.rx.payload_size = *payload_size;
-    small_msg.payload = payload;
+    raw_msg.header.rx.payload_size = *payload_size;
+    raw_msg.payload = payload;
 
-    ret = ioctl(dev->fd, AXNET_RECV_SMALL, &small_msg);
+    ret = ioctl(dev->fd, AXNET_RECV_RAW, &raw_msg);
     if (ret < 0) {
         EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
         return AXIOM_RET_ERROR;
     }
 #else
-    ret = read(dev->fd, &small_msg, sizeof(small_msg));
+    ret = read(dev->fd, &raw_msg, sizeof(raw_msg));
     if (ret < 0) {
         EPRINTF("impossible to write() - ret: %d", ret);
         return AXIOM_RET_ERROR;
     }
 
-    if (small_msg.header.rx.payload_size > *payload_size) {
+    if (raw_msg.header.rx.payload_size > *payload_size) {
         EPRINTF("receive packet bigger[%d] than payload_size[%d] specified",
-                small_msg.header.rx.payload_size, *payload_size);
+                raw_msg.header.rx.payload_size, *payload_size);
         return AXIOM_RET_ERROR;
     }
-    memcpy(payload, &small_msg.payload, small_msg.header.rx.payload_size);
+    memcpy(payload, &raw_msg.payload, raw_msg.header.rx.payload_size);
 #endif
 
-    *src_id = small_msg.header.rx.src;
-    *port = (small_msg.header.rx.port_type.field.port & 0x7);
-    *type = (small_msg.header.rx.port_type.field.type & 0x7);
-    *payload_size = small_msg.header.rx.payload_size;
+    *src_id = raw_msg.header.rx.src;
+    *port = (raw_msg.header.rx.port_type.field.port & 0x7);
+    *type = (raw_msg.header.rx.port_type.field.type & 0x7);
+    *payload_size = raw_msg.header.rx.payload_size;
 
     return AXIOM_RET_OK;
 }

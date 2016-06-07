@@ -23,7 +23,7 @@
 #include "axiom_nic_discovery.h"
 
 static int
-axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
+axsw_forward_neighbour(axsw_logic_t *logic, axiom_raw_eth_t *neighbour_msg,
         int src_sd)
 {
     int src_vm, dst_vm, dst_sd;
@@ -36,7 +36,7 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
     }
 
     /* find the receiver virtual machine */
-    dst_if = neighbour_msg->small_msg.header.tx.dst;
+    dst_if = neighbour_msg->raw_msg.header.tx.dst;
     dst_vm = logic->start_topology.topology[src_vm][dst_if];
 
     DPRINTF("src_vm_id: %d dst_if: %d dst_vm: %d", src_vm, dst_if, dst_vm);
@@ -49,22 +49,22 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
 
     /* find the recipient receiving interface */
     neighbour_if = axsw_logic_find_neighbour_if(logic, src_vm,
-            neighbour_msg->small_msg.header.tx.dst);
+            neighbour_msg->raw_msg.header.tx.dst);
     if (neighbour_if < 0) {
         return -1;
     }
     DPRINTF("neighbour_if %d", neighbour_if);
     /* set receiver interface */
-    neighbour_msg->small_msg.header.rx.src = neighbour_if;
+    neighbour_msg->raw_msg.header.rx.src = neighbour_if;
 
     /* capture AXIOM_DSCV_CMD_SETID messages in order to memorize socket
-     * descriptor associated to each node id for small messages forwarding */
-    if (neighbour_msg->small_msg.header.tx.port_type.field.port
-            == AXIOM_SMALL_PORT_INIT) {
+     * descriptor associated to each node id for raw messages forwarding */
+    if (neighbour_msg->raw_msg.header.tx.port_type.field.port
+            == AXIOM_RAW_PORT_INIT) {
         axiom_discovery_payload_t *disc_payload;
 
         disc_payload = (axiom_discovery_payload_t *)
-                    (&(neighbour_msg->small_msg.payload));
+                    (&(neighbour_msg->raw_msg.payload));
 
         if (disc_payload->command == AXIOM_DSCV_CMD_SETID) {
             logic->node_sd[disc_payload->src_node] = src_sd;
@@ -79,42 +79,42 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_small_eth_t *neighbour_msg,
 }
 
 static int
-axsw_forward_small(axsw_logic_t *logic, axiom_small_eth_t *small_msg,
+axsw_forward_raw(axsw_logic_t *logic, axiom_raw_eth_t *raw_msg,
         int src_sd)
 {
     uint8_t dst_node, src_node;
 
-    dst_node = small_msg->small_msg.header.tx.dst;
+    dst_node = raw_msg->raw_msg.header.tx.dst;
     src_node = axsw_logic_find_node_id(logic, src_sd);
 
     DPRINTF("dst_node: %d - src_node: %d", dst_node, src_node);
 
     /* set source node id in the packet */
-    small_msg->small_msg.header.rx.src = src_node;
+    raw_msg->raw_msg.header.rx.src = src_node;
 
-    return axsw_logic_find_small_sd(logic, dst_node);
+    return axsw_logic_find_raw_sd(logic, dst_node);
 }
 
 int
 axsw_logic_forward(axsw_logic_t *logic, int src_sd,
-        axiom_small_eth_t *axiom_packet)
+        axiom_raw_eth_t *axiom_packet)
 {
     int dst_sd;
 
-    if (ntohs(axiom_packet->eth_hdr.type) != AXIOM_ETH_TYPE_SMALL) {
+    if (ntohs(axiom_packet->eth_hdr.type) != AXIOM_ETH_TYPE_RAW) {
         EPRINTF("Received a ethernet packet with wrong type");
         return -1;
     }
 
     DPRINTF("src_sd: %d", src_sd);
 
-    if (axiom_packet->small_msg.header.tx.port_type.field.type ==
-            AXIOM_TYPE_SMALL_NEIGHBOUR) {
+    if (axiom_packet->raw_msg.header.tx.port_type.field.type ==
+            AXIOM_TYPE_RAW_NEIGHBOUR) {
         /* neighbour message */
         dst_sd = axsw_forward_neighbour(logic, axiom_packet, src_sd);
     } else {
-        /* small message */
-        dst_sd = axsw_forward_small(logic, axiom_packet, src_sd);
+        /* raw message */
+        dst_sd = axsw_forward_raw(logic, axiom_packet, src_sd);
     }
 
     NDPRINTF("dst_sd: %d", dst_sd);

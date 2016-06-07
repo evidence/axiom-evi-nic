@@ -14,12 +14,12 @@
 
 
 /*!
- * \brief  This function sends small data to a remote node.
+ * \brief  This function sends raw data to a remote node.
  *
  * \param dev           The axiom device private data pointer
- * \param dst_id        The remote node id that will receive the small data or
- *                      local interface that will send the small data
- * \param port_type     port and type of the small message
+ * \param dst_id        The remote node id that will receive the raw data or
+ *                      local interface that will send the raw data
+ * \param port_type     port and type of the raw message
  * \param payload_size  size of data to be sent
  * \param payload       data to be sent
  *
@@ -27,35 +27,35 @@
  * XXX: the return type is unsigned!
  */
 axiom_msg_id_t
-axiom_hw_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id,
+axiom_hw_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id,
         axiom_port_type_t port_type, axiom_payload_size_t payload_size,
         axiom_payload_t *payload);
 
 /*!
- * \brief This function returns the space available in the small TX queue.
+ * \brief This function returns the space available in the raw TX queue.
  *
  * \param dev           The axiom device private data pointer
  *
  * \return Returns the space available
  */
-axiom_small_len_t
-axiom_hw_small_tx_avail(axiom_dev_t *dev);
+axiom_raw_len_t
+axiom_hw_raw_tx_avail(axiom_dev_t *dev);
 
 /*!
- * \brief This function the tail of the small TX queue.
+ * \brief This function the tail of the raw TX queue.
  *
  * \param dev           The axiom device private data pointer
  */
 void
-axiom_hw_small_tx_push(axiom_dev_t *dev);
+axiom_hw_raw_tx_push(axiom_dev_t *dev);
 
 /*!
- * \brief This function receives small data to a remote node.
+ * \brief This function receives raw data to a remote node.
  *
  * \param dev           The axiom device private data pointer
- * \param src_id        The source node id that sent the small data or local
- *                      interface that received the small data
- * \param port_type     port and type of the small message
+ * \param src_id        The source node id that sent the raw data or local
+ *                      interface that received the raw data
+ * \param port_type     port and type of the raw message
  * \param payload_size  size of data received
  * \param payload       data received
  *
@@ -63,19 +63,19 @@ axiom_hw_small_tx_push(axiom_dev_t *dev);
  * XXX: the return type is unsigned!
  */
 axiom_msg_id_t
-axiom_hw_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id,
+axiom_hw_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
         axiom_port_type_t *port_type, axiom_payload_size_t *payload_size,
         axiom_payload_t *payload);
 
 /*!
- * \brief This function returns the messages available in the small RX queue.
+ * \brief This function returns the messages available in the raw RX queue.
  *
  * \param dev           The axiom device private data pointer
  *
  * \return Returns the messages available
  */
-axiom_small_len_t
-axiom_hw_small_rx_avail(axiom_dev_t *dev);
+axiom_raw_len_t
+axiom_hw_raw_rx_avail(axiom_dev_t *dev);
 
 /*!
  * \brief This function updates the head of RX queue.
@@ -83,7 +83,7 @@ axiom_hw_small_rx_avail(axiom_dev_t *dev);
  * \param dev           The axiom device private data pointer
  */
 void
-axiom_hw_small_rx_pop(axiom_dev_t *dev);
+axiom_hw_raw_rx_pop(axiom_dev_t *dev);
 
 /*!
  * \brief This function writes data to a remote node memory.

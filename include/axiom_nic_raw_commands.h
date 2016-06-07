@@ -1,13 +1,13 @@
-#ifndef AXIOM_NIC_SMALL_COMMANDS_h
-#define AXIOM_NIC_SMALL_COMMANDS_h
+#ifndef AXIOM_NIC_RAW_COMMANDS_h
+#define AXIOM_NIC_RAW_COMMANDS_h
 
 /*!
- * \file axiom_nic_small_commands.h
+ * \file axiom_nic_raw_commands.h
  *
  * \version     v0.5
  * \date        2016-03-22
  *
- * This file contains the AXIOM small messages commands
+ * This file contains the AXIOM raw messages commands
  *
  */
 
@@ -53,4 +53,4 @@
 
 
 
-#endif /* !AXIOM_NIC_SMALL_COMMANDS_h */
+#endif /* !AXIOM_NIC_RAW_COMMANDS_h */

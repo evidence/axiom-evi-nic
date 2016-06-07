@@ -22,8 +22,8 @@
 #define AXIOMREG_LEN_IFINFO                     8
 /*! \brief length of ROUTING registers array */
 #define AXIOMREG_LEN_ROUTING                    256
-/*! \brief length of SMALL QUEUE registers array */
-#define AXIOMREG_LEN_SMALL_QUEUE                8
+/*! \brief length of RAW QUEUE registers array */
+#define AXIOMREG_LEN_RAW_QUEUE                  8
 /*! \brief length of RDMA QUEUE registers array */
 #define AXIOMREG_LEN_RDMA_QUEUE                 64
 
@@ -31,8 +31,8 @@
 #define AXIOMREG_SIZE_IFINFO                    1
 /*! \brief size of ROUTING registers array elements */
 #define AXIOMREG_SIZE_ROUTING                   1
-/*! \brief size of SMALL QUEUE registers array elements */
-#define AXIOMREG_SIZE_SMALL_QUEUE               132
+/*! \brief size of RAW QUEUE registers array elements */
+#define AXIOMREG_SIZE_RAW_QUEUE                 132
 /*! \brief size of RDMA QUEUE registers array elements */
 #define AXIOMREG_SIZE_RDMA_QUEUE                12
 
@@ -86,28 +86,28 @@
 #define AXIOMREG_IO_ROUTING_BASE                0x00000100
 
 
-/* SMALL TX queue registers */
+/* RAW TX queue registers */
 
-/*! \brief SMALL_TX_HEAD register - 32 bit r/o */
-#define AXIOMREG_IO_SMALL_TX_HEAD               0x00000300
-/*! \brief SMALL_TX_TAIL register - 32 bit r/w */
-#define AXIOMREG_IO_SMALL_TX_TAIL               0x00000304
-/*! \brief SMALL_TX_AVAIL register - 32 bit r/o */
-#define AXIOMREG_IO_SMALL_TX_AVAIL              0x00000308
-/*! \brief SMALL_TX_BASE register - 1056 bit w/o x 8 = 1056 bytes */
-#define AXIOMREG_IO_SMALL_TX_BASE               0x00000400
+/*! \brief RAW_TX_HEAD register - 32 bit r/o */
+#define AXIOMREG_IO_RAW_TX_HEAD                 0x00000300
+/*! \brief RAW_TX_TAIL register - 32 bit r/w */
+#define AXIOMREG_IO_RAW_TX_TAIL                 0x00000304
+/*! \brief RAW_TX_AVAIL register - 32 bit r/o */
+#define AXIOMREG_IO_RAW_TX_AVAIL                0x00000308
+/*! \brief RAW_TX_BASE register - 1056 bit w/o x 8 = 1056 bytes */
+#define AXIOMREG_IO_RAW_TX_BASE                 0x00000400
 
 
-/* SMALL RX queue registers */
+/* RAW RX queue registers */
 
-/*! \brief SMALL_RX_HEAD register - 32 bit r/w */
-#define AXIOMREG_IO_SMALL_RX_HEAD               0x00000310
-/*! \brief SMALL_RX_TAIL register - 32 bit r/o */
-#define AXIOMREG_IO_SMALL_RX_TAIL               0x00000314
-/*! \brief SMALL_RX_AVAIL register - 32 bit r/o */
-#define AXIOMREG_IO_SMALL_RX_AVAIL              0x00000318
-/*! \brief SMALL_RX_BASE register - 1056 r/o x 8 = 1056 bytes */
-#define AXIOMREG_IO_SMALL_RX_BASE               0x00000820
+/*! \brief RAW_RX_HEAD register - 32 bit r/w */
+#define AXIOMREG_IO_RAW_RX_HEAD                 0x00000310
+/*! \brief RAW_RX_TAIL register - 32 bit r/o */
+#define AXIOMREG_IO_RAW_RX_TAIL                 0x00000314
+/*! \brief RAW_RX_AVAIL register - 32 bit r/o */
+#define AXIOMREG_IO_RAW_RX_AVAIL                0x00000318
+/*! \brief RAW_RX_BASE register - 1056 r/o x 8 = 1056 bytes */
+#define AXIOMREG_IO_RAW_RX_BASE                 0x00000820
 
 
 /* RDMA TX queue registers */
@@ -167,10 +167,10 @@
 
 /* Interrupt bit */
 
-/*! \brief SMALL RX Queue interrupt */
-#define AXIOMREG_IRQ_SMALL_RX                   0x00000001
-/*! \brief SMALL TX Queue interrupt */
-#define AXIOMREG_IRQ_SMALL_TX                   0x00000002
+/*! \brief RAW RX Queue interrupt */
+#define AXIOMREG_IRQ_RAW_RX                     0x00000001
+/*! \brief RAW TX Queue interrupt */
+#define AXIOMREG_IRQ_RAW_TX                     0x00000002
 /*! \brief RDMA TX Queue interrupt */
 #define AXIOMREG_IRQ_RDMA_TX                    0x00000004
 /*! \brief RDMA RX Queue interrupt */

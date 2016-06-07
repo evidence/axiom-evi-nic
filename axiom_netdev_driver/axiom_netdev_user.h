@@ -10,8 +10,8 @@
  * through IOCTLs and write()/read()
  */
 
-/*! \brief AXIOM message type SMALL */
-#define AXIOM_MSG_TYPE_SMALL    0
+/*! \brief AXIOM message type RAW */
+#define AXIOM_MSG_TYPE_RAW    0
 /*! \brief AXIOM message type RDMA */
 #define AXIOM_MSG_TYPE_RDMA     1
 
@@ -20,7 +20,7 @@ typedef struct axiom_msg {
     uint8_t type;
     uint8_t spare[3];
     union {
-        axiom_small_msg_t small_msg;
+        axiom_raw_msg_t raw_msg;
         axiom_RDMA_msg_t rdma_msg;
     } payload;
 
@@ -33,11 +33,11 @@ typedef struct axiom_ioctl_routing {
     uint8_t enabled_mask;       /*!< \brief mask of interface enabled */
 } axiom_ioctl_routing_t;
 
-/*! \brief AXIOM ioctl SMALL messages descriptor with a pointer to the payload*/
-typedef struct axiom_ioctl_small {
-    axiom_small_hdr_t header;   /*!< \brief message header */
+/*! \brief AXIOM ioctl RAW messages descriptor with a pointer to the payload*/
+typedef struct axiom_ioctl_raw {
+    axiom_raw_hdr_t header;   /*!< \brief message header */
     void *payload;              /*!< \brief pointer to the message payload */
-} axiom_ioctl_small_t;
+} axiom_ioctl_raw_t;
 
 
 /* ioctl defines */
@@ -64,9 +64,9 @@ typedef struct axiom_ioctl_small {
 #define AXNET_GET_CONTROL       _IOR(AXNET_MAGIC, 108, uint32_t)
 /*! \brief AXIOM IOCTL to bind a process on a specified port */
 #define AXNET_BIND              _IOW(AXNET_MAGIC, 109, uint8_t)
-/*! \brief AXIOM IOCTL to send a small message */
-#define AXNET_SEND_SMALL        _IOW(AXNET_MAGIC, 110, axiom_ioctl_small_t)
-/*! \brief AXIOM IOCTL to recv a small message */
-#define AXNET_RECV_SMALL        _IOWR(AXNET_MAGIC, 111, axiom_ioctl_small_t)
+/*! \brief AXIOM IOCTL to send a raw message */
+#define AXNET_SEND_RAW        _IOW(AXNET_MAGIC, 110, axiom_ioctl_raw_t)
+/*! \brief AXIOM IOCTL to recv a raw message */
+#define AXNET_RECV_RAW        _IOWR(AXNET_MAGIC, 111, axiom_ioctl_raw_t)
 
 #endif /* !AXIOM_NETDEV_USER_h */

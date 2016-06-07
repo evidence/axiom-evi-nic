@@ -13,7 +13,7 @@
 
 #include "axiom_nic_types.h"
 #include "axiom_nic_api_user.h"
-#include "axiom_nic_small_commands.h"
+#include "axiom_nic_raw_commands.h"
 
 /********************************* Types **************************************/
 typedef uint8_t	    axiom_routing_cmd_t;     /*!< \brief Routing command type */
@@ -44,7 +44,7 @@ typedef struct axiom_routing_payload {
  * \return Returns XXX
  */
 inline static axiom_msg_id_t
-axiom_send_small_delivery(axiom_dev_t *dev, axiom_node_id_t dst_node_id,
+axiom_send_raw_delivery(axiom_dev_t *dev, axiom_node_id_t dst_node_id,
         axiom_routing_cmd_t cmd, axiom_node_id_t payload_node_id,
         axiom_if_id_t payload_if_mask)
 {
@@ -55,7 +55,7 @@ axiom_send_small_delivery(axiom_dev_t *dev, axiom_node_id_t dst_node_id,
     payload.node_id = payload_node_id;
     payload.if_mask = payload_if_mask;
 
-    ret = axiom_send_small(dev, dst_node_id, AXIOM_SMALL_PORT_INIT,
+    ret = axiom_send_raw(dev, dst_node_id, AXIOM_RAW_PORT_INIT,
             0, sizeof(payload), &payload);
 
     return ret;
@@ -74,7 +74,7 @@ axiom_send_small_delivery(axiom_dev_t *dev, axiom_node_id_t dst_node_id,
  * XXX: the return type is unsigned!
 */
 inline static axiom_msg_id_t
-axiom_recv_small_delivery(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
+axiom_recv_raw_delivery(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
         axiom_routing_cmd_t *cmd, axiom_node_id_t *payload_node_id,
         axiom_if_id_t *payload_if_mask)
 {
@@ -84,13 +84,13 @@ axiom_recv_small_delivery(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
     axiom_type_t type;
     axiom_msg_id_t ret;
 
-    port = AXIOM_SMALL_PORT_INIT;
-    type = AXIOM_TYPE_SMALL_DATA;
-    /* receive routing info with small messgees */
-    ret = axiom_recv_small(dev, src_node_id, &port, &type, &payload_size,
+    port = AXIOM_RAW_PORT_INIT;
+    type = AXIOM_TYPE_RAW_DATA;
+    /* receive routing info with raw messgees */
+    ret = axiom_recv_raw(dev, src_node_id, &port, &type, &payload_size,
             &payload);
 
-    if ((ret == AXIOM_RET_OK) && (port == AXIOM_SMALL_PORT_INIT))
+    if ((ret == AXIOM_RET_OK) && (port == AXIOM_RAW_PORT_INIT))
     {
         /* payload info */
         *cmd = payload.command;
@@ -114,7 +114,7 @@ axiom_recv_small_delivery(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
  * \return Returns XXX
  */
 inline static axiom_msg_id_t
-axiom_send_small_set_routing(axiom_dev_t *dev, axiom_if_id_t interface,
+axiom_send_raw_set_routing(axiom_dev_t *dev, axiom_if_id_t interface,
         axiom_routing_cmd_t cmd)
 {
     axiom_routing_payload_t payload;
@@ -124,8 +124,8 @@ axiom_send_small_set_routing(axiom_dev_t *dev, axiom_if_id_t interface,
     payload.node_id = 0;
     payload.if_mask = 0;
 
-    ret = axiom_send_small(dev, interface, AXIOM_SMALL_PORT_INIT,
-            AXIOM_TYPE_SMALL_NEIGHBOUR, sizeof(payload), &payload);
+    ret = axiom_send_raw(dev, interface, AXIOM_RAW_PORT_INIT,
+            AXIOM_TYPE_RAW_NEIGHBOUR, sizeof(payload), &payload);
 
     return ret;
 }
@@ -140,7 +140,7 @@ axiom_send_small_set_routing(axiom_dev_t *dev, axiom_if_id_t interface,
  * \return Returns XXX
  */
 inline static axiom_msg_id_t
-axiom_recv_small_set_routing(axiom_dev_t *dev, axiom_if_id_t *interface,
+axiom_recv_raw_set_routing(axiom_dev_t *dev, axiom_if_id_t *interface,
         axiom_routing_cmd_t *cmd)
 {
     axiom_routing_payload_t payload;
@@ -149,13 +149,13 @@ axiom_recv_small_set_routing(axiom_dev_t *dev, axiom_if_id_t *interface,
     axiom_type_t type;
     axiom_msg_id_t ret;
 
-    port = AXIOM_SMALL_PORT_INIT;
-    type = AXIOM_TYPE_SMALL_NEIGHBOUR;
-    /* receive routing info with small messgees */
-    ret = axiom_recv_small(dev, interface, &port, &type, &payload_size,
+    port = AXIOM_RAW_PORT_INIT;
+    type = AXIOM_TYPE_RAW_NEIGHBOUR;
+    /* receive routing info with raw messgees */
+    ret = axiom_recv_raw(dev, interface, &port, &type, &payload_size,
             &payload);
 
-    if ((ret == AXIOM_RET_OK) && (port == AXIOM_SMALL_PORT_INIT))
+    if ((ret == AXIOM_RET_OK) && (port == AXIOM_RAW_PORT_INIT))
     {
         /* payload info */
         *cmd = payload.command;

@@ -31,7 +31,7 @@ typedef struct axsw_logic {
  * \return socket descriptor to forward the packet
  */
 int axsw_logic_forward(axsw_logic_t *logic, int src_sd,
-        axiom_small_eth_t *axiom_packet);
+        axiom_raw_eth_t *axiom_packet);
 
 
 
@@ -63,7 +63,7 @@ axsw_logic_init(axsw_logic_t *logic, int num_ports) {
  * \return socket descriptor associated to dst_node
  */
 inline static int
-axsw_logic_find_small_sd(axsw_logic_t *logic, int dst_node)
+axsw_logic_find_raw_sd(axsw_logic_t *logic, int dst_node)
 {
     if (dst_node >= AXSW_PORT_MAX)
         return -1;

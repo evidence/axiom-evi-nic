@@ -65,13 +65,13 @@ axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
         axiom_if_id_t *if_number);
 
 /*!
- * \brief  This function sends small data to a remote node.
+ * \brief  This function sends raw data to a remote node.
  *
  * \param dev           The axiom device private data pointer
- * \param dst_id        The remote node id that will receive the small data or
- *                      local interface that will send the small data
- * \param port          port of the small message
- * \param type          type of the small message
+ * \param dst_id        The remote node id that will receive the raw data or
+ *                      local interface that will send the raw data
+ * \param port          port of the raw message
+ * \param type          type of the raw message
  * \param payload_size  size of data to be sent
  * \param payload       data to be sent
  *
@@ -79,18 +79,18 @@ axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
  * XXX: the return type is unsigned!
  */
 axiom_msg_id_t
-axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
+axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
         axiom_type_t type, axiom_payload_size_t payload_size,
         void *payload);
 
 /*!
- * \brief This function receives small data to a remote node.
+ * \brief This function receives raw data to a remote node.
  *
  * \param dev           The axiom device private data pointer
- * \param src_id        The source node id that sent the small data or local
- *                      interface that received the small data
- * \param port          port of the small message
- * \param type          type of the small message
+ * \param src_id        The source node id that sent the raw data or local
+ *                      interface that received the raw data
+ * \param port          port of the raw message
+ * \param type          type of the raw message
  * \param payload_size  size of data received
  * \param payload       data received
  *
@@ -98,7 +98,7 @@ axiom_send_small(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
  * XXX: the return type is unsigned!
  */
 axiom_msg_id_t
-axiom_recv_small(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
+axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
         axiom_type_t *type, axiom_payload_size_t *payload_size,
         void *payload);
 

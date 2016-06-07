@@ -8,8 +8,8 @@
  * \date        2016-03-25
  *
  * This file contains the following AXIOM NIC packets description:
- *      - SMALL data packet
- *      - SMALL to neighbour
+ *      - RAW data packet
+ *      - RAW to neighbour
  *
  */
 #include "axiom_nic_limits.h"
@@ -18,17 +18,17 @@
 /************************* Well-known AXIOM port ******************************/
 
 /*! \brief axiom-init deamon port number */
-#define AXIOM_SMALL_PORT_INIT           0
+#define AXIOM_RAW_PORT_INIT             0
 /*! \brief Axiom network utilities port number */
-#define AXIOM_SMALL_PORT_NETUTILS       1
+#define AXIOM_RAW_PORT_NETUTILS         1
 
 
 /*************************** AXIOM packet TYPES *******************************/
 
-/*! \brief Axiom type SMALL DATA (contains SMALL data) */
-#define AXIOM_TYPE_SMALL_DATA           0
-/*! \brief Axiom type SMALL NEIGHBOUR (contains SMALL data to neighbour) */
-#define AXIOM_TYPE_SMALL_NEIGHBOUR      1
+/*! \brief Axiom type RAW DATA (contains RAW data) */
+#define AXIOM_TYPE_RAW_DATA             0
+/*! \brief Axiom type RAW NEIGHBOUR (contains RAW data to neighbour) */
+#define AXIOM_TYPE_RAW_NEIGHBOUR        1
 /*! \brief Axiom type LONG DATA (contains LONG data) */
 #define AXIOM_TYPE_LONG_DATA            2
 /*! \brief Axiom type RDMA WRITE (contains RDMA write) */
@@ -46,9 +46,9 @@
 /*************************** Packets structure ********************************/
 
 /*!
- * \brief Header packet structure for TX small messages
+ * \brief Header packet structure for TX raw messages
  */
-typedef struct axiom_small_tx_hdr {
+typedef struct axiom_raw_tx_hdr {
     union {
         uint8_t raw;
         struct {
@@ -60,12 +60,12 @@ typedef struct axiom_small_tx_hdr {
     uint8_t dst;	        /*!< \brief destination (for tx) identificator*/
     uint8_t payload_size;       /*!< \brief size of payload */
     uint8_t spare[1];
-} axiom_small_tx_hdr_t;
+} axiom_raw_tx_hdr_t;
 
 /*!
- * \brief Header packet structure for RX small messages
+ * \brief Header packet structure for RX raw messages
  */
-typedef struct axiom_small_rx_hdr {
+typedef struct axiom_raw_rx_hdr {
     union {
         uint8_t raw;
         struct {
@@ -77,31 +77,31 @@ typedef struct axiom_small_rx_hdr {
     uint8_t src;	        /*!< \brief source (for rx) identificator */
     uint8_t payload_size;       /*!< \brief size of payload */
     uint8_t spare[1];
-} axiom_small_rx_hdr_t;
+} axiom_raw_rx_hdr_t;
 
 
 /*!
- * \brief Header packet union for SMALL messages
+ * \brief Header packet union for RAW messages
  */
-typedef union axiom_small_hdr {
-    axiom_small_tx_hdr_t tx;
-    axiom_small_rx_hdr_t rx;
+typedef union axiom_raw_hdr {
+    axiom_raw_tx_hdr_t tx;
+    axiom_raw_rx_hdr_t rx;
     uint8_t raw[4];
     uint32_t raw32;
-} axiom_small_hdr_t;
+} axiom_raw_hdr_t;
 
 
 /*! \brief AXIOM payload type */
 typedef struct axiom_payload {
-    uint8_t raw[AXIOM_SMALL_PAYLOAD_MAX_SIZE];
+    uint8_t raw[AXIOM_RAW_PAYLOAD_MAX_SIZE];
 } axiom_payload_t;
 
 /*!
- * \brief SMALL messages with payload embedded
+ * \brief RAW messages with payload embedded
  */
-typedef struct axiom_small_msg {
-    axiom_small_hdr_t header;   /*!< \brief message header */
+typedef struct axiom_raw_msg {
+    axiom_raw_hdr_t header;     /*!< \brief message header */
     axiom_payload_t payload;    /*!< \brief message payload */
-} axiom_small_msg_t;
+} axiom_raw_msg_t;
 
 #endif /* !AXIOM_NIC_PACKETS_H */

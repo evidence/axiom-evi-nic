@@ -13,7 +13,7 @@
 #include "dprintf.h"
 #include "axiom_nic_types.h"
 #include "axiom_nic_api_user.h"
-#include "axiom_nic_small_commands.h"
+#include "axiom_nic_raw_commands.h"
 
 /********************************* Types **************************************/
 typedef uint8_t	  axiom_discovery_cmd_t;    /*!< \brief Discovery command type*/
@@ -49,7 +49,7 @@ typedef struct axiom_discovery_payload {
  * \return Returns XXX
  */
 inline static axiom_msg_id_t
-axiom_send_small_discovery (axiom_dev_t *dev, axiom_if_id_t interface,
+axiom_send_raw_discovery (axiom_dev_t *dev, axiom_if_id_t interface,
         axiom_discovery_cmd_t cmd, axiom_node_id_t payload_src_id,
         axiom_node_id_t payload_dst_id, axiom_if_id_t payload_src_if,
         axiom_if_id_t payload_dst_if)
@@ -65,8 +65,8 @@ axiom_send_small_discovery (axiom_dev_t *dev, axiom_if_id_t interface,
                                 (0x0F & payload_dst_if)) ;
 
 
-    ret = axiom_send_small(dev, interface, AXIOM_SMALL_PORT_INIT,
-            AXIOM_TYPE_SMALL_NEIGHBOUR, sizeof(payload), &payload);
+    ret = axiom_send_raw(dev, interface, AXIOM_RAW_PORT_INIT,
+            AXIOM_TYPE_RAW_NEIGHBOUR, sizeof(payload), &payload);
 
 
     DPRINTF("ret: %x payload: %x", ret, (*(uint32_t*)&payload));
@@ -89,7 +89,7 @@ axiom_send_small_discovery (axiom_dev_t *dev, axiom_if_id_t interface,
  * \return Returns XXX
  */
 inline static axiom_msg_id_t
-axiom_recv_small_discovery(axiom_dev_t *dev, axiom_if_id_t *interface,
+axiom_recv_raw_discovery(axiom_dev_t *dev, axiom_if_id_t *interface,
         axiom_discovery_cmd_t *cmd, axiom_node_id_t *src_id,
         axiom_node_id_t *dst_id, axiom_if_id_t *payload_src_if,
         axiom_if_id_t *payload_dst_if)
@@ -100,15 +100,15 @@ axiom_recv_small_discovery(axiom_dev_t *dev, axiom_if_id_t *interface,
     axiom_msg_id_t ret;
     axiom_payload_size_t payload_size = sizeof(payload);
 
-    port = AXIOM_SMALL_PORT_INIT;
-    type = AXIOM_TYPE_SMALL_NEIGHBOUR;
-    ret = axiom_recv_small(dev, interface, &port, &type, &payload_size,
+    port = AXIOM_RAW_PORT_INIT;
+    type = AXIOM_TYPE_RAW_NEIGHBOUR;
+    ret = axiom_recv_raw(dev, interface, &port, &type, &payload_size,
             &payload);
 
-    if ((ret != AXIOM_RET_OK) || (port != AXIOM_SMALL_PORT_INIT) ||
+    if ((ret != AXIOM_RET_OK) || (port != AXIOM_RAW_PORT_INIT) ||
             (payload_size != sizeof(payload))) {
         EPRINTF("ret: %x port: %x[%x] type: %x payload_size: %d[%d] payload: %x",
-                ret, port, AXIOM_SMALL_PORT_INIT, type, payload_size,
+                ret, port, AXIOM_RAW_PORT_INIT, type, payload_size,
                 ((int)sizeof(payload)), (*(uint32_t*)&payload));
         return AXIOM_RET_ERROR;
     }

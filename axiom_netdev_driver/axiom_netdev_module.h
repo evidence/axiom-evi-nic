@@ -36,7 +36,7 @@
 struct axiomnet_sw_queue {
     spinlock_t queue_lock;              /*!< \brief queue lock */
     evi_queue_t evi_queue;              /*!< \brief queue manager */
-    axiom_small_msg_t *queue_desc;      /*!< \brief queue elements */
+    axiom_raw_msg_t *queue_desc;      /*!< \brief queue elements */
 };
 
 /*! \brief Structure to handle an AXIOM hardware ring */
@@ -60,10 +60,10 @@ struct axiomnet_drvdata {
     /* IRQ */
     int irq;                            /*!< \brief IRQ descriptor */
 
-    /*!\brief SMALL TX hardware ring */
-    struct axiomnet_hw_ring small_tx_ring;
-    /*!\brief SMALL RX hardware ring */
-    struct axiomnet_hw_ring small_rx_ring;
+    /*!\brief RAW TX hardware ring */
+    struct axiomnet_hw_ring raw_tx_ring;
+    /*!\brief RAW RX hardware ring */
+    struct axiomnet_hw_ring raw_rx_ring;
 
     int devnum;                         /*!< \brief CharDev minor number */
     struct mutex lock;                  /*!< \brief Axiom driver mutex */
