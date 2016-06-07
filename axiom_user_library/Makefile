@@ -3,7 +3,7 @@ AXIOM_DRIVER :=	../axiom_netdev_driver
 
 APPS := axiom_user_test
 HEADERS := $(AXIOM_INCLUDE)/*.h
-LIBS := axiom_user_api.a
+LIBS := libaxiom_user_api.a
 CLEANFILES = $(APPS) $(LIBS) *.o
 
 PWD := $(shell pwd)
@@ -26,14 +26,14 @@ CFLAGS += -Wall $(DFLAGS) -I$(AXIOM_INCLUDE) -I$(AXIOM_DRIVER)
 
 all: $(APPS) $(LIBS)
 
-axiom_user_api.a: axiom_user_api.o
+libaxiom_user_api.a: axiom_user_api.o
 	$(AR) rcs $@ $?
 	$(RANLIB) $@
 
 axiom_user_api.o: axiom_user_api.c $(HEADERS) $(AXIOM_DRIVER)/axiom_netdev_user.h
 
 
-axiom_user_test: axiom_user_test.o axiom_user_api.a
+axiom_user_test: axiom_user_test.o libaxiom_user_api.a
 
 axiom_user_test.o: axiom_user_test.c $(HEADERS)
 
