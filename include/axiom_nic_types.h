@@ -15,8 +15,10 @@
 /****************************** Return Values *********************************/
 /*! \brief Return value OK */
 #define AXIOM_RET_OK            0
-/*! \brief Return value ERROR */
+/*! \brief Return value ERROR: generic error */
 #define AXIOM_RET_ERROR         1
+/*! \brief Return value NOTAVAIL: space not available */
+#define AXIOM_RET_NOTAVAIL      2
 
 
 /********************************* Types **************************************/

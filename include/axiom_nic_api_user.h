@@ -41,6 +41,18 @@ void
 axiom_close(axiom_dev_t *dev);
 
 /*!
+ * \brief This function change the behaviour (blocking or not) of send/read API
+ *
+ * \param dev           The axiom device private data pointer
+ * \param blocking      0 to set no blocking behaviour, otherwise blocking
+ *                      behaviour is set
+ *
+ * \return Returns AXIOM_RET_OK on success, an error otherwise.
+ */
+axiom_err_t
+axiom_set_blocking(axiom_dev_t *dev, int blocking);
+
+/*!
  * \brief This function bind the current process on a specified port
  *
  * \param dev           The axiom device private data pointer

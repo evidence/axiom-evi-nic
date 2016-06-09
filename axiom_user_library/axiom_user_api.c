@@ -67,6 +67,35 @@ axiom_close(axiom_dev_t *dev)
 }
 
 axiom_err_t
+axiom_set_blocking(axiom_dev_t *dev, int blocking)
+{
+    int flags;
+
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
+        return AXIOM_RET_ERROR;
+    }
+
+    flags = fcntl(dev->fd, F_GETFL);
+    if (flags == -1) {
+        EPRINTF("fcntl error - errno: %d", errno);
+        return AXIOM_RET_ERROR;
+    }
+
+    if (blocking)
+        flags &= ~O_NONBLOCK;
+    else
+        flags |= O_NONBLOCK;
+
+    if (fcntl(dev->fd, F_SETFL, flags) == -1) {
+        EPRINTF("fcntl error - errno: %d", errno);
+        return AXIOM_RET_ERROR;
+    }
+
+    return AXIOM_RET_OK;
+}
+
+axiom_err_t
 axiom_bind(axiom_dev_t *dev, axiom_port_t port)
 {
     int ret;
@@ -145,6 +174,8 @@ axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
 
     ret = ioctl(dev->fd, AXNET_SEND_RAW, &raw_msg);
     if (ret < 0) {
+        if (errno == EAGAIN)
+            return AXIOM_RET_NOTAVAIL;
         EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
         return AXIOM_RET_ERROR;
     }
@@ -155,6 +186,8 @@ axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
     /* TODO: maybe we can send only the payload bytes used */
     ret = write(dev->fd, &raw_msg, sizeof(raw_msg));
     if (ret < 0) {
+        if (errno == EAGAIN)
+            return AXIOM_RET_NOTAVAIL;
         EPRINTF("impossible to write() - ret: %d", ret);
         return AXIOM_RET_ERROR;
     }
@@ -195,12 +228,16 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
 
     ret = ioctl(dev->fd, AXNET_RECV_RAW, &raw_msg);
     if (ret < 0) {
+        if (errno == EAGAIN)
+            return AXIOM_RET_NOTAVAIL;
         EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
         return AXIOM_RET_ERROR;
     }
 #else
     ret = read(dev->fd, &raw_msg, sizeof(raw_msg));
     if (ret < 0) {
+        if (errno == EAGAIN)
+            return AXIOM_RET_NOTAVAIL;
         EPRINTF("impossible to write() - ret: %d", ret);
         return AXIOM_RET_ERROR;
     }

@@ -11,7 +11,7 @@
  */
 
 /*! \brief AXIOM message type RAW */
-#define AXIOM_MSG_TYPE_RAW    0
+#define AXIOM_MSG_TYPE_RAW      0
 /*! \brief AXIOM message type RDMA */
 #define AXIOM_MSG_TYPE_RDMA     1
 
