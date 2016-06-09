@@ -65,8 +65,12 @@ typedef struct axiom_ioctl_raw {
 /*! \brief AXIOM IOCTL to bind a process on a specified port */
 #define AXNET_BIND              _IOW(AXNET_MAGIC, 109, uint8_t)
 /*! \brief AXIOM IOCTL to send a raw message */
-#define AXNET_SEND_RAW        _IOW(AXNET_MAGIC, 110, axiom_ioctl_raw_t)
+#define AXNET_SEND_RAW          _IOW(AXNET_MAGIC, 110, axiom_ioctl_raw_t)
 /*! \brief AXIOM IOCTL to recv a raw message */
-#define AXNET_RECV_RAW        _IOWR(AXNET_MAGIC, 111, axiom_ioctl_raw_t)
+#define AXNET_RECV_RAW          _IOWR(AXNET_MAGIC, 111, axiom_ioctl_raw_t)
+/*! \brief AXIOM IOCTL to send a raw message */
+#define AXNET_SEND_RAW_AVAIL    _IOW(AXNET_MAGIC, 112, int)
+/*! \brief AXIOM IOCTL to recv a raw message */
+#define AXNET_RECV_RAW_AVAIL    _IOWR(AXNET_MAGIC, 113, int)
 
 #endif /* !AXIOM_NETDEV_USER_h */

@@ -258,6 +258,48 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
     return AXIOM_RET_OK;
 }
 
+int
+axiom_send_raw_avail(axiom_dev_t *dev)
+{
+    int ret;
+    int avail;
+
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
+        return -1;
+    }
+
+    ret = ioctl(dev->fd, AXNET_SEND_RAW_AVAIL, &avail);
+
+    if (ret < 0) {
+        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        return -1;
+    }
+
+    return avail;
+}
+
+int
+axiom_recv_raw_avail(axiom_dev_t *dev)
+{
+    int ret;
+    int avail;
+
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device not open");
+        return -1;
+    }
+
+    ret = ioctl(dev->fd, AXNET_RECV_RAW_AVAIL, &avail);
+
+    if (ret < 0) {
+        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        return -1;
+    }
+
+    return avail;
+}
+
 uint32_t
 axiom_read_ni_status(axiom_dev_t *dev)
 {

@@ -115,6 +115,28 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
         void *payload);
 
 /*!
+ * \brief This function returns the number of slot available to send raw
+ *        messages.
+ *
+ * \param dev           The axiom device private data pointer
+ *
+ * \return Returns the number of slot available to send raw messages.
+ */
+int
+axiom_send_raw_avail(axiom_dev_t *dev);
+
+/*!
+ * \brief This function returns the number of raw messages to receive available.
+ *
+ * \param dev           The axiom device private data pointer
+ *
+ * \return Returns the number of raw messages to receive available.
+ * XXX: for now return 0 when there are not slot available, 1 otherwise. (TBC)
+ */
+int
+axiom_recv_raw_avail(axiom_dev_t *dev);
+
+/*!
  * \brief This function writes data to a remote node memory.
  *
  * \param dev              The axiom device private data pointer

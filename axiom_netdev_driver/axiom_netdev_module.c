@@ -215,6 +215,19 @@ static void axiom_raw_rx_dequeue(struct axiomnet_drvdata *drvdata)
     DPRINTF("end");
 }
 
+inline static int axiomnet_check_port(struct axiomnet_priv *priv)
+{
+    int port = priv->bind_port;
+
+    /* check bind */
+    if (port == AXIOMNET_PORT_INVALID) {
+        EPRINTF("port not assigned");
+        return -EFAULT;
+    }
+
+    return port;
+}
+
 inline static int axiomnet_raw_rx_avail(struct axiomnet_hw_ring *ring,
         int port)
 {
@@ -624,9 +637,11 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
+    struct axiomnet_hw_ring *ring;
     void __user* argp = (void __user*)arg;
     long ret = 0;
     uint32_t buf_uint32;
+    int buf_int, port;
     uint8_t buf_uint8;
     uint8_t buf_uint8_2;
     axiom_ioctl_routing_t buf_routing;
@@ -707,6 +722,19 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         ret = copy_to_user(argp, &buf_raw, sizeof(buf_raw));
         if (ret)
             return -EFAULT;
+        break;
+    case AXNET_SEND_RAW_AVAIL:
+        ring = &drvdata->raw_tx_ring;
+        buf_int = axiomnet_raw_tx_avail(ring);
+        put_user(buf_int, (int __user*)arg);
+        break;
+    case AXNET_RECV_RAW_AVAIL:
+        ring = &drvdata->raw_rx_ring;
+        port = axiomnet_check_port(priv);
+        if (port < 0)
+            return port;
+        buf_int = axiomnet_raw_rx_avail(ring, port);
+        put_user(buf_int, (int __user*)arg);
         break;
     default:
         ret = -EINVAL;
