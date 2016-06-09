@@ -285,6 +285,8 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
     raw_msg = &sw_queue->queue_desc[queue_slot];
 
     if (header->rx.payload_size < raw_msg->header.rx.payload_size) {
+        EPRINTF("payload received too big - payload: available %d - received %d",
+                header->rx.payload_size, raw_msg->header.rx.payload_size);
         len = -EFBIG;
         goto err;
     }
@@ -528,6 +530,9 @@ static ssize_t axiomnet_read(struct file *filep, char __user *buffer, size_t len
     ret = axiomnet_raw_recv(filep, &header, buffer +
             sizeof(axiom_raw_hdr_t));
 
+    if (ret < 0)
+        return ret;
+
     if (copy_to_user(buffer, &header, sizeof(header))) {
         return -EFAULT;
     }
@@ -697,6 +702,8 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
             return -EFAULT;
         ret = axiomnet_raw_recv(filep, &(buf_raw.header),
                 buf_raw.payload);
+        if (ret < 0)
+            return ret;
         ret = copy_to_user(argp, &buf_raw, sizeof(buf_raw));
         if (ret)
             return -EFAULT;

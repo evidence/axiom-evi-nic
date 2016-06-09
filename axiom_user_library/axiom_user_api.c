@@ -160,7 +160,7 @@ axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
     }
 #endif
 
-    DPRINTF("dst: %x payload_size: %x", raw_msg.header.tx.dst,
+    DPRINTF("dst: 0x%x payload_size: 0x%x", raw_msg.header.tx.dst,
             raw_msg.header.tx.payload_size);
 
     return AXIOM_RET_OK;
