@@ -128,7 +128,7 @@ axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
     }
 
     ret = axiom_get_routing(dev, dst_id, &enabled_mask);
-    if (ret == AXIOM_RET_ERROR)
+    if (ret != AXIOM_RET_OK)
         return ret;
 
     for (i = 0; i < AXIOM_INTERFACES_MAX; i++) {
