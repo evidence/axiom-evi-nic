@@ -65,6 +65,30 @@ typedef struct axiom_netperf_payload {
     uint8_t  spare[101];
 } axiom_netperf_payload_t;
 
+/* FLAGS for barrier request message */
+/* request application reset */
+#define AXIOM_BARRIER_FLAG_RESET 0x01
+
+/*! \brief Message payload for the axiom-barrier (request) application */
+typedef struct axiom_barrier_req_payload {
+    uint8_t  command;      /*!< \brief Command of barier request messages */
+    uint8_t  flags;        /*!< \brief Flags */
+    uint8_t  application;  /*!< \brief Application identification */
+    uint8_t  barrier;      /*!< \brief Barrier number */
+    uint8_t  reply_port;   /*!< \brief Port used to reply message */
+    uint8_t  spare[3];     /*!< \brief Spare */
+} axiom_barrier_req_payload_t;
+
+/*! \brief Message payload for the axiom-barrier (reply) application */
+typedef struct axiom_barrier_reply_payload {
+    uint8_t  command;       /*!< \brief Command of barier reply messages */
+    uint8_t  flags;         /*!< \brief Flags */
+    uint8_t  application;   /*!< \brief Application identification */
+    uint8_t  barrier;       /*!< \brief Barrier number */
+    uint8_t  result;        /*!< \brief Result */
+    uint8_t spare[3];       /*!< \brief Spare */
+    //uint8_t  spare[sizeof(axiom_init_payload_t)-4];
+} axiom_barrier_reply_payload_t;
 
 /******************************* Functions ************************************/
 

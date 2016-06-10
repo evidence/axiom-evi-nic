@@ -50,7 +50,9 @@
 /*! \brief Network utilities: netperf end */
 #define AXIOM_CMD_NETPERF_END          17
 
-
-
+/*! \brief Barrier: sync request */
+#define AXIOM_CMD_BARRIER_REQ        18
+/*! \brief Barrier: sync reply */
+#define AXIOM_CMD_BARRIER_REPLY      19
 
 #endif /* !AXIOM_NIC_RAW_COMMANDS_h */

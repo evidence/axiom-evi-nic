@@ -36,4 +36,7 @@
  */
 #define AXIOM_RDMA_PAYLOAD_SIZE_ORDER           3
 
+/*! \brief  Max memory segment size */
+#define AXIOM_MAX_SEGMENT_SIZE                  (2L*1024*1024*1204)
+
 #endif /* !AXIOM_NIC_LIMITS_h */
