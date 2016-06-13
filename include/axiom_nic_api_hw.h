@@ -32,22 +32,14 @@ axiom_hw_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id,
         axiom_payload_t *payload);
 
 /*!
- * \brief This function returns the space available in the raw TX queue.
+ * \brief This function checks the space available in the raw TX queue.
  *
  * \param dev           The axiom device private data pointer
  *
- * \return Returns the space available
+ * \return Returns a value != 0 if there is space available, 0 otherwise.
  */
 axiom_raw_len_t
 axiom_hw_raw_tx_avail(axiom_dev_t *dev);
-
-/*!
- * \brief This function the tail of the raw TX queue.
- *
- * \param dev           The axiom device private data pointer
- */
-void
-axiom_hw_raw_tx_push(axiom_dev_t *dev);
 
 /*!
  * \brief This function receives raw data to a remote node.
@@ -68,22 +60,14 @@ axiom_hw_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
         axiom_payload_t *payload);
 
 /*!
- * \brief This function returns the messages available in the raw RX queue.
+ * \brief This function cheks the messages available in the raw RX queue.
  *
  * \param dev           The axiom device private data pointer
  *
- * \return Returns the messages available
+ * \return Returns a value != 0 if there are messages available, 0 otherwise.
  */
 axiom_raw_len_t
 axiom_hw_raw_rx_avail(axiom_dev_t *dev);
-
-/*!
- * \brief This function updates the head of RX queue.
- *
- * \param dev           The axiom device private data pointer
- */
-void
-axiom_hw_raw_rx_pop(axiom_dev_t *dev);
 
 /*!
  * \brief This function writes data to a remote node memory.

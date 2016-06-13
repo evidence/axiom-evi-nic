@@ -23,9 +23,9 @@
 /*! \brief length of ROUTING registers array */
 #define AXIOMREG_LEN_ROUTING                    256
 /*! \brief length of RAW QUEUE registers array */
-#define AXIOMREG_LEN_RAW_QUEUE                  8
+//#define AXIOMREG_LEN_RAW_QUEUE                  1
 /*! \brief length of RDMA QUEUE registers array */
-#define AXIOMREG_LEN_RDMA_QUEUE                 64
+//#define AXIOMREG_LEN_RDMA_QUEUE                 1
 
 /*! \brief size of IFINFO registers array elements */
 #define AXIOMREG_SIZE_IFINFO                    1
@@ -88,53 +88,37 @@
 
 /* RAW TX queue registers */
 
-/*! \brief RAW_TX_HEAD register - 32 bit r/o */
-#define AXIOMREG_IO_RAW_TX_HEAD                 0x00000300
-/*! \brief RAW_TX_TAIL register - 32 bit r/w */
-#define AXIOMREG_IO_RAW_TX_TAIL                 0x00000304
-/*! \brief RAW_TX_AVAIL register - 32 bit r/o */
-#define AXIOMREG_IO_RAW_TX_AVAIL                0x00000308
-/*! \brief RAW_TX_BASE register - 1056 bit w/o x 8 = 1056 bytes */
-#define AXIOMREG_IO_RAW_TX_BASE                 0x00000400
+/*! \brief RAW_TX_STATUS register - 32 bit r/o */
+#define AXIOMREG_IO_RAW_TX_STATUS               0x00000300
+/*! \brief RAW_TX_DESC register - 1056 bit w/o */
+#define AXIOMREG_IO_RAW_TX_DESC                 0x00000400
 
 
 /* RAW RX queue registers */
 
-/*! \brief RAW_RX_HEAD register - 32 bit r/w */
-#define AXIOMREG_IO_RAW_RX_HEAD                 0x00000310
-/*! \brief RAW_RX_TAIL register - 32 bit r/o */
-#define AXIOMREG_IO_RAW_RX_TAIL                 0x00000314
-/*! \brief RAW_RX_AVAIL register - 32 bit r/o */
-#define AXIOMREG_IO_RAW_RX_AVAIL                0x00000318
-/*! \brief RAW_RX_BASE register - 1056 r/o x 8 = 1056 bytes */
-#define AXIOMREG_IO_RAW_RX_BASE                 0x00000820
+/*! \brief RAW_RX_STATUS register - 32 bit r/w */
+#define AXIOMREG_IO_RAW_RX_STATUS               0x00000310
+/*! \brief RAW_RX_DESC register - 1056 bit r/o */
+#define AXIOMREG_IO_RAW_RX_DESC                 0x00000500
 
 
 /* RDMA TX queue registers */
 
-/*! \brief RDMA_TX_HEAD register - 32 bit r/o */
-#define AXIOMREG_IO_RDMA_TX_HEAD                0x00000320
-/*! \brief RDMA_TX_TAIL register - 32 bit r/w */
-#define AXIOMREG_IO_RDMA_TX_TAIL                0x00000324
-/*! \brief RDMA_TX_AVAIL register - 32 bit r/o */
-#define AXIOMREG_IO_RDMA_TX_AVAIL               0x00000328
-/*! \brief RDMA_TX_BASE register - 96 bit w/o x 64 = 768 bytes */
-#define AXIOMREG_IO_RDMA_TX_BASE                0x00000C40
+/*! \brief RDMA_TX_STATUS register - 32 bit r/o */
+#define AXIOMREG_IO_RDMA_TX_STATUS              0x00000320
+/*! \brief RDMA_TX_DESC register - 96 bit w/o */
+#define AXIOMREG_IO_RDMA_TX_DESC                0x00000600
 
 
 /* RDMA RX queue registers */
 
-/*! \brief RDMA_RX_HEAD register - 32 bit r/w */
-#define AXIOMREG_IO_RDMA_RX_HEAD                0x00000330
-/*! \brief RDMA_RX_TAIL register - 32 bit r/o */
-#define AXIOMREG_IO_RDMA_RX_TAIL                0x00000334
-/*! \brief RDMA_RX_AVAIL register - 32 bit r/o */
-#define AXIOMREG_IO_RDMA_RX_AVAIL               0x00000338
-/*! \brief RDMA_RX_BASE register - 96 r/o x 64 = 768 bytes */
-#define AXIOMREG_IO_RDMA_RX_BASE                0x00000F40
+/*! \brief RDMA_RX_STATUS register - 32 bit r/w */
+#define AXIOMREG_IO_RDMA_RX_STATUS              0x00000330
+/*! \brief RDMA_RX_DESC register - 96 bit r/o */
+#define AXIOMREG_IO_RDMA_RX_DESC                0x00000610
 
 /*! \brief Registers end */
-#define AXIOMREG_IO_SIZE                        0x00001240
+#define AXIOMREG_IO_SIZE                        0x00000620
 
 
 
@@ -168,9 +152,9 @@
 /* Interrupt bit */
 
 /*! \brief RAW RX Queue interrupt */
-#define AXIOMREG_IRQ_RAW_RX                     0x00000001
+#define AXIOMREG_IRQ_RAW_TX                     0x00000001
 /*! \brief RAW TX Queue interrupt */
-#define AXIOMREG_IRQ_RAW_TX                     0x00000002
+#define AXIOMREG_IRQ_RAW_RX                     0x00000002
 /*! \brief RDMA TX Queue interrupt */
 #define AXIOMREG_IRQ_RDMA_TX                    0x00000004
 /*! \brief RDMA RX Queue interrupt */
@@ -178,5 +162,10 @@
 /*! \brief ALL interrupts */
 #define AXIOMREG_IRQ_ALL                        0xFFFFFFFF
 
+
+/* Queue status bit */
+
+/*! \brief Slots available in the queue */
+#define AXIOMREG_QSTATUS_AVAIL                  0x00000001
 
 #endif /* AXIOM_NIC_REGS_H */

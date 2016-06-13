@@ -150,8 +150,6 @@ inline static ssize_t axiomnet_raw_send(struct file *filep,
                 header->tx.payload_size, &(raw_payload))) {
         len = -EFAULT;
     }
-    /* TODO: implement batch */
-    axiom_hw_raw_tx_push(ring->drvdata->dev_api);
 
     len = sizeof(*header) + header->tx.payload_size;
 err:
@@ -167,49 +165,37 @@ static void axiom_raw_rx_dequeue(struct axiomnet_drvdata *drvdata)
     struct axiomnet_hw_ring *ring = &drvdata->raw_rx_ring;
     struct axiomnet_sw_queue *sw_queue = &ring->sw_queue;
     unsigned long flags;
-    uint32_t avail;
+    uint32_t received = 0;
     int port;
     eviq_pnt_t queue_slot = EVIQ_NONE;
     DPRINTF("start");
 
     spin_lock_irqsave(&sw_queue->queue_lock, flags);
 
-    /* external cycle to recheck new batch */
-    while ((avail = axiom_hw_raw_rx_avail(ring->drvdata->dev_api)) > 0) {
-        uint32_t received = 0;
+    /* something to read */
+    while (axiom_hw_raw_rx_avail(ring->drvdata->dev_api) != 0) {
+        axiom_raw_msg_t *msg;
 
-        while (avail > 0) { /* something to read */
-            axiom_raw_msg_t *msg;
-
-            queue_slot = eviq_free_head(&sw_queue->evi_queue);
-            if (queue_slot == EVIQ_NONE) {
-                break;
-            }
-
-            msg = &sw_queue->queue_desc[queue_slot];
-
-            axiom_hw_recv_raw(ring->drvdata->dev_api, &msg->header.rx.src,
-                    &msg->header.rx.port_type.raw, &msg->header.rx.payload_size,
-                    &msg->payload);
-            port = msg->header.rx.port_type.field.port;
-
-            eviq_insert(&sw_queue->evi_queue, port);
-            DPRINTF("queue insert - avail: %d queue_slot: %d port: %d", avail,
-                    queue_slot, port);
-
-            avail--;
-            received++;
-        }
-
-        if (received > 0)
-            axiom_hw_raw_rx_pop(ring->drvdata->dev_api);
-
-        DPRINTF("received: %d", received);
-
+        queue_slot = eviq_free_head(&sw_queue->evi_queue);
         if (queue_slot == EVIQ_NONE) {
             break;
         }
+
+        msg = &sw_queue->queue_desc[queue_slot];
+
+        axiom_hw_recv_raw(ring->drvdata->dev_api, &msg->header.rx.src,
+                &msg->header.rx.port_type.raw, &msg->header.rx.payload_size,
+                &msg->payload);
+        port = msg->header.rx.port_type.field.port;
+
+        eviq_insert(&sw_queue->evi_queue, port);
+        DPRINTF("queue insert - received: %d queue_slot: %d port: %d", received,
+                queue_slot, port);
+
+        received++;
     }
+
+    DPRINTF("received: %d", received);
 
     spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
     DPRINTF("end");

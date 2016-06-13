@@ -26,10 +26,11 @@ MODULE_VERSION("v0.5");
 /*! \brief AXIOM HW device status */
 typedef struct axiom_dev {
     void __iomem *vregs;        /*!< \brief Memory mapped IO registers */
-
-    uint32_t tx_tail;           /*!< \brief RAW TX tail value (read on push)*/
-    uint32_t rx_head;           /*!< \brief RAW RX head value (read on pop)*/
 } axiom_dev_t;
+
+
+static void axiom_hw_raw_tx_push(axiom_dev_t *dev);
+static void axiom_hw_raw_rx_pop(axiom_dev_t *dev);
 
 axiom_dev_t *
 axiom_hw_dev_alloc(void *vregs)
@@ -38,9 +39,6 @@ axiom_hw_dev_alloc(void *vregs)
 
     dev = vmalloc(sizeof(*dev));
     dev->vregs = vregs;
-
-    dev->tx_tail = ioread32(dev->vregs + AXIOMREG_IO_RAW_TX_TAIL);
-    dev->rx_head = ioread32(dev->vregs + AXIOMREG_IO_RAW_RX_HEAD);
 
     return dev;
 }
@@ -57,7 +55,6 @@ axiom_hw_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id,
         axiom_port_type_t port_type, axiom_payload_size_t payload_size,
         axiom_payload_t *payload)
 {
-    uint32_t tail = dev->tx_tail;
     axiom_raw_hdr_t header;
     void __iomem *base_reg;
     int i;
@@ -66,8 +63,7 @@ axiom_hw_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id,
     header.tx.dst = dst_id;
     header.tx.payload_size = payload_size;
 
-    base_reg = dev->vregs + AXIOMREG_IO_RAW_TX_BASE +
-        AXIOMREG_SIZE_RAW_QUEUE * (tail);
+    base_reg = dev->vregs + AXIOMREG_IO_RAW_TX_DESC;
 
     /* write header */
     iowrite32(header.raw32, base_reg);
@@ -78,13 +74,12 @@ axiom_hw_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id,
                 AXIOM_RAW_HEADER_SIZE + i);
     }
 
-    DPRINTF("tail: %x header: %x", tail, header.raw32);
-
-    dev->tx_tail++;
-    /* module is expensive */
-    if (dev->tx_tail == AXIOMREG_LEN_RAW_QUEUE) {
-        dev->tx_tail = 0;
+    /* if the payload is not entire filled, write last byte to push the slot */
+    if (i < AXIOM_RAW_PAYLOAD_MAX_SIZE) {
+        axiom_hw_raw_tx_push(dev);
     }
+
+    DPRINTF("header: %x", header.raw32);
 
     return 0;
 }
@@ -94,15 +89,19 @@ axiom_hw_raw_tx_avail(axiom_dev_t *dev)
 {
     uint32_t ret;
 
-    ret = ioread32(dev->vregs + AXIOMREG_IO_RAW_TX_AVAIL);
+    ret = ioread32(dev->vregs + AXIOMREG_IO_RAW_TX_STATUS);
 
-    return ret;
+    return (ret & AXIOMREG_QSTATUS_AVAIL);
 }
 
-void
+static void
 axiom_hw_raw_tx_push(axiom_dev_t *dev)
 {
-    iowrite32(dev->tx_tail, dev->vregs + AXIOMREG_IO_RAW_TX_TAIL);
+    void __iomem *base_reg = dev->vregs + AXIOMREG_IO_RAW_TX_DESC +
+        (AXIOMREG_SIZE_RAW_QUEUE - 1);
+
+    /* write last byte to push the slot */
+    iowrite8(0, base_reg);
 }
 
 axiom_msg_id_t
@@ -110,13 +109,11 @@ axiom_hw_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
         axiom_port_type_t *port_type, axiom_payload_size_t *payload_size,
         axiom_payload_t *payload)
 {
-    uint32_t head = dev->rx_head;
     axiom_raw_hdr_t header;
     void __iomem *base_reg;
     int i;
 
-    base_reg = dev->vregs + AXIOMREG_IO_RAW_RX_BASE +
-        AXIOMREG_SIZE_RAW_QUEUE * (head);
+    base_reg = dev->vregs + AXIOMREG_IO_RAW_RX_DESC;
 
     /* read header */
     header.raw32 = ioread32(base_reg);
@@ -131,13 +128,10 @@ axiom_hw_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
                 AXIOM_RAW_HEADER_SIZE + i);
     }
 
-    dev->rx_head++;
-
-    /* module is expensive */
-    if (dev->rx_head == AXIOMREG_LEN_RAW_QUEUE) {
-        dev->rx_head = 0;
+    /* if the payload is not entire filled, read last byte to pop the slot */
+    if (i < AXIOM_RAW_PAYLOAD_MAX_SIZE) {
+        axiom_hw_raw_rx_pop(dev);
     }
-
     return 0;
 }
 
@@ -146,15 +140,19 @@ axiom_hw_raw_rx_avail(axiom_dev_t *dev)
 {
     uint32_t ret;
 
-    ret = ioread32(dev->vregs + AXIOMREG_IO_RAW_RX_AVAIL);
+    ret = ioread32(dev->vregs + AXIOMREG_IO_RAW_RX_STATUS);
 
-    return ret;
+    return (ret & AXIOMREG_QSTATUS_AVAIL);
 }
 
-void
+static void
 axiom_hw_raw_rx_pop(axiom_dev_t *dev)
 {
-    iowrite32(dev->rx_head, dev->vregs + AXIOMREG_IO_RAW_RX_HEAD);
+    void __iomem *base_reg = dev->vregs + AXIOMREG_IO_RAW_RX_DESC +
+        (AXIOMREG_SIZE_RAW_QUEUE - 1);
+
+    /* read last byte to pop the slot */
+    ioread8(base_reg);
 }
 
 uint32_t
@@ -315,19 +313,11 @@ axiom_print_queue_reg(axiom_dev_t *dev)
 
     printk("axiom --- QUEUE REGISTERS start ---\n");
 
-    buf32 = ioread32(dev->vregs + AXIOMREG_IO_RAW_TX_HEAD);
-    printk("axiom - tx_head: 0x%08x\n", buf32);
-    buf32 = ioread32(dev->vregs + AXIOMREG_IO_RAW_TX_TAIL);
-    printk("axiom - tx_tail: 0x%08x\n", buf32);
-    buf32 = ioread32(dev->vregs + AXIOMREG_IO_RAW_TX_AVAIL);
-    printk("axiom - tx_info: 0x%08x\n", buf32);
+    buf32 = ioread32(dev->vregs + AXIOMREG_IO_RAW_TX_STATUS);
+    printk("axiom - tx_status: 0x%08x\n", buf32);
 
-    buf32 = ioread32(dev->vregs + AXIOMREG_IO_RAW_RX_HEAD);
-    printk("axiom - rx_head: 0x%08x\n", buf32);
-    buf32 = ioread32(dev->vregs + AXIOMREG_IO_RAW_RX_TAIL);
-    printk("axiom - rx_tail: 0x%08x\n", buf32);
-    buf32 = ioread32(dev->vregs + AXIOMREG_IO_RAW_RX_AVAIL);
-    printk("axiom - rx_info: 0x%08x\n", buf32);
+    buf32 = ioread32(dev->vregs + AXIOMREG_IO_RAW_RX_STATUS);
+    printk("axiom - rx_status: 0x%08x\n", buf32);
 
     printk("axiom --- QUEUE REGISTERS end ---\n");
 }
