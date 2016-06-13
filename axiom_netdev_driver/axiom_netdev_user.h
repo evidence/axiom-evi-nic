@@ -72,5 +72,7 @@ typedef struct axiom_ioctl_raw {
 #define AXNET_SEND_RAW_AVAIL    _IOW(AXNET_MAGIC, 112, int)
 /*! \brief AXIOM IOCTL to recv a raw message */
 #define AXNET_RECV_RAW_AVAIL    _IOWR(AXNET_MAGIC, 113, int)
+/*! \brief AXIOM IOCTL to flush raw messages */
+#define AXNET_FLUSH_RAW         _IO(AXNET_MAGIC, 114)
 
 #endif /* !AXIOM_NETDEV_USER_h */

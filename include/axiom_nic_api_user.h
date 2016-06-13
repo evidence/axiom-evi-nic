@@ -126,6 +126,16 @@ int
 axiom_send_raw_avail(axiom_dev_t *dev);
 
 /*!
+ * \brief This function flushes all messages enqueued on port previously bound.
+ *
+ * \param dev           The axiom device private data pointer
+ *
+ * \return Returns AXIOM_RET_OK on success, an error otherwise.
+ */
+axiom_err_t
+axiom_flush_raw(axiom_dev_t *dev);
+
+/*!
  * \brief This function returns the number of raw messages to receive available.
  *
  * \param dev           The axiom device private data pointer
