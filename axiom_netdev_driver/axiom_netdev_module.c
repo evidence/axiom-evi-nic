@@ -1,7 +1,7 @@
 /*!
  * \file axiom_netdev_module.c
  *
- * \version     v0.5
+ * \version     v0.6
  * \date        2016-05-03
  *
  * This file contains the implementation of the Axiom NIC kernel module.
@@ -34,7 +34,7 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Evidence SRL");
 MODULE_DESCRIPTION("Axiom Network Device Driver");
-MODULE_VERSION("v0.5");
+MODULE_VERSION("v0.6");
 
 /*! \brief verbose module parameter */
 int verbose = 0;

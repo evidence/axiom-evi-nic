@@ -3,7 +3,7 @@
 /*!
  * \file axiom_nic_api_user.h
  *
- * \version     v0.5
+ * \version     v0.6
  * \date        2016-03-14
  *
  * This file contains the AXIOM NIC API for the userspace

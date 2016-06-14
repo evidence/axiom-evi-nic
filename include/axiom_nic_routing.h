@@ -4,7 +4,7 @@
 /*!
  * \file axiom_nic_routing.h
  *
- * \version     v0.5
+ * \version     v0.6
  * \date        2016-03-18
  *
  * This file contains the AXIOM NIC API for the routing phase

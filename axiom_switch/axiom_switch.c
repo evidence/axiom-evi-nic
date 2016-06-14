@@ -1,7 +1,7 @@
 /*!
  * \file axiom_switch.c
  *
- * \version     v0.5
+ * \version     v0.6
  * \date        2016-05-03
  *
  * This file implements the Axiom Switch: emulate network topology to

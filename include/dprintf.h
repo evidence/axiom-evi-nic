@@ -3,7 +3,7 @@
 /*!
  * \file dprintf.h
  *
- * \version     v0.5
+ * \version     v0.6
  * \date        2016-04-29
  *
  * This file contains some functions to print debugging information
