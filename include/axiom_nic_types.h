@@ -19,6 +19,8 @@
 #define AXIOM_RET_ERROR         1
 /*! \brief Return value NOTAVAIL: space not available */
 #define AXIOM_RET_NOTAVAIL      2
+/*! \brief Return value INTR: system call interrupted */
+#define AXIOM_RET_INTR          3
 
 
 /********************************* Types **************************************/

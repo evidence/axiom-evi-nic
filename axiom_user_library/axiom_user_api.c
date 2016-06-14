@@ -176,6 +176,8 @@ axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
     if (ret < 0) {
         if (errno == EAGAIN)
             return AXIOM_RET_NOTAVAIL;
+        if (errno == EINTR)
+            return AXIOM_RET_INTR;
         EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
         return AXIOM_RET_ERROR;
     }
@@ -188,6 +190,8 @@ axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
     if (ret < 0) {
         if (errno == EAGAIN)
             return AXIOM_RET_NOTAVAIL;
+        if (errno == EINTR)
+            return AXIOM_RET_INTR;
         EPRINTF("impossible to write() - ret: %d", ret);
         return AXIOM_RET_ERROR;
     }
@@ -230,6 +234,8 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
     if (ret < 0) {
         if (errno == EAGAIN)
             return AXIOM_RET_NOTAVAIL;
+        if (errno == EINTR)
+            return AXIOM_RET_INTR;
         EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
         return AXIOM_RET_ERROR;
     }
@@ -238,6 +244,8 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
     if (ret < 0) {
         if (errno == EAGAIN)
             return AXIOM_RET_NOTAVAIL;
+        if (errno == EINTR)
+            return AXIOM_RET_INTR;
         EPRINTF("impossible to write() - ret: %d", ret);
         return AXIOM_RET_ERROR;
     }

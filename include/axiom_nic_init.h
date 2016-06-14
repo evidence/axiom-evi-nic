@@ -32,8 +32,10 @@ typedef struct axiom_init_payload {
 /*! \brief Message payload for the axiom-ping application */
 typedef struct axiom_ping_payload {
     uint8_t  command;           /*!< \brief Command of ping-pong messages */
-    uint8_t  spare;             /*!< \brief Spare field */
-    uint16_t packet_id;         /*!< \brief Packet id */
+    uint8_t  padding[3];
+    uint32_t unique_id;         /*!< \brief Unique id */
+    uint32_t seq_num;           /*!< \brief Sequence number */
+    uint64_t timestamp;         /*!< \brief Timestamp */
 } axiom_ping_payload_t;
 
 
