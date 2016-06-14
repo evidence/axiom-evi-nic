@@ -9,6 +9,7 @@
 #include <asm/uaccess.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/kthread.h>
 #include <linux/init.h>
 #include <linux/device.h>
 #include <linux/dma-mapping.h>
@@ -84,7 +85,7 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
     irq_pending = ioread32(drvdata->vregs + AXIOMREG_IO_PNDIRQ);
 
     if (irq_pending & AXIOMREG_IRQ_RAW_RX) {
-        wake_up(&drvdata->raw_rx_ring.wait_queue);
+        wake_up(&drvdata->kthread_wq);
     }
 
     if (irq_pending & AXIOMREG_IRQ_RAW_TX) {
@@ -170,11 +171,12 @@ static void axiom_raw_rx_dequeue(struct axiomnet_drvdata *drvdata)
     eviq_pnt_t queue_slot = EVIQ_NONE;
     DPRINTF("start");
 
-    spin_lock_irqsave(&sw_queue->queue_lock, flags);
 
     /* something to read */
     while (axiom_hw_raw_rx_avail(ring->drvdata->dev_api) != 0) {
         axiom_raw_msg_t *msg;
+
+        spin_lock_irqsave(&sw_queue->queue_lock, flags);
 
         queue_slot = eviq_free_head(&sw_queue->evi_queue);
         if (queue_slot == EVIQ_NONE) {
@@ -189,16 +191,84 @@ static void axiom_raw_rx_dequeue(struct axiomnet_drvdata *drvdata)
         port = msg->header.rx.port_type.field.port;
 
         eviq_insert(&sw_queue->evi_queue, port);
+
+        spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
+
         DPRINTF("queue insert - received: %d queue_slot: %d port: %d", received,
                 queue_slot, port);
 
         received++;
+
+        /* wake up process */ /* TODO: wake process per port */
+        wake_up(&drvdata->raw_rx_ring.wait_queue);
     }
 
     DPRINTF("received: %d", received);
 
-    spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
+
     DPRINTF("end");
+}
+
+static bool axiomnet_kthread_work_todo(struct axiomnet_drvdata *drvdata)
+{
+    return (axiom_hw_raw_rx_avail(drvdata->dev_api) != 0);
+}
+
+inline static bool axiomnet_kthread_should_stop(struct axiomnet_drvdata *drvdata)
+{
+    return kthread_should_stop();
+}
+
+static int axiomnet_kthread(void *data)
+{
+    struct axiomnet_drvdata *drvdata = data;
+
+    for (;;) {
+        wait_event_interruptible(drvdata->kthread_wq,
+                axiomnet_kthread_work_todo(drvdata) ||
+                axiomnet_kthread_should_stop(drvdata));
+
+        if (axiomnet_kthread_should_stop(drvdata))
+            break;
+
+        /* fetch raw rx queue elements */
+        axiom_raw_rx_dequeue(drvdata);
+
+        cond_resched();
+    }
+
+    return 0;
+}
+
+static int axiomnet_kthread_init(struct axiomnet_drvdata *drvdata)
+{
+    struct task_struct *task;
+    int err = -ENOMEM;
+
+    init_waitqueue_head(&drvdata->kthread_wq);
+
+    task = kthread_create(axiomnet_kthread, (void *) drvdata, "axiom-kthread");
+    if (IS_ERR(task)) {
+        EPRINTF("Unable to allocate axiom-kthread");
+        err = PTR_ERR(task);
+        goto err;
+    }
+    drvdata->kthread_task = task;
+
+    wake_up_process(drvdata->kthread_task);
+
+    return 0;
+
+err:
+    return err;
+}
+
+static void axiomnet_kthread_release(struct axiomnet_drvdata *drvdata)
+{
+    if(drvdata->kthread_task) {
+        kthread_stop(drvdata->kthread_task);
+        drvdata->kthread_task = NULL;
+    }
 }
 
 inline static int axiomnet_check_port(struct axiomnet_priv *priv)
@@ -215,13 +285,9 @@ inline static int axiomnet_check_port(struct axiomnet_priv *priv)
 }
 
 inline static int axiomnet_raw_rx_avail(struct axiomnet_hw_ring *ring,
-        int port, int fetch)
+        int port)
 {
     int avail;
-
-    /* fetch new packets */
-    if (fetch)
-        axiom_raw_rx_dequeue(ring->drvdata);
 
     avail = eviq_queue_avail(&ring->sw_queue.evi_queue, port);
     DPRINTF("queue - avail %d port: %d", avail, port);
@@ -255,7 +321,7 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
     if (mutex_lock_interruptible(&ring->mutex))
         return -ERESTARTSYS;
 
-    while (axiomnet_raw_rx_avail(ring, port, 1) == 0) { /* nothing to read */
+    while (axiomnet_raw_rx_avail(ring, port) == 0) { /* nothing to read */
         mutex_unlock(&ring->mutex);
 
         /* no blocking write */
@@ -264,7 +330,7 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
 
         /* put the process in the wait_queue to wait new space (irq) */
         if (wait_event_interruptible(ring->wait_queue,
-                    axiomnet_raw_rx_avail(ring, port, 1) != 0))
+                    axiomnet_raw_rx_avail(ring, port) != 0))
             return -ERESTARTSYS;
 
         if (mutex_lock_interruptible(&ring->mutex))
@@ -465,12 +531,21 @@ static int axiomnet_probe(struct platform_device *pdev)
         goto free_tx_ring;
     }
 
+    /* init kthread */
+    err = axiomnet_kthread_init(drvdata);
+    if (err) {
+        dev_err(&pdev->dev, "could not init kthread\n");
+        goto free_rx_ring;
+    }
+
     axiomnet_enable_irq(drvdata);
 
     IPRINTF(1, "AXIOM NIC driver loaded");
     DPRINTF("end");
 
     return 0;
+free_rx_ring:
+    axiomnet_hw_ring_release(drvdata, &drvdata->raw_rx_ring);
 free_tx_ring:
     axiomnet_hw_ring_release(drvdata, &drvdata->raw_tx_ring);
 free_cdev:
@@ -491,6 +566,8 @@ static int axiomnet_remove(struct platform_device *pdev)
     DPRINTF("start");
 
     axiomnet_disable_irq(drvdata);
+
+    axiomnet_kthread_release(drvdata);
 
     axiomnet_hw_ring_release(drvdata, &drvdata->raw_rx_ring);
     axiomnet_hw_ring_release(drvdata, &drvdata->raw_tx_ring);
@@ -623,7 +700,8 @@ static long axiomnet_raw_flush(struct axiomnet_priv *priv) {
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_hw_ring *ring = &drvdata->raw_rx_ring;
     struct axiomnet_sw_queue *sw_queue = &ring->sw_queue;
-    int port = priv->bind_port, fetch;
+    int port = priv->bind_port;
+    unsigned long flags;
     long ret = 0;
 
     /* check bind */
@@ -635,16 +713,12 @@ static long axiomnet_raw_flush(struct axiomnet_priv *priv) {
     if (mutex_lock_interruptible(&ring->mutex))
         return -ERESTARTSYS;
 
-    /* fetch new packets only the firt time */
-    fetch = 1;
+    spin_lock_irqsave(&sw_queue->queue_lock, flags);
 
-    while (axiomnet_raw_rx_avail(ring, port, fetch) != 0) {
-        unsigned long flags;
+    while (axiomnet_raw_rx_avail(ring, port) != 0) {
         eviq_pnt_t queue_slot;
 
-        spin_lock_irqsave(&sw_queue->queue_lock, flags);
         queue_slot = eviq_remove(&sw_queue->evi_queue, port);
-        spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
 
         /* XXX: impossible! */
         if (queue_slot == EVIQ_NONE) {
@@ -652,11 +726,10 @@ static long axiomnet_raw_flush(struct axiomnet_priv *priv) {
             goto err;
         }
         DPRINTF("queue remove - queue_slot: %d port: %d", queue_slot, port);
-
-        fetch = 0;
     }
 
 err:
+    spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
     mutex_unlock(&ring->mutex);
     return ret;
 }
@@ -762,7 +835,7 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         port = axiomnet_check_port(priv);
         if (port < 0)
             return port;
-        buf_int = axiomnet_raw_rx_avail(ring, port, 1);
+        buf_int = axiomnet_raw_rx_avail(ring, port);
         put_user(buf_int, (int __user*)arg);
         break;
     case AXNET_FLUSH_RAW:

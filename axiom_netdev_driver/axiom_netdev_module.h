@@ -36,7 +36,7 @@
 struct axiomnet_sw_queue {
     spinlock_t queue_lock;              /*!< \brief queue lock */
     evi_queue_t evi_queue;              /*!< \brief queue manager */
-    axiom_raw_msg_t *queue_desc;      /*!< \brief queue elements */
+    axiom_raw_msg_t *queue_desc;        /*!< \brief queue elements */
 };
 
 /*! \brief Structure to handle an AXIOM hardware ring */
@@ -51,6 +51,10 @@ struct axiomnet_hw_ring {
 struct axiomnet_drvdata {
     struct device *dev;                 /*!< \brief parent device */
     axiom_dev_t *dev_api;               /*!< \brief AXIOM dev HW API*/
+    int devnum;                         /*!< \brief CharDev minor number */
+    struct mutex lock;                  /*!< \brief Axiom driver mutex */
+    int used;                           /*!< \brief Current number of open() */
+    uint8_t port_used;                  /*!< \brief Current port bound */
 
     /* IO registers */
     void __iomem *vregs;                /*!< \brief Memory mapped IO registers:
@@ -65,10 +69,10 @@ struct axiomnet_drvdata {
     /*!\brief RAW RX hardware ring */
     struct axiomnet_hw_ring raw_rx_ring;
 
-    int devnum;                         /*!< \brief CharDev minor number */
-    struct mutex lock;                  /*!< \brief Axiom driver mutex */
-    int used;                           /*!< \brief Current number of open() */
-    uint8_t port_used;                  /*!< \brief Current port bound */
+    /* kthread */
+    struct task_struct *kthread_task;   /*< \brief Kernel thread task struct */
+    wait_queue_head_t kthread_wq;       /*< \brief Kernel thread wait queue */
+
 };
 
 /*! \brief AXIOM char device status */
