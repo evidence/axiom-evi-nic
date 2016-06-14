@@ -177,8 +177,9 @@ static void axiom_raw_rx_dequeue(struct axiomnet_drvdata *drvdata)
         axiom_raw_msg_t *msg;
 
         spin_lock_irqsave(&sw_queue->queue_lock, flags);
+        queue_slot = eviq_free_pop(&sw_queue->evi_queue);
+        spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
 
-        queue_slot = eviq_free_head(&sw_queue->evi_queue);
         if (queue_slot == EVIQ_NONE) {
             break;
         }
@@ -190,21 +191,20 @@ static void axiom_raw_rx_dequeue(struct axiomnet_drvdata *drvdata)
                 &msg->payload);
         port = msg->header.rx.port_type.field.port;
 
-        eviq_insert(&sw_queue->evi_queue, port);
-
+        spin_lock_irqsave(&sw_queue->queue_lock, flags);
+        eviq_enqueue(&sw_queue->evi_queue, port, queue_slot);
         spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
 
         DPRINTF("queue insert - received: %d queue_slot: %d port: %d", received,
                 queue_slot, port);
 
         received++;
-
-        /* wake up process */ /* TODO: wake process per port */
-        wake_up(&drvdata->raw_rx_ring.wait_queue);
     }
 
     DPRINTF("received: %d", received);
 
+    /* wake up process */ /* TODO: wake process per port */
+    wake_up(&drvdata->raw_rx_ring.wait_queue);
 
     DPRINTF("end");
 }
@@ -289,7 +289,7 @@ inline static int axiomnet_raw_rx_avail(struct axiomnet_hw_ring *ring,
 {
     int avail;
 
-    avail = eviq_queue_avail(&ring->sw_queue.evi_queue, port);
+    avail = eviq_avail(&ring->sw_queue.evi_queue, port);
     DPRINTF("queue - avail %d port: %d", avail, port);
 
     return avail;
@@ -339,7 +339,8 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
 
     /* copy packet from the ring */
     spin_lock_irqsave(&sw_queue->queue_lock, flags);
-    queue_slot = eviq_remove(&sw_queue->evi_queue, port);
+    queue_slot = eviq_dequeue(&sw_queue->evi_queue, port);
+    spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
 
     /* XXX: impossible! */
     if (queue_slot == EVIQ_NONE) {
@@ -354,7 +355,7 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
         EPRINTF("payload received too big - payload: available %d - received %d",
                 header->rx.payload_size, raw_msg->header.rx.payload_size);
         len = -EFBIG;
-        goto err;
+        goto free_enqueue;
     }
 
     memcpy(header, &(raw_msg->header), sizeof(*header));
@@ -362,13 +363,17 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
     if (copy_to_user(payload, &(raw_msg->payload),
                 raw_msg->header.rx.payload_size)) {
         len = -EFAULT;
-        goto err;
+        goto free_enqueue;
     }
 
     len = sizeof(*header) + raw_msg->header.rx.payload_size;
 
-err:
+free_enqueue:
+    spin_lock_irqsave(&sw_queue->queue_lock, flags);
+    eviq_free_push(&sw_queue->evi_queue, queue_slot);
     spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
+
+err:
 
     mutex_unlock(&ring->mutex);
 
@@ -713,18 +718,22 @@ static long axiomnet_raw_flush(struct axiomnet_priv *priv) {
     if (mutex_lock_interruptible(&ring->mutex))
         return -ERESTARTSYS;
 
+    /* take the lock to avoid enqueue during the flush */
     spin_lock_irqsave(&sw_queue->queue_lock, flags);
 
     while (axiomnet_raw_rx_avail(ring, port) != 0) {
         eviq_pnt_t queue_slot;
 
-        queue_slot = eviq_remove(&sw_queue->evi_queue, port);
+        queue_slot = eviq_dequeue(&sw_queue->evi_queue, port);
 
         /* XXX: impossible! */
         if (queue_slot == EVIQ_NONE) {
             ret = -EFAULT;
             goto err;
         }
+
+        eviq_free_push(&sw_queue->evi_queue, queue_slot);
+
         DPRINTF("queue remove - queue_slot: %d port: %d", queue_slot, port);
     }
 

@@ -120,30 +120,16 @@ eviq_free_avail(evi_queue_t *q)
 }
 
 /*!
- * \brief Get the head of free queue
+ * \brief Pop one slot from the free queue
  *
  * \param q             EVI queue status pointer
  *
- * \return head of the free queue
+ * \return slot from the head
  */
 inline static eviq_pnt_t
-eviq_free_head(evi_queue_t *q)
+eviq_free_pop(evi_queue_t *q)
 {
-    return q->free;
-}
-
-/*!
- * \brief Insert one element at the tail of the specified queue
- *
- * \param q             EVI queue status pointer
- * \param queue_id      Queue identifier
- *
- * \return eviq_pnt_t to the slot on success, otherwise -1
- */
-inline static eviq_pnt_t
-eviq_insert(evi_queue_t *q, int queue_id)
-{
-    eviq_pnt_t slot, old_tail;
+    eviq_pnt_t slot;
 
     /* remove slot at the head of the free queue */
     slot = q->free;
@@ -153,6 +139,50 @@ eviq_insert(evi_queue_t *q, int queue_id)
     }
 
     q->free = q->next[slot];
+
+    return slot;
+}
+
+/*!
+ * \brief Push one slot in the free queue
+ *
+ * \param q             EVI queue status pointer
+ * \param slot          Slot to enqueue
+ */
+inline static void
+eviq_free_push(evi_queue_t *q, eviq_pnt_t slot)
+{
+    /* insert slot at the head of the free list */
+    q->next[slot] = q->free;
+    q->free = slot;
+}
+
+/*!
+ * \brief Chek if there are elements in the specified queue
+ *
+ * \param q             EVI queue status pointer
+ * \param queue_id      Queue identifier
+ *
+ * \return 0 if there are not elements available, otherwise an integer != 0
+ */
+inline static int
+eviq_avail(evi_queue_t *q, int queue_id)
+{
+    return (q->head[queue_id] != EVIQ_NONE);
+}
+
+/*!
+ * \brief Insert one element at the tail of the specified queue
+ *
+ * \param q             EVI queue status pointer
+ * \param queue_id      Queue identifier
+ * \param slot          Slot to insert
+ *
+ */
+inline static void
+eviq_enqueue(evi_queue_t *q, int queue_id, eviq_pnt_t slot)
+{
+    eviq_pnt_t old_tail;
 
     /* insert at the tail */
     q->next[slot] = EVIQ_NONE;
@@ -166,36 +196,6 @@ eviq_insert(evi_queue_t *q, int queue_id)
     }
 
     q->tail[queue_id] = slot;
-
-    return slot;
-}
-
-/*!
- * \brief Chek if there are elements in the specified queue
- *
- * \param q             EVI queue status pointer
- * \param queue_id      Queue identifier
- *
- * \return 0 if there are not elements available, otherwise an integer != 0
- */
-inline static int
-eviq_queue_avail(evi_queue_t *q, int queue_id)
-{
-    return (q->head[queue_id] != EVIQ_NONE);
-}
-
-/*!
- * \brief Get the head of the specified queue
- *
- * \param q             EVI queue status pointer
- * \param queue_id      Queue identifier
- *
- * \return head of the specified queue
- */
-inline static eviq_pnt_t
-eviq_queue_head(evi_queue_t *q, int queue_id)
-{
-    return q->head[queue_id];
 }
 
 /*!
@@ -207,7 +207,7 @@ eviq_queue_head(evi_queue_t *q, int queue_id)
  * \return eviq_pnt_t to the slot removed on success, otherwise -1
  */
 inline static eviq_pnt_t
-eviq_remove(evi_queue_t *q, int queue_id)
+eviq_dequeue(evi_queue_t *q, int queue_id)
 {
     eviq_pnt_t slot, new_head;
 
@@ -226,10 +226,6 @@ eviq_remove(evi_queue_t *q, int queue_id)
     }
 
     q->head[queue_id] = q->next[slot];
-
-    /* insert slot at the head of the free list */
-    q->next[slot] = q->free;
-    q->free = slot;
 
     return slot;
 }
