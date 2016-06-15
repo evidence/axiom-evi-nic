@@ -12,6 +12,7 @@
 #include "dprintf.h"
 #include "axiom_nic_regs.h"
 #include "axiom_kernel_api.h"
+#include "axiom_kthread.h"
 
 /*! \brief AXIOM char device minor */
 #define AXIOMNET_DEV_MINOR      0
@@ -56,7 +57,7 @@ struct axiomnet_drvdata {
     int used;                           /*!< \brief Current number of open() */
     uint8_t port_used;                  /*!< \brief Current port bound */
 
-    /* IO registers */
+    /* I/O registers */
     void __iomem *vregs;                /*!< \brief Memory mapped IO registers:
                                                     virtual kernel address */
     struct resource *regs_res;          /*!< \brief IO resource */
@@ -64,15 +65,13 @@ struct axiomnet_drvdata {
     /* IRQ */
     int irq;                            /*!< \brief IRQ descriptor */
 
-    /*!\brief RAW TX hardware ring */
-    struct axiomnet_hw_ring raw_tx_ring;
-    /*!\brief RAW RX hardware ring */
-    struct axiomnet_hw_ring raw_rx_ring;
+    /* hardware ring */
+    struct axiomnet_hw_ring raw_tx_ring;/*!\brief RAW TX hardware ring */
+    struct axiomnet_hw_ring raw_rx_ring;/*!\brief RAW RX hardware ring */
 
     /* kthread */
-    struct task_struct *kthread_task;   /*< \brief Kernel thread task struct */
-    wait_queue_head_t kthread_wq;       /*< \brief Kernel thread wait queue */
-
+    struct axiom_kthread kthread_tx; /*!< \brief kthread for TX */
+    struct axiom_kthread kthread_rx; /*!< \brief kthread for RX */
 };
 
 /*! \brief AXIOM char device status */

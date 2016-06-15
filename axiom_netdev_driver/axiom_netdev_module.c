@@ -85,7 +85,7 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
     irq_pending = ioread32(drvdata->vregs + AXIOMREG_IO_PNDIRQ);
 
     if (irq_pending & AXIOMREG_IRQ_RAW_RX) {
-        wake_up(&drvdata->kthread_wq);
+        axiom_kthread_wakeup(&drvdata->kthread_rx);
     }
 
     if (irq_pending & AXIOMREG_IRQ_RAW_TX) {
@@ -161,9 +161,8 @@ err:
     return len;
 }
 
-static void axiom_raw_rx_dequeue(struct axiomnet_drvdata *drvdata)
+inline static void axiom_raw_rx_dequeue(struct axiomnet_hw_ring *ring)
 {
-    struct axiomnet_hw_ring *ring = &drvdata->raw_rx_ring;
     struct axiomnet_sw_queue *sw_queue = &ring->sw_queue;
     unsigned long flags;
     uint32_t received = 0;
@@ -204,71 +203,24 @@ static void axiom_raw_rx_dequeue(struct axiomnet_drvdata *drvdata)
     DPRINTF("received: %d", received);
 
     /* wake up process */ /* TODO: wake process per port */
-    wake_up(&drvdata->raw_rx_ring.wait_queue);
+    wake_up(&ring->wait_queue);
 
     DPRINTF("end");
 }
 
-static bool axiomnet_kthread_work_todo(struct axiomnet_drvdata *drvdata)
+static bool axiomnet_rx_work_todo(void *data)
 {
-    return (axiom_hw_raw_rx_avail(drvdata->dev_api) != 0);
+    struct axiomnet_hw_ring *ring = data;
+    return (axiom_hw_raw_rx_avail(ring->drvdata->dev_api) != 0)
+        && (eviq_free_avail(&ring->sw_queue.evi_queue) != 0);
 }
 
-inline static bool axiomnet_kthread_should_stop(struct axiomnet_drvdata *drvdata)
+static void axiomnet_rx_worker(void *data)
 {
-    return kthread_should_stop();
-}
+    struct axiomnet_hw_ring *ring = data;
 
-static int axiomnet_kthread(void *data)
-{
-    struct axiomnet_drvdata *drvdata = data;
-
-    for (;;) {
-        wait_event_interruptible(drvdata->kthread_wq,
-                axiomnet_kthread_work_todo(drvdata) ||
-                axiomnet_kthread_should_stop(drvdata));
-
-        if (axiomnet_kthread_should_stop(drvdata))
-            break;
-
-        /* fetch raw rx queue elements */
-        axiom_raw_rx_dequeue(drvdata);
-
-        cond_resched();
-    }
-
-    return 0;
-}
-
-static int axiomnet_kthread_init(struct axiomnet_drvdata *drvdata)
-{
-    struct task_struct *task;
-    int err = -ENOMEM;
-
-    init_waitqueue_head(&drvdata->kthread_wq);
-
-    task = kthread_create(axiomnet_kthread, (void *) drvdata, "axiom-kthread");
-    if (IS_ERR(task)) {
-        EPRINTF("Unable to allocate axiom-kthread");
-        err = PTR_ERR(task);
-        goto err;
-    }
-    drvdata->kthread_task = task;
-
-    wake_up_process(drvdata->kthread_task);
-
-    return 0;
-
-err:
-    return err;
-}
-
-static void axiomnet_kthread_release(struct axiomnet_drvdata *drvdata)
-{
-    if(drvdata->kthread_task) {
-        kthread_stop(drvdata->kthread_task);
-        drvdata->kthread_task = NULL;
-    }
+    /* fetch raw rx queue elements */
+    axiom_raw_rx_dequeue(ring);
 }
 
 inline static int axiomnet_check_port(struct axiomnet_priv *priv)
@@ -301,7 +253,7 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_hw_ring *ring = &drvdata->raw_rx_ring;
-    int port = priv->bind_port;
+    int port = priv->bind_port, wakeup_kthread = 0;
     ssize_t len;
 
     struct axiomnet_sw_queue *sw_queue = &ring->sw_queue;
@@ -370,8 +322,16 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
 
 free_enqueue:
     spin_lock_irqsave(&sw_queue->queue_lock, flags);
+    /* send a notification to kthread if the free queue was empty */
+    if (eviq_free_avail(&sw_queue->evi_queue) == 0) {
+        wakeup_kthread = 1;
+    }
     eviq_free_push(&sw_queue->evi_queue, queue_slot);
     spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
+
+    if (wakeup_kthread) {
+        axiom_kthread_wakeup(&drvdata->kthread_rx);
+    }
 
 err:
 
@@ -536,8 +496,9 @@ static int axiomnet_probe(struct platform_device *pdev)
         goto free_tx_ring;
     }
 
-    /* init kthread */
-    err = axiomnet_kthread_init(drvdata);
+    /* init RX kthread */
+    err = axiom_kthread_init(&drvdata->kthread_rx, axiomnet_rx_worker,
+            axiomnet_rx_work_todo, &drvdata->raw_rx_ring, "RX");
     if (err) {
         dev_err(&pdev->dev, "could not init kthread\n");
         goto free_rx_ring;
@@ -572,7 +533,7 @@ static int axiomnet_remove(struct platform_device *pdev)
 
     axiomnet_disable_irq(drvdata);
 
-    axiomnet_kthread_release(drvdata);
+    axiom_kthread_uninit(&drvdata->kthread_rx);
 
     axiomnet_hw_ring_release(drvdata, &drvdata->raw_rx_ring);
     axiomnet_hw_ring_release(drvdata, &drvdata->raw_tx_ring);

@@ -1,7 +1,7 @@
 AXIOM_INCLUDE := ../include
 
 obj-m := axiom_netdev.o
-axiom_netdev-objs := axiom_kernel_api.o axiom_netdev_module.o
+axiom_netdev-objs := axiom_kernel_api.o axiom_netdev_module.o axiom_kthread.o
 
 PWD := $(shell pwd)
 MKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
