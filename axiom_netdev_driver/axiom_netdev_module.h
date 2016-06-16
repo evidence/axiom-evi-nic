@@ -26,7 +26,7 @@
 #define AXIOMNET_MAX_OPEN       16
 
 /*! \brief number of AXIOM software queue */
-#define AXIOMNET_SW_QUEUE_NUM           8
+#define AXIOMNET_SW_QUEUE_NUM           AXIOM_RAW_PORT_MAX
 /*! \brief number of free elements in the AXIOM free queue */
 #define AXIOMNET_SW_QUEUE_FREE_LEN      (256 * AXIOMNET_SW_QUEUE_NUM)
 
@@ -40,12 +40,25 @@ struct axiomnet_sw_queue {
     axiom_raw_msg_t *queue_desc;        /*!< \brief queue elements */
 };
 
-/*! \brief Structure to handle an AXIOM hardware ring */
-struct axiomnet_hw_ring {
+/*!< \brief AXIOM struct to handle software port */
+struct axiomnet_sw_port {
+    struct mutex mutex;                 /*!< \brief port mutex */
+    wait_queue_head_t wait_queue;       /*!< \brief port wait queue */
+};
+
+/*! \brief Structure to handle an AXIOM hardware RX ring */
+struct axiomnet_hw_rx_ring {
     struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM driver data */
     struct axiomnet_sw_queue sw_queue;  /*!< \brief AXIOM software queue */
-    struct mutex mutex;                 /*!< \brief ring mutex */
-    wait_queue_head_t wait_queue;       /*!< \brief ring wait queue */
+    /*!< \brief ports of this ring */
+    struct axiomnet_sw_port ports[AXIOM_RAW_PORT_MAX];
+};
+
+/*! \brief Structure to handle an AXIOM hardware TX ring */
+struct axiomnet_hw_tx_ring {
+    struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM driver data */
+    /*!< \brief port of this ring, the TX ring has only 1 port */
+    struct axiomnet_sw_port port;
 };
 
 /*! \brief AXIOM device driver data */
@@ -66,8 +79,8 @@ struct axiomnet_drvdata {
     int irq;                            /*!< \brief IRQ descriptor */
 
     /* hardware ring */
-    struct axiomnet_hw_ring raw_tx_ring;/*!\brief RAW TX hardware ring */
-    struct axiomnet_hw_ring raw_rx_ring;/*!\brief RAW RX hardware ring */
+    struct axiomnet_hw_tx_ring raw_tx_ring;/*!\brief RAW TX hardware ring */
+    struct axiomnet_hw_rx_ring raw_rx_ring;/*!\brief RAW RX hardware ring */
 
     /* kthread */
     struct axiom_kthread kthread_tx; /*!< \brief kthread for TX */

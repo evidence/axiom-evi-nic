@@ -89,7 +89,7 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
     }
 
     if (irq_pending & AXIOMREG_IRQ_RAW_TX) {
-        wake_up(&drvdata->raw_tx_ring.wait_queue);
+        wake_up(&drvdata->raw_tx_ring.port.wait_queue);
     }
 
     iowrite32(irq_pending, drvdata->vregs + AXIOMREG_IO_ACKIRQ);
@@ -99,10 +99,21 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
     return serviced;
 }
 
-inline static unsigned int axiomnet_raw_tx_avail(struct axiomnet_hw_ring *ring)
+inline static int axiomnet_raw_tx_avail(struct axiomnet_hw_tx_ring *tx_ring)
 {
     /*TODO: try to minimize the register read */
-    return axiom_hw_raw_tx_avail(ring->drvdata->dev_api);
+    return axiom_hw_raw_tx_avail(tx_ring->drvdata->dev_api);
+}
+
+inline static int axiomnet_raw_rx_avail(struct axiomnet_hw_rx_ring *rx_ring,
+        int port)
+{
+    int avail;
+
+    avail = eviq_avail(&rx_ring->sw_queue.evi_queue, port);
+    DPRINTF("queue - avail %d port: %d", avail, port);
+
+    return avail;
 }
 
 inline static ssize_t axiomnet_raw_send(struct file *filep,
@@ -110,28 +121,28 @@ inline static ssize_t axiomnet_raw_send(struct file *filep,
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
-    struct axiomnet_hw_ring *ring = &drvdata->raw_tx_ring;
+    struct axiomnet_hw_tx_ring *tx_ring = &drvdata->raw_tx_ring;
     axiom_payload_t raw_payload;
     ssize_t len;
 
     DPRINTF("start");
 
-    if (mutex_lock_interruptible(&ring->mutex))
+    if (mutex_lock_interruptible(&tx_ring->port.mutex))
         return -ERESTARTSYS;
 
-    while (axiomnet_raw_tx_avail(ring) == 0) { /* no space to write */
-        mutex_unlock(&ring->mutex);
+    while (axiomnet_raw_tx_avail(tx_ring) == 0) { /* no space to write */
+        mutex_unlock(&tx_ring->port.mutex);
 
         /* no blocking write */
         if (filep->f_flags & O_NONBLOCK)
             return -EAGAIN;
 
         /* put the process in the wait_queue to wait new space (irq) */
-        if (wait_event_interruptible(ring->wait_queue,
-                    axiomnet_raw_tx_avail(ring) != 0))
+        if (wait_event_interruptible(tx_ring->port.wait_queue,
+                    axiomnet_raw_tx_avail(tx_ring) != 0))
             return -ERESTARTSYS;
 
-        if (mutex_lock_interruptible(&ring->mutex))
+        if (mutex_lock_interruptible(&tx_ring->port.mutex))
             return -ERESTARTSYS;
     }
 
@@ -146,7 +157,7 @@ inline static ssize_t axiomnet_raw_send(struct file *filep,
     }
 
     /* copy packet into the ring */
-    if (axiom_hw_send_raw(ring->drvdata->dev_api, header->tx.dst,
+    if (axiom_hw_send_raw(tx_ring->drvdata->dev_api, header->tx.dst,
                 header->tx.port_type.raw,
                 header->tx.payload_size, &(raw_payload))) {
         len = -EFAULT;
@@ -154,16 +165,16 @@ inline static ssize_t axiomnet_raw_send(struct file *filep,
 
     len = sizeof(*header) + header->tx.payload_size;
 err:
-    mutex_unlock(&ring->mutex);
+    mutex_unlock(&tx_ring->port.mutex);
 
     DPRINTF("end");
 
     return len;
 }
 
-inline static void axiom_raw_rx_dequeue(struct axiomnet_hw_ring *ring)
+inline static void axiom_raw_rx_dequeue(struct axiomnet_hw_rx_ring *rx_ring)
 {
-    struct axiomnet_sw_queue *sw_queue = &ring->sw_queue;
+    struct axiomnet_sw_queue *sw_queue = &rx_ring->sw_queue;
     unsigned long flags;
     uint32_t received = 0;
     int port;
@@ -172,8 +183,9 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_hw_ring *ring)
 
 
     /* something to read */
-    while (axiom_hw_raw_rx_avail(ring->drvdata->dev_api) != 0) {
-        axiom_raw_msg_t *msg;
+    while (axiom_hw_raw_rx_avail(rx_ring->drvdata->dev_api) != 0) {
+        int process_wakeup = 0;
+        axiom_raw_msg_t *raw_msg;
 
         spin_lock_irqsave(&sw_queue->queue_lock, flags);
         queue_slot = eviq_free_pop(&sw_queue->evi_queue);
@@ -183,16 +195,35 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_hw_ring *ring)
             break;
         }
 
-        msg = &sw_queue->queue_desc[queue_slot];
+        raw_msg = &sw_queue->queue_desc[queue_slot];
 
-        axiom_hw_recv_raw(ring->drvdata->dev_api, &msg->header.rx.src,
-                &msg->header.rx.port_type.raw, &msg->header.rx.payload_size,
-                &msg->payload);
-        port = msg->header.rx.port_type.field.port;
+        axiom_hw_recv_raw(rx_ring->drvdata->dev_api, &raw_msg->header.rx.src,
+                &raw_msg->header.rx.port_type.raw, &raw_msg->header.rx.payload_size,
+                &raw_msg->payload);
+        port = raw_msg->header.rx.port_type.field.port;
+
+        /* check valid port */
+        if (port < 0 || port >= AXIOM_RAW_PORT_MAX) {
+            EPRINTF("message discarded - wrong port %d", port);
+            continue;
+        }
+
+        /* TODO: maybe this lock can be avoided with double check */
+        mutex_lock(&rx_ring->ports[port].mutex);
+
+        if (axiomnet_raw_rx_avail(rx_ring, port) == 0) {
+            process_wakeup = 1;
+        }
 
         spin_lock_irqsave(&sw_queue->queue_lock, flags);
         eviq_enqueue(&sw_queue->evi_queue, port, queue_slot);
         spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
+
+        mutex_unlock(&rx_ring->ports[port].mutex);
+
+        /* wake up process only when the queue was empty */
+        if (process_wakeup)
+            wake_up(&rx_ring->ports[port].wait_queue);
 
         DPRINTF("queue insert - received: %d queue_slot: %d port: %d", received,
                 queue_slot, port);
@@ -202,25 +233,22 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_hw_ring *ring)
 
     DPRINTF("received: %d", received);
 
-    /* wake up process */ /* TODO: wake process per port */
-    wake_up(&ring->wait_queue);
-
     DPRINTF("end");
 }
 
 static bool axiomnet_rx_work_todo(void *data)
 {
-    struct axiomnet_hw_ring *ring = data;
-    return (axiom_hw_raw_rx_avail(ring->drvdata->dev_api) != 0)
-        && (eviq_free_avail(&ring->sw_queue.evi_queue) != 0);
+    struct axiomnet_hw_rx_ring *rx_ring = data;
+    return (axiom_hw_raw_rx_avail(rx_ring->drvdata->dev_api) != 0)
+        && (eviq_free_avail(&rx_ring->sw_queue.evi_queue) != 0);
 }
 
 static void axiomnet_rx_worker(void *data)
 {
-    struct axiomnet_hw_ring *ring = data;
+    struct axiomnet_hw_rx_ring *rx_ring = data;
 
     /* fetch raw rx queue elements */
-    axiom_raw_rx_dequeue(ring);
+    axiom_raw_rx_dequeue(rx_ring);
 }
 
 inline static int axiomnet_check_port(struct axiomnet_priv *priv)
@@ -236,27 +264,16 @@ inline static int axiomnet_check_port(struct axiomnet_priv *priv)
     return port;
 }
 
-inline static int axiomnet_raw_rx_avail(struct axiomnet_hw_ring *ring,
-        int port)
-{
-    int avail;
-
-    avail = eviq_avail(&ring->sw_queue.evi_queue, port);
-    DPRINTF("queue - avail %d port: %d", avail, port);
-
-    return avail;
-}
-
 inline static ssize_t axiomnet_raw_recv(struct file *filep,
         axiom_raw_hdr_t *header, char __user *payload)
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
-    struct axiomnet_hw_ring *ring = &drvdata->raw_rx_ring;
+    struct axiomnet_hw_rx_ring *rx_ring = &drvdata->raw_rx_ring;
     int port = priv->bind_port, wakeup_kthread = 0;
     ssize_t len;
 
-    struct axiomnet_sw_queue *sw_queue = &ring->sw_queue;
+    struct axiomnet_sw_queue *sw_queue = &rx_ring->sw_queue;
     axiom_raw_msg_t *raw_msg;
     eviq_pnt_t queue_slot;
     unsigned long flags;
@@ -270,22 +287,22 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
     }
 
     /* TODO: use 1 mutex per port */
-    if (mutex_lock_interruptible(&ring->mutex))
+    if (mutex_lock_interruptible(&rx_ring->ports[port].mutex))
         return -ERESTARTSYS;
 
-    while (axiomnet_raw_rx_avail(ring, port) == 0) { /* nothing to read */
-        mutex_unlock(&ring->mutex);
+    while (axiomnet_raw_rx_avail(rx_ring, port) == 0) { /* nothing to read */
+        mutex_unlock(&rx_ring->ports[port].mutex);
 
         /* no blocking write */
         if (filep->f_flags & O_NONBLOCK)
             return -EAGAIN;
 
         /* put the process in the wait_queue to wait new space (irq) */
-        if (wait_event_interruptible(ring->wait_queue,
-                    axiomnet_raw_rx_avail(ring, port) != 0))
+        if (wait_event_interruptible(rx_ring->ports[port].wait_queue,
+                    axiomnet_raw_rx_avail(rx_ring, port) != 0))
             return -ERESTARTSYS;
 
-        if (mutex_lock_interruptible(&ring->mutex))
+        if (mutex_lock_interruptible(&rx_ring->ports[port].mutex))
             return -ERESTARTSYS;
     }
 
@@ -293,6 +310,8 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
     spin_lock_irqsave(&sw_queue->queue_lock, flags);
     queue_slot = eviq_dequeue(&sw_queue->evi_queue, port);
     spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
+
+    mutex_unlock(&rx_ring->ports[port].mutex);
 
     /* XXX: impossible! */
     if (queue_slot == EVIQ_NONE) {
@@ -335,7 +354,6 @@ free_enqueue:
 
 err:
 
-    mutex_unlock(&ring->mutex);
 
     DPRINTF("end len:%zu", len);
     return len;
@@ -378,23 +396,25 @@ err:
     return err;
 }
 
-static void axiomnet_hw_ring_release(struct axiomnet_drvdata *drvdata,
-            struct axiomnet_hw_ring *ring)
+static void axiomnet_hw_rx_ring_release(struct axiomnet_drvdata *drvdata,
+            struct axiomnet_hw_rx_ring *rx_ring)
 {
-    axiomnet_sw_queue_free(&ring->sw_queue);
+    axiomnet_sw_queue_free(&rx_ring->sw_queue);
 }
 
-static int axiomnet_hw_ring_init(struct axiomnet_drvdata *drvdata,
-        struct axiomnet_hw_ring *ring)
+static int axiomnet_hw_rx_ring_init(struct axiomnet_drvdata *drvdata,
+        struct axiomnet_hw_rx_ring *rx_ring)
 {
-    int err;
+    int err, port;
 
-    ring->drvdata = drvdata;
+    rx_ring->drvdata = drvdata;
 
-    mutex_init(&ring->mutex);
-    init_waitqueue_head(&ring->wait_queue);
+    for (port = 0; port < AXIOM_RAW_PORT_MAX; port++) {
+        mutex_init(&rx_ring->ports[port].mutex);
+        init_waitqueue_head(&rx_ring->ports[port].wait_queue);
+    }
 
-    err = axiomnet_sw_queue_alloc(&ring->sw_queue);
+    err = axiomnet_sw_queue_alloc(&rx_ring->sw_queue);
     if (err) {
         goto err;
     }
@@ -404,6 +424,16 @@ static int axiomnet_hw_ring_init(struct axiomnet_drvdata *drvdata,
 err:
     DPRINTF("error: %d", err);
     return err;
+}
+
+static int axiomnet_hw_tx_ring_init(struct axiomnet_drvdata *drvdata,
+        struct axiomnet_hw_tx_ring *tx_ring)
+{
+    tx_ring->drvdata = drvdata;
+
+    mutex_init(&tx_ring->port.mutex);
+    init_waitqueue_head(&tx_ring->port.wait_queue);
+    return 0;
 }
 
 static int axiomnet_probe(struct platform_device *pdev)
@@ -449,15 +479,18 @@ static int axiomnet_probe(struct platform_device *pdev)
     regs_phys = (regs_pfn << PAGE_SHIFT) + off;
 
     DPRINTF("drvdata: %p", drvdata);
-    DPRINTF("--- is_vmalloc_addr(%p): %d", drvdata->vregs, is_vmalloc_addr(drvdata->vregs))
-    DPRINTF("--- vregs: %p regs_pfn:%lx regs_phys:%lx res->start:%zx", drvdata->vregs, regs_pfn,
-            regs_phys, (size_t)drvdata->regs_res->start);
+    DPRINTF("--- is_vmalloc_addr(%p): %d", drvdata->vregs,
+            is_vmalloc_addr(drvdata->vregs))
+    DPRINTF("--- vregs: %p regs_pfn:%lx regs_phys:%lx res->start:%zx",
+            drvdata->vregs, regs_pfn, regs_phys,
+            (size_t)drvdata->regs_res->start);
 
     axiomnet_disable_irq(drvdata);
 
     /* setup IRQ */
     drvdata->irq = platform_get_irq(pdev, 0);
-    err = request_irq(drvdata->irq, axiomnet_irqhandler, IRQF_SHARED, pdev->name, drvdata);
+    err = request_irq(drvdata->irq, axiomnet_irqhandler, IRQF_SHARED,
+            pdev->name, drvdata);
     if (err) {
         dev_err(&pdev->dev, "could not get irq(%d) - %d\n", drvdata->irq, err);
         err = -EIO;
@@ -483,14 +516,14 @@ static int axiomnet_probe(struct platform_device *pdev)
     }
 
     /* init RAW TX ring */
-    err = axiomnet_hw_ring_init(drvdata, &drvdata->raw_tx_ring);
+    err = axiomnet_hw_tx_ring_init(drvdata, &drvdata->raw_tx_ring);
     if (err) {
         dev_err(&pdev->dev, "could not init TX ring\n");
         goto free_cdev;
     }
 
     /* init RAW RX ring */
-    err = axiomnet_hw_ring_init(drvdata, &drvdata->raw_rx_ring);
+    err = axiomnet_hw_rx_ring_init(drvdata, &drvdata->raw_rx_ring);
     if (err) {
         dev_err(&pdev->dev, "could not init RX ring\n");
         goto free_tx_ring;
@@ -511,9 +544,8 @@ static int axiomnet_probe(struct platform_device *pdev)
 
     return 0;
 free_rx_ring:
-    axiomnet_hw_ring_release(drvdata, &drvdata->raw_rx_ring);
+    axiomnet_hw_rx_ring_release(drvdata, &drvdata->raw_rx_ring);
 free_tx_ring:
-    axiomnet_hw_ring_release(drvdata, &drvdata->raw_tx_ring);
 free_cdev:
     axiomnet_destroy_chrdev(drvdata, &chrdev);
 free_irq:
@@ -535,8 +567,7 @@ static int axiomnet_remove(struct platform_device *pdev)
 
     axiom_kthread_uninit(&drvdata->kthread_rx);
 
-    axiomnet_hw_ring_release(drvdata, &drvdata->raw_rx_ring);
-    axiomnet_hw_ring_release(drvdata, &drvdata->raw_tx_ring);
+    axiomnet_hw_rx_ring_release(drvdata, &drvdata->raw_rx_ring);
 
     axiomnet_destroy_chrdev(drvdata, &chrdev);
     free_irq(drvdata->irq, drvdata);
@@ -559,8 +590,8 @@ static struct platform_driver axiomnet_driver = {
 
 /************************ AxiomNet Char Device  ******************************/
 
-static ssize_t axiomnet_read(struct file *filep, char __user *buffer, size_t len,
-        loff_t *offset)
+static ssize_t axiomnet_read(struct file *filep, char __user *buffer,
+        size_t len, loff_t *offset)
 {
     axiom_raw_hdr_t header;
     ssize_t ret;
@@ -664,8 +695,8 @@ exit:
 
 static long axiomnet_raw_flush(struct axiomnet_priv *priv) {
     struct axiomnet_drvdata *drvdata = priv->drvdata;
-    struct axiomnet_hw_ring *ring = &drvdata->raw_rx_ring;
-    struct axiomnet_sw_queue *sw_queue = &ring->sw_queue;
+    struct axiomnet_hw_rx_ring *rx_ring = &drvdata->raw_rx_ring;
+    struct axiomnet_sw_queue *sw_queue = &rx_ring->sw_queue;
     int port = priv->bind_port;
     unsigned long flags;
     long ret = 0;
@@ -676,13 +707,13 @@ static long axiomnet_raw_flush(struct axiomnet_priv *priv) {
         return -EFAULT;
     }
 
-    if (mutex_lock_interruptible(&ring->mutex))
+    if (mutex_lock_interruptible(&rx_ring->ports[port].mutex))
         return -ERESTARTSYS;
 
     /* take the lock to avoid enqueue during the flush */
     spin_lock_irqsave(&sw_queue->queue_lock, flags);
 
-    while (axiomnet_raw_rx_avail(ring, port) != 0) {
+    while (axiomnet_raw_rx_avail(rx_ring, port) != 0) {
         eviq_pnt_t queue_slot;
 
         queue_slot = eviq_dequeue(&sw_queue->evi_queue, port);
@@ -700,7 +731,8 @@ static long axiomnet_raw_flush(struct axiomnet_priv *priv) {
 
 err:
     spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
-    mutex_unlock(&ring->mutex);
+
+    mutex_unlock(&rx_ring->ports[port].mutex);
     return ret;
 }
 
@@ -709,7 +741,8 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
-    struct axiomnet_hw_ring *ring;
+    struct axiomnet_hw_rx_ring *rx_ring;
+    struct axiomnet_hw_tx_ring *tx_ring;
     void __user* argp = (void __user*)arg;
     long ret = 0;
     uint32_t buf_uint32;
@@ -796,16 +829,16 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
             return -EFAULT;
         break;
     case AXNET_SEND_RAW_AVAIL:
-        ring = &drvdata->raw_tx_ring;
-        buf_int = axiomnet_raw_tx_avail(ring);
+        tx_ring = &drvdata->raw_tx_ring;
+        buf_int = axiomnet_raw_tx_avail(tx_ring);
         put_user(buf_int, (int __user*)arg);
         break;
     case AXNET_RECV_RAW_AVAIL:
-        ring = &drvdata->raw_rx_ring;
+        rx_ring = &drvdata->raw_rx_ring;
         port = axiomnet_check_port(priv);
         if (port < 0)
             return port;
-        buf_int = axiomnet_raw_rx_avail(ring, port);
+        buf_int = axiomnet_raw_rx_avail(rx_ring, port);
         put_user(buf_int, (int __user*)arg);
         break;
     case AXNET_FLUSH_RAW:
