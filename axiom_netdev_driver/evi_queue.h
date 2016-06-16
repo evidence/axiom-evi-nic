@@ -134,7 +134,7 @@ eviq_free_pop(evi_queue_t *q)
     /* remove slot at the head of the free queue */
     slot = q->free;
     /* no slot to remove */
-    if (slot == EVIQ_NONE) {
+    if (unlikely(slot == EVIQ_NONE)) {
         return EVIQ_NONE;
     }
 
@@ -214,7 +214,7 @@ eviq_dequeue(evi_queue_t *q, int queue_id)
     /* remove slot at the head of the queue */
     slot = q->head[queue_id];
     /* no slot to remove */
-    if (slot == EVIQ_NONE) {
+    if (unlikely(slot == EVIQ_NONE)) {
         return EVIQ_NONE;
     }
 

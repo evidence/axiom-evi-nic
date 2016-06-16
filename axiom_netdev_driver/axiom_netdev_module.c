@@ -123,6 +123,7 @@ inline static ssize_t axiomnet_raw_send(struct file *filep,
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_hw_tx_ring *tx_ring = &drvdata->raw_tx_ring;
     axiom_payload_t raw_payload;
+    int ret;
     ssize_t len;
 
     DPRINTF("start");
@@ -146,20 +147,21 @@ inline static ssize_t axiomnet_raw_send(struct file *filep,
             return -ERESTARTSYS;
     }
 
-    if (header->tx.payload_size > sizeof(raw_payload)) {
+    if (unlikely(header->tx.payload_size > sizeof(raw_payload))) {
         len = -EFBIG;
         goto err;
     }
 
-    if (copy_from_user(&(raw_payload), payload, header->tx.payload_size)) {
+    ret = copy_from_user(&(raw_payload), payload, header->tx.payload_size);
+    if (unlikely(ret)) {
         len = -EFAULT;
         goto err;
     }
 
     /* copy packet into the ring */
-    if (axiom_hw_send_raw(tx_ring->drvdata->dev_api, header->tx.dst,
-                header->tx.port_type.raw,
-                header->tx.payload_size, &(raw_payload))) {
+    ret = axiom_hw_send_raw(tx_ring->drvdata->dev_api, header->tx.dst,
+            header->tx.port_type.raw, header->tx.payload_size, &(raw_payload));
+    if (unlikely(ret)) {
         len = -EFAULT;
     }
 
@@ -191,7 +193,7 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_hw_rx_ring *rx_ring)
         queue_slot = eviq_free_pop(&sw_queue->evi_queue);
         spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
 
-        if (queue_slot == EVIQ_NONE) {
+        if (unlikely(queue_slot == EVIQ_NONE)) {
             break;
         }
 
@@ -203,7 +205,7 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_hw_rx_ring *rx_ring)
         port = raw_msg->header.rx.port_type.field.port;
 
         /* check valid port */
-        if (port < 0 || port >= AXIOM_RAW_PORT_MAX) {
+        if (unlikely(port < 0 || port >= AXIOM_RAW_PORT_MAX)) {
             EPRINTF("message discarded - wrong port %d", port);
             continue;
         }
@@ -222,8 +224,9 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_hw_rx_ring *rx_ring)
         mutex_unlock(&rx_ring->ports[port].mutex);
 
         /* wake up process only when the queue was empty */
-        if (process_wakeup)
+        if (process_wakeup) {
             wake_up(&rx_ring->ports[port].wait_queue);
+        }
 
         DPRINTF("queue insert - received: %d queue_slot: %d port: %d", received,
                 queue_slot, port);
@@ -270,7 +273,7 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_hw_rx_ring *rx_ring = &drvdata->raw_rx_ring;
-    int port = priv->bind_port, wakeup_kthread = 0;
+    int port = priv->bind_port, wakeup_kthread = 0, ret;
     ssize_t len;
 
     struct axiomnet_sw_queue *sw_queue = &rx_ring->sw_queue;
@@ -281,7 +284,7 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
     DPRINTF("start");
 
     /* check bind */
-    if (port == AXIOMNET_PORT_INVALID) {
+    if (unlikely(port == AXIOMNET_PORT_INVALID)) {
         EPRINTF("port not assigned");
         return -EFAULT;
     }
@@ -314,7 +317,7 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
     mutex_unlock(&rx_ring->ports[port].mutex);
 
     /* XXX: impossible! */
-    if (queue_slot == EVIQ_NONE) {
+    if (unlikely(queue_slot == EVIQ_NONE)) {
         len = -EFAULT;
         goto err;
     }
@@ -322,7 +325,7 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
 
     raw_msg = &sw_queue->queue_desc[queue_slot];
 
-    if (header->rx.payload_size < raw_msg->header.rx.payload_size) {
+    if (unlikely(header->rx.payload_size < raw_msg->header.rx.payload_size)) {
         EPRINTF("payload received too big - payload: available %d - received %d",
                 header->rx.payload_size, raw_msg->header.rx.payload_size);
         len = -EFBIG;
@@ -331,8 +334,9 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
 
     memcpy(header, &(raw_msg->header), sizeof(*header));
 
-    if (copy_to_user(payload, &(raw_msg->payload),
-                raw_msg->header.rx.payload_size)) {
+    ret = copy_to_user(payload, &(raw_msg->payload),
+            raw_msg->header.rx.payload_size);
+    if (unlikely(ret)) {
         len = -EFAULT;
         goto free_enqueue;
     }
