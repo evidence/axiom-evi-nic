@@ -4,28 +4,11 @@
  * \file axiom_netdev_user.h
  *
  * \version     v0.6
- * \date        2016-05-03
+ * \date        2016-06-22
  *
  * This file contains the Axiom-NIC interface beetween user-space and kernel
- * through IOCTLs and write()/read()
+ * through IOCTLs
  */
-
-/*! \brief AXIOM message type RAW */
-#define AXIOM_MSG_TYPE_RAW      0
-/*! \brief AXIOM message type RDMA */
-#define AXIOM_MSG_TYPE_RDMA     1
-
-#if 0
-typedef struct axiom_msg {
-    uint8_t type;
-    uint8_t spare[3];
-    union {
-        axiom_raw_msg_t raw_msg;
-        axiom_RDMA_msg_t rdma_msg;
-    } payload;
-
-} axiom_msg_t;
-#endif
 
 /*! \brief AXIOM ioctl routing parameters */
 typedef struct axiom_ioctl_routing {
@@ -35,9 +18,15 @@ typedef struct axiom_ioctl_routing {
 
 /*! \brief AXIOM ioctl RAW messages descriptor with a pointer to the payload*/
 typedef struct axiom_ioctl_raw {
-    axiom_raw_hdr_t header;   /*!< \brief message header */
+    axiom_raw_hdr_t header;     /*!< \brief message header */
     void *payload;              /*!< \brief pointer to the message payload */
 } axiom_ioctl_raw_t;
+
+/*! \brief AXIOM ioctl bind parameters */
+typedef struct axiom_ioctl_bind {
+    uint8_t port;               /*!< \brief port to bind */
+    uint8_t flush;              /*!< \brief flush previous packets */
+} axiom_ioctl_bind_t;
 
 
 /* ioctl defines */
@@ -63,7 +52,7 @@ typedef struct axiom_ioctl_raw {
 /*! \brief AXIOM IOCTL to get control register value */
 #define AXNET_GET_CONTROL       _IOR(AXNET_MAGIC, 108, uint32_t)
 /*! \brief AXIOM IOCTL to bind a process on a specified port */
-#define AXNET_BIND              _IOW(AXNET_MAGIC, 109, uint8_t)
+#define AXNET_BIND              _IOW(AXNET_MAGIC, 109, axiom_ioctl_bind_t)
 /*! \brief AXIOM IOCTL to send a raw message */
 #define AXNET_SEND_RAW          _IOW(AXNET_MAGIC, 110, axiom_ioctl_raw_t)
 /*! \brief AXIOM IOCTL to recv a raw message */

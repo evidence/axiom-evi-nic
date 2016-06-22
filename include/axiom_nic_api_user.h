@@ -16,9 +16,8 @@
 /*!
  * \brief  axiom arguments for the axiom_open() function
  */
-/*TODO: is it needed ? */
 struct axiom_args {
-
+    axiom_flags_t       flags;  /*!< \brief Axiom flags */
 };
 
 /*!
@@ -41,16 +40,31 @@ void
 axiom_close(axiom_dev_t *dev);
 
 /*!
- * \brief This function change the behaviour (blocking or not) of send/read API
+ * \brief This function set the flags of the axiom device.
+ *
+ * This function can be used to change the behaviour of the API. The available
+ * flags are:
+ *   - AXIOM_FLAGS_NOBLOCKING
+ *   - AXIOM_FLAGS_NOFLUSH
  *
  * \param dev           The axiom device private data pointer
- * \param blocking      0 to set no blocking behaviour, otherwise blocking
- *                      behaviour is set
+ * \param flags         Axiom flags (multiple flags can be passed)
  *
  * \return Returns AXIOM_RET_OK on success, an error otherwise.
  */
 axiom_err_t
-axiom_set_blocking(axiom_dev_t *dev, int blocking);
+axiom_set_flags(axiom_dev_t *dev, axiom_flags_t flags);
+
+/*!
+ * \brief This function unset the flags of the axiom device.
+ *
+ * \param dev           The axiom device private data pointer
+ * \param flags         Axiom flags
+ *
+ * \return Returns AXIOM_RET_OK on success, an error otherwise.
+ */
+axiom_err_t
+axiom_unset_flags(axiom_dev_t *dev, axiom_flags_t flags);
 
 /*!
  * \brief This function bind the current process on a specified port

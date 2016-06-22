@@ -755,6 +755,7 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
     uint8_t buf_uint8_2;
     axiom_ioctl_routing_t buf_routing;
     axiom_ioctl_raw_t buf_raw;
+    axiom_ioctl_bind_t buf_bind;
 
     DPRINTF("start");
 
@@ -809,9 +810,17 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         axiom_hw_set_ni_control(drvdata->dev_api, buf_uint32);
         break;
     case AXNET_BIND:
-        get_user(buf_uint8, (uint8_t __user*)arg);
-        ret = axiomnet_bind(priv, buf_uint8);
-        DPRINTF("bind port: %x", priv->bind_port);
+        ret = copy_from_user(&buf_bind, argp, sizeof(buf_bind));
+        if (ret)
+            return -EFAULT;
+        ret = axiomnet_bind(priv, buf_bind.port);
+        DPRINTF(1, "bind port: %x flush: %x", priv->bind_port, buf_bind.flush);
+        if (ret)
+            return ret;
+        /* flush all previous received packets */
+        if (buf_bind.flush) {
+            ret = axiomnet_raw_flush(priv);
+        }
         break;
     case AXNET_SEND_RAW:
         ret = copy_from_user(&buf_raw, argp, sizeof(buf_raw));

@@ -29,7 +29,8 @@
  * \brief axiom arguments for the axiom_open() function
  */
 typedef struct axiom_dev {
-    int fd; /*!< \brief file descriptor of the AXIOM char dev */
+    int fd;             /*!< \brief file descriptor of the AXIOM char dev */
+    axiom_flags_t flags;/*!< \brief axiom flags */
 } axiom_dev_t;
 
 
@@ -38,7 +39,7 @@ axiom_dev_t *
 axiom_open(axiom_args_t *args) {
     axiom_dev_t *dev;
 
-    dev = malloc(sizeof(*dev));
+    dev = calloc(1, sizeof(*dev));
     if (!dev) {
         EPRINTF("failed to allocate memory");
         return NULL;
@@ -50,8 +51,18 @@ axiom_open(axiom_args_t *args) {
         goto free_dev;
     }
 
+    if (args) {
+        axiom_err_t ret;
+
+        ret = axiom_set_flags(dev, args->flags);
+        if (ret) {
+            EPRINTF("impossible to set flags");
+            goto free_dev;
+        }
+    }
 
     return dev;
+
 free_dev:
     free(dev);
     return NULL;
@@ -66,38 +77,63 @@ axiom_close(axiom_dev_t *dev)
     free(dev);
 }
 
-axiom_err_t
-axiom_set_blocking(axiom_dev_t *dev, int blocking)
+static axiom_err_t
+axiom_update_flags(axiom_dev_t *dev, axiom_flags_t update_flags)
 {
-    int flags;
+    /* no-blocking flag updated */
+    if (update_flags & AXIOM_FLAG_NOBLOCK) {
+        int fd_flags;
 
-    if (!dev || dev->fd <= 0) {
-        EPRINTF("axiom device is not opened");
-        return AXIOM_RET_ERROR;
-    }
+        fd_flags = fcntl(dev->fd, F_GETFL);
+        if (fd_flags == -1) {
+            EPRINTF("fcntl error - errno: %d", errno);
+            return AXIOM_RET_ERROR;
+        }
 
-    flags = fcntl(dev->fd, F_GETFL);
-    if (flags == -1) {
-        EPRINTF("fcntl error - errno: %d", errno);
-        return AXIOM_RET_ERROR;
-    }
+        if (dev->flags & AXIOM_FLAG_NOBLOCK)
+            fd_flags |= O_NONBLOCK;
+        else
+            fd_flags &= ~O_NONBLOCK;
 
-    if (blocking)
-        flags &= ~O_NONBLOCK;
-    else
-        flags |= O_NONBLOCK;
-
-    if (fcntl(dev->fd, F_SETFL, flags) == -1) {
-        EPRINTF("fcntl error - errno: %d", errno);
-        return AXIOM_RET_ERROR;
+        if (fcntl(dev->fd, F_SETFL, fd_flags) == -1) {
+            EPRINTF("fcntl error - errno: %d", errno);
+            return AXIOM_RET_ERROR;
+        }
     }
 
     return AXIOM_RET_OK;
 }
 
 axiom_err_t
+axiom_set_flags(axiom_dev_t *dev, axiom_flags_t flags)
+{
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device is not opened");
+        return AXIOM_RET_ERROR;
+    }
+
+    dev->flags |= flags;
+
+    return axiom_update_flags(dev, flags);
+}
+
+axiom_err_t
+axiom_unset_flags(axiom_dev_t *dev, axiom_flags_t flags)
+{
+    if (!dev || dev->fd <= 0) {
+        EPRINTF("axiom device is not opened");
+        return AXIOM_RET_ERROR;
+    }
+
+    dev->flags &= ~flags;
+
+    return axiom_update_flags(dev, flags);
+}
+
+axiom_err_t
 axiom_bind(axiom_dev_t *dev, axiom_port_t port)
 {
+    axiom_ioctl_bind_t ioctl_bind;
     int ret;
 
     if (!dev || dev->fd <= 0) {
@@ -105,7 +141,10 @@ axiom_bind(axiom_dev_t *dev, axiom_port_t port)
         return AXIOM_RET_ERROR;
     }
 
-    ret = ioctl(dev->fd, AXNET_BIND, &port);
+    ioctl_bind.port = port;
+    ioctl_bind.flush = (dev->flags & AXIOM_FLAG_NOFLUSH) ? 0 : 1;
+
+    ret = ioctl(dev->fd, AXNET_BIND, &ioctl_bind);
 
     if (ret < 0) {
         EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
