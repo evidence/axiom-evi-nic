@@ -814,7 +814,7 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         if (ret)
             return -EFAULT;
         ret = axiomnet_bind(priv, buf_bind.port);
-        DPRINTF(1, "bind port: %x flush: %x", priv->bind_port, buf_bind.flush);
+        DPRINTF("bind port: %x flush: %x", priv->bind_port, buf_bind.flush);
         if (ret)
             return ret;
         /* flush all previous received packets */
