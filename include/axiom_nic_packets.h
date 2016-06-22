@@ -43,20 +43,25 @@
 #define AXIOM_TYPE_ACK                  7
 
 
-/*************************** Packets structure ********************************/
+/*!
+ * \brief AXIOM port/type for RAW and RDMA messages
+ */
+typedef union axiom_port_type {
+    uint8_t raw;
+    struct {
+        uint8_t reserved : 2;
+        uint8_t port : 3;
+        uint8_t type : 3;
+    } field;
+} axiom_port_type_t;
+
+/************************* RAW Packets structure ******************************/
 
 /*!
  * \brief Header packet structure for TX raw messages
  */
 typedef struct axiom_raw_tx_hdr {
-    union {
-        uint8_t raw;
-        struct {
-            uint8_t reserved : 2;
-            uint8_t port : 3;
-            uint8_t type : 3;
-        } field;
-    } port_type;                /*!< \brief port and type fields */
+    axiom_port_type_t port_type;/*!< \brief port and type fields */
     uint8_t dst;	        /*!< \brief destination (for tx) identificator*/
     uint8_t payload_size;       /*!< \brief size of payload */
     uint8_t spare[1];
@@ -66,14 +71,7 @@ typedef struct axiom_raw_tx_hdr {
  * \brief Header packet structure for RX raw messages
  */
 typedef struct axiom_raw_rx_hdr {
-    union {
-        uint8_t raw;
-        struct {
-            uint8_t reserved : 2;
-            uint8_t port : 3;
-            uint8_t type : 3;
-        } field;
-    } port_type;                /*!< \brief port and type fields */
+    axiom_port_type_t port_type;/*!< \brief port and type fields */
     uint8_t src;	        /*!< \brief source (for rx) identificator */
     uint8_t payload_size;       /*!< \brief size of payload */
     uint8_t spare[1];

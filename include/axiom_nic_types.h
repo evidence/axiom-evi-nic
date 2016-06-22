@@ -16,8 +16,6 @@
 typedef uint8_t	            axiom_port_t;
 /*! \brief AXIOM type of RAW messages */
 typedef uint8_t	            axiom_type_t;
-/*! \brief AXIOM port/type of RAW messages */
-typedef uint8_t	            axiom_port_type_t;
 /*! \brief AXIOM queue length type */
 typedef uint32_t            axiom_raw_len_t;
 /*! \brief AXIOM node identifier */

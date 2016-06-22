@@ -59,7 +59,7 @@ axiom_hw_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id,
     void __iomem *base_reg;
     int i;
 
-    header.tx.port_type.raw = port_type;
+    header.tx.port_type = port_type;
     header.tx.dst = dst_id;
     header.tx.payload_size = payload_size;
 
@@ -119,7 +119,7 @@ axiom_hw_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
     header.raw32 = ioread32(base_reg);
 
     *src_id = header.rx.src;
-    *port_type = header.rx.port_type.raw;
+    *port_type = header.rx.port_type;
     *payload_size = header.rx.payload_size;
 
     /* read payload */
