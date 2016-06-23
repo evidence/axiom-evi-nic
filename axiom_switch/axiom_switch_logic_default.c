@@ -23,7 +23,7 @@
 #include "axiom_nic_discovery.h"
 
 static int
-axsw_forward_neighbour(axsw_logic_t *logic, axiom_raw_eth_t *neighbour_msg,
+axsw_forward_neighbour(axsw_logic_t *logic, axiom_eth_raw_t *neighbour_msg,
         int src_sd)
 {
     int src_vm, dst_vm, dst_sd;
@@ -79,7 +79,7 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_raw_eth_t *neighbour_msg,
 }
 
 static int
-axsw_forward_raw(axsw_logic_t *logic, axiom_raw_eth_t *raw_msg,
+axsw_forward_raw(axsw_logic_t *logic, axiom_eth_raw_t *raw_msg,
         int src_sd)
 {
     uint8_t dst_node, src_node;
@@ -97,25 +97,29 @@ axsw_forward_raw(axsw_logic_t *logic, axiom_raw_eth_t *raw_msg,
 
 int
 axsw_logic_forward(axsw_logic_t *logic, int src_sd,
-        axiom_raw_eth_t *axiom_packet)
+        axiom_eth_pkt_t *axiom_packet)
 {
     int dst_sd;
+    uint16_t eth_type = ntohs(axiom_packet->eth_hdr.type);
 
-    if (ntohs(axiom_packet->eth_hdr.type) != AXIOM_ETH_TYPE_RAW) {
-        EPRINTF("Received a ethernet packet with wrong type");
+    DPRINTF("src_sd: %d eth_type: 0x%x", src_sd, eth_type);
+
+    if (eth_type == AXIOM_ETH_TYPE_RAW) {
+        if (axiom_packet->raw.raw_msg.header.tx.port_type.field.type ==
+                AXIOM_TYPE_RAW_NEIGHBOUR) {
+            /* neighbour message */
+            dst_sd = axsw_forward_neighbour(logic, &(axiom_packet->raw), src_sd);
+        } else {
+            /* raw message */
+            dst_sd = axsw_forward_raw(logic, &(axiom_packet->raw), src_sd);
+        }
+    } else if (eth_type == AXIOM_ETH_TYPE_RDMA) {
+        /* TODO */
+    } else {
+        EPRINTF("Received a ethernet packet with wrong type: 0x%x", eth_type);
         return -1;
     }
 
-    DPRINTF("src_sd: %d", src_sd);
-
-    if (axiom_packet->raw_msg.header.tx.port_type.field.type ==
-            AXIOM_TYPE_RAW_NEIGHBOUR) {
-        /* neighbour message */
-        dst_sd = axsw_forward_neighbour(logic, axiom_packet, src_sd);
-    } else {
-        /* raw message */
-        dst_sd = axsw_forward_raw(logic, axiom_packet, src_sd);
-    }
 
     NDPRINTF("dst_sd: %d", dst_sd);
 

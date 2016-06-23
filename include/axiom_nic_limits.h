@@ -25,5 +25,9 @@
 /*! \brief Max payload size in the raw message */
 #define AXIOM_RAW_PAYLOAD_MAX_SIZE              128
 
+/*! \brief Header size in the rdma message */
+#define AXIOM_RDMA_HEADER_SIZE                  12
+/*! \brief Max payload size in the rdma message */
+#define AXIOM_RDMA_PAYLOAD_MAX_SIZE             524288
 
 #endif /* !AXIOM_NIC_LIMITS_h */

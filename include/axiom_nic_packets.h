@@ -102,4 +102,38 @@ typedef struct axiom_raw_msg {
     axiom_payload_t payload;    /*!< \brief message payload */
 } axiom_raw_msg_t;
 
+
+/************************* RDMA Packets structure *****************************/
+
+/*!
+ * \brief Header packet structure for TX RDMA messages
+ */
+typedef struct axiom_rdma_tx_hdr {
+    axiom_port_type_t port_type;/*!< \brief port and type fields */
+    uint8_t dst;	        /*!< \brief destination (for tx) identificator*/
+    uint16_t payload_size;      /*!< \brief size of payload */
+    uint32_t src_addr;          /*!< \brief source address of payload */
+    uint32_t dst_addr;          /*!< \brief destination address of payload */
+} axiom_rdma_tx_hdr_t;
+
+/*!
+ * \brief Header packet structure for RX RDMA messages
+ */
+typedef struct axiom_rdma_rx_hdr {
+    axiom_port_type_t port_type;/*!< \brief port and type fields */
+    uint8_t src;	        /*!< \brief source (for rx) identificator */
+    uint16_t payload_size;      /*!< \brief size of payload */
+    uint32_t dst_addr;          /*!< \brief destination address of payload */
+} axiom_rdma_rx_hdr_t;
+
+
+/*!
+ * \brief Header packet union for RDMA messages
+ */
+typedef union axiom_rdma_hdr {
+    axiom_rdma_tx_hdr_t tx;
+    axiom_rdma_rx_hdr_t rx;
+    uint8_t raw[12];
+    uint32_t raw32[3];
+} axiom_rdma_hdr_t;
 #endif /* !AXIOM_NIC_PACKETS_H */

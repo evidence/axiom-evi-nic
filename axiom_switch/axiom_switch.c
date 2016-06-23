@@ -136,7 +136,6 @@ main (int argc, char *argv[])
     char filename[100];
     int n, num_ports = 0, end_server = 0;
     int listen_sd[AXSW_PORT_MAX];
-    axiom_raw_eth_t axiom_raw_eth_msg;
     axsw_logic_t logic_status;
     axsw_event_loop_t el_status;
     int file_ok = 0, ring_ok = 0, mesh_ok = 0, n_ok = 0;
@@ -376,30 +375,31 @@ main (int argc, char *argv[])
                 }
 
             } else {
-                int dst_sd;
+                axiom_eth_pkt_t eth_pkt;
+                int dst_sd, pkt_len;
 
                 IPRINTF(verbose, "New incoming packet - source sd: %d", fd);
-                /* receive ethernet packet */
-                ret = axsw_qemu_recv(fd, &axiom_raw_eth_msg);
 
-                if (ret < 0) {
+                /* receive ethernet packet */
+                pkt_len = axsw_qemu_recv(fd, &eth_pkt);
+                if (pkt_len < 0) {
                     axsw_event_loop_close(&el_status, i);
                     axsw_logic_clean_vm_sd(&logic_status, fd);
                     continue;
-                } else if (ret == 0) {
+                } else if (pkt_len == 0) {
                     continue;
                 }
 
                 /* forward the received message */
-                dst_sd = axsw_logic_forward(&logic_status, fd,
-                        &axiom_raw_eth_msg);
+                dst_sd = axsw_logic_forward(&logic_status, fd, &eth_pkt);
                 if (dst_sd < 0)
                     continue;
 
                 IPRINTF(verbose, "Packet forwarded - destination sd: %d",
                         dst_sd);
+
                 /* send ethernet packet */
-                ret = axsw_qemu_send(dst_sd, &axiom_raw_eth_msg);
+                ret = axsw_qemu_send(dst_sd, &eth_pkt, pkt_len);
                 if (ret < 0) {
                     continue;
                 }

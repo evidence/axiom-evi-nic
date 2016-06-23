@@ -31,7 +31,7 @@ typedef struct axsw_logic {
  * \return socket descriptor to forward the packet
  */
 int axsw_logic_forward(axsw_logic_t *logic, int src_sd,
-        axiom_raw_eth_t *axiom_packet);
+        axiom_eth_pkt_t *axiom_packet);
 
 
 

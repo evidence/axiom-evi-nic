@@ -31,9 +31,17 @@
  * the Axiom switch
  */
 #define AXIOM_ETH_TYPE_RAW              0x8333
+/*!
+ * \brief AXIOM RDMA message type
+ *
+ * This message is used to exchange Axiom RDMA messages between QEMU VMs and
+ * the Axiom switch
+ */
+#define AXIOM_ETH_TYPE_RDMA             0x8334
 
 
 /************************ Switch Packets structure ****************************/
+
 /*!
  * \brief Ethernet frame header
  */
@@ -43,15 +51,47 @@ typedef struct axiom_eth_hdr {
     uint16_t type;                      /*!< \brief Ethernet type */
 } __attribute__((packed)) axiom_eth_hdr_t;
 
-
 /*!
  * \brief RAW packet structure encapsulated in the ethernet frame
  */
-typedef struct axiom_raw_eth {
+typedef struct axiom_eth_raw {
     axiom_eth_hdr_t eth_hdr;            /*!< \brief Ethernet frame header */
     axiom_raw_msg_t raw_msg;            /*!< \brief AXIOM RAW message */
-} __attribute__((packed)) axiom_raw_eth_t;
+} __attribute__((packed)) axiom_eth_raw_t;
 
+/*!
+ * \brief RDMA packet structure encapsulated in the ethernet frame
+ */
+typedef struct axiom_eth_rdma {
+    axiom_eth_hdr_t eth_hdr;            /*!< \brief Ethernet frame header */
+    axiom_rdma_hdr_t rdma_hdr;          /*!< \brief AXIOM RDMA header */
+    /*! \brief AXIOM RDMA payload */
+    uint8_t rdma_payload[AXIOM_RDMA_PAYLOAD_MAX_SIZE];
+} __attribute__((packed)) axiom_eth_rdma_t;
 
+/*!
+ * \brief control packet structure
+ */
+typedef struct axiom_ctrl_msg {
+    uint8_t if_id;                      /*!< \brief Interface ID */
+    uint8_t if_info;                    /*!< \brief Interface info */
+} axiom_ctrl_msg_t;
 
+/*!
+ * \brief control packet structure encapsulated in the ethernet frame
+ */
+typedef struct axiom_eth_ctrl {
+    axiom_eth_hdr_t eth_hdr;            /*!< \brief Ethernet frame header */
+    axiom_ctrl_msg_t ctrl_msg;          /*!< \brief AXIOM control message */
+} __attribute__((packed)) axiom_eth_ctrl_t;
+
+/*!
+ * \brief axiom packet encapsulated in the ethernet frame
+ */
+typedef union axiom_eth_pkt {
+    axiom_eth_hdr_t eth_hdr;            /*!< \brief Ethernet frame header */
+    axiom_eth_raw_t raw;                /*!< \brief AXIOM RAW packet */
+    axiom_eth_rdma_t rdma;              /*!< \brief AXIOM RDMA packet */
+    axiom_eth_ctrl_t ctrl;              /*!< \brief AXIOM control packet */
+} axiom_eth_pkt_t;
 #endif /* !AXIOM_NIC_PACKETS_H */
