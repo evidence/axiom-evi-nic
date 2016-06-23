@@ -92,14 +92,31 @@ axsw_forward_raw(axsw_logic_t *logic, axiom_eth_raw_t *raw_msg,
     /* set source node id in the packet */
     raw_msg->raw_msg.header.rx.src = src_node;
 
-    return axsw_logic_find_raw_sd(logic, dst_node);
+    return axsw_logic_find_node_sd(logic, dst_node);
+}
+
+static int
+axsw_forward_rdma(axsw_logic_t *logic, axiom_eth_rdma_t *rdma_msg,
+        int src_sd)
+{
+    uint8_t dst_node, src_node;
+
+    dst_node = rdma_msg->rdma_hdr.tx.dst;
+    src_node = axsw_logic_find_node_id(logic, src_sd);
+
+    DPRINTF("dst_node: %d - src_node: %d", dst_node, src_node);
+
+    /* set source node id in the packet */
+    rdma_msg->rdma_hdr.rx.src = src_node;
+
+    return axsw_logic_find_node_sd(logic, dst_node);
 }
 
 int
 axsw_logic_forward(axsw_logic_t *logic, int src_sd,
         axiom_eth_pkt_t *axiom_packet)
 {
-    int dst_sd;
+    int dst_sd = -1;
     uint16_t eth_type = ntohs(axiom_packet->eth_hdr.type);
 
     DPRINTF("src_sd: %d eth_type: 0x%x", src_sd, eth_type);
@@ -114,7 +131,8 @@ axsw_logic_forward(axsw_logic_t *logic, int src_sd,
             dst_sd = axsw_forward_raw(logic, &(axiom_packet->raw), src_sd);
         }
     } else if (eth_type == AXIOM_ETH_TYPE_RDMA) {
-        /* TODO */
+        /* raw message */
+        dst_sd = axsw_forward_rdma(logic, &(axiom_packet->rdma), src_sd);
     } else {
         EPRINTF("Received a ethernet packet with wrong type: 0x%x", eth_type);
         return -1;

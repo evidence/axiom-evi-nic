@@ -40,6 +40,17 @@
 #define AXIOM_ETH_TYPE_RDMA             0x8334
 
 
+/********************** Messages for the AXIOM switch *************************/
+
+/*!
+ * \brief control packet structure
+ */
+typedef struct axiom_ctrl_msg {
+    uint8_t if_id;                      /*!< \brief Interface ID */
+    uint8_t if_info;                    /*!< \brief Interface info */
+} axiom_ctrl_msg_t;
+
+
 /************************ Switch Packets structure ****************************/
 
 /*!
@@ -68,14 +79,6 @@ typedef struct axiom_eth_rdma {
     /*! \brief AXIOM RDMA payload */
     uint8_t rdma_payload[AXIOM_RDMA_PAYLOAD_MAX_SIZE];
 } __attribute__((packed)) axiom_eth_rdma_t;
-
-/*!
- * \brief control packet structure
- */
-typedef struct axiom_ctrl_msg {
-    uint8_t if_id;                      /*!< \brief Interface ID */
-    uint8_t if_info;                    /*!< \brief Interface info */
-} axiom_ctrl_msg_t;
 
 /*!
  * \brief control packet structure encapsulated in the ethernet frame

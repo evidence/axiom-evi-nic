@@ -63,7 +63,7 @@ axsw_logic_init(axsw_logic_t *logic, int num_ports) {
  * \return socket descriptor associated to dst_node
  */
 inline static int
-axsw_logic_find_raw_sd(axsw_logic_t *logic, int dst_node)
+axsw_logic_find_node_sd(axsw_logic_t *logic, int dst_node)
 {
     if (unlikely(dst_node >= AXSW_PORT_MAX))
         return -1;
