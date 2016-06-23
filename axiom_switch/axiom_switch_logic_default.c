@@ -31,7 +31,7 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_eth_raw_t *neighbour_msg,
 
     /* get the index of src virtual machine */
     src_vm = axsw_logic_find_vm_id(logic, src_sd);
-    if (src_vm < 0) {
+    if (unlikely(src_vm < 0)) {
         return -1;
     }
 
@@ -43,14 +43,14 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_eth_raw_t *neighbour_msg,
 
     /* find receiver socket */
     dst_sd = axsw_logic_find_neighbour_sd(logic, dst_vm);
-    if (dst_sd < 0) {
+    if (unlikely(dst_sd < 0)) {
         return -1;
     }
 
     /* find the recipient receiving interface */
     neighbour_if = axsw_logic_find_neighbour_if(logic, src_vm,
             neighbour_msg->raw_msg.header.tx.dst);
-    if (neighbour_if < 0) {
+    if (unlikely(neighbour_if < 0)) {
         return -1;
     }
     DPRINTF("neighbour_if %d", neighbour_if);
@@ -66,7 +66,7 @@ axsw_forward_neighbour(axsw_logic_t *logic, axiom_eth_raw_t *neighbour_msg,
         disc_payload = (axiom_discovery_payload_t *)
                     (&(neighbour_msg->raw_msg.payload));
 
-        if (disc_payload->command == AXIOM_DSCV_CMD_SETID) {
+        if (unlikely(disc_payload->command == AXIOM_DSCV_CMD_SETID)) {
             logic->node_sd[disc_payload->src_node] = src_sd;
             logic->node_sd[disc_payload->dst_node] = dst_sd;
 
@@ -123,7 +123,7 @@ axsw_logic_forward(axsw_logic_t *logic, int src_sd,
 
     NDPRINTF("dst_sd: %d", dst_sd);
 
-    if (dst_sd < 0) {
+    if (unlikely(dst_sd < 0)) {
         EPRINTF("dstination socket not found - dst_sd: %d", dst_sd);
         return -1;
     }

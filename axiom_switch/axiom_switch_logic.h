@@ -65,7 +65,7 @@ axsw_logic_init(axsw_logic_t *logic, int num_ports) {
 inline static int
 axsw_logic_find_raw_sd(axsw_logic_t *logic, int dst_node)
 {
-    if (dst_node >= AXSW_PORT_MAX)
+    if (unlikely(dst_node >= AXSW_PORT_MAX))
         return -1;
 
     return logic->node_sd[dst_node];
@@ -82,7 +82,7 @@ axsw_logic_find_raw_sd(axsw_logic_t *logic, int dst_node)
 inline static int
 axsw_logic_find_neighbour_sd(axsw_logic_t *logic, int dst_vm)
 {
-    if (dst_vm >= AXSW_PORT_MAX)
+    if (unlikely(dst_vm >= AXSW_PORT_MAX))
         return -1;
 
     return logic->vm_sd[dst_vm];
@@ -104,11 +104,11 @@ axsw_logic_find_neighbour_if(axsw_logic_t *logic, int src_vm, int src_if)
     int ret_if_id;
 
     ret_if_id = logic->start_topology.if_topology[src_vm][src_if];
-    if (ret_if_id != AXIOM_NULL_NODE) {
-        return ret_if_id;
+    if (unlikely(ret_if_id == AXIOM_NULL_NODE)) {
+        return -1;
     }
 
-    return -1;
+    return ret_if_id;
 }
 
 /*!
@@ -165,7 +165,7 @@ axsw_logic_find_node_id(axsw_logic_t *logic, int sd)
 inline static void
 axsw_logic_set_vm_sd(axsw_logic_t *logic, int vm_id, int sd)
 {
-    if (vm_id < AXSW_PORT_MAX) {
+    if (likely(vm_id < AXSW_PORT_MAX)) {
         logic->vm_sd[vm_id] = sd;
     }
 

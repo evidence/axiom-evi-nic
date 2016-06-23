@@ -60,10 +60,10 @@ axsw_event_loop_compress(axsw_event_loop_t *el_status)
 {
     int i, j;
 
-    if (el_status->compress_array) {
+    if (unlikely(el_status->compress_array)) {
         el_status->compress_array = 0;
         for (i = 0; i < el_status->fds_tail; i++) {
-            if (el_status->fds[i].fd == -1) {
+            if (unlikely(el_status->fds[i].fd == -1)) {
                 for(j = i; j < el_status->fds_tail; j++) {
                     el_status->fds[j].fd = el_status->fds[j+1].fd;
                 }
@@ -98,9 +98,9 @@ axsw_event_loop_poll(axsw_event_loop_t *el_status)
     int ret;
 
     ret = poll(el_status->fds, el_status->fds_tail, el_status->timeout);
-    if (ret < 0) {
+    if (unlikely(ret < 0)) {
         perror("poll() FAILED");
-    } else if (ret == 0) {
+    } else if (unlikely(ret == 0)) {
         IPRINTF(verbose, "  poll() timed out\n");
         ret = 1;
     }

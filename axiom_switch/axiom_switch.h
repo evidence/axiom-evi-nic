@@ -13,6 +13,7 @@
 #include "axiom_nic_types.h"
 #include "axiom_nic_limits.h"
 #include "axiom_sim_topology.h"
+#include "axiom_utility.h"
 
 /*! \brief maximum port supported in the axiom switch */
 #define AXSW_PORT_MAX           16

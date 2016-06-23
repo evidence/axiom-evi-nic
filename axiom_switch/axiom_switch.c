@@ -314,7 +314,7 @@ main (int argc, char *argv[])
 
         IPRINTF(verbose, "Waiting on poll()...");
         ret = axsw_event_loop_poll(&el_status);
-        if (ret < 0) {
+        if (unlikely(ret < 0)) {
             DPRINTF("poll error");
             break;
         }
@@ -324,10 +324,10 @@ main (int argc, char *argv[])
 
             revents = axsw_event_loop_get_revents(&el_status, i);
 
-            if (revents == 0)
+            if (unlikely(revents == 0))
                 continue;
 
-            if (revents != POLLIN) {
+            if (unlikely(revents != POLLIN)) {
                 EPRINTF("revents = %d", revents);
                 end_server = 1;
                 break;
@@ -335,9 +335,9 @@ main (int argc, char *argv[])
 
             fd = axsw_event_loop_get_fd(&el_status, i);
 
-            /* check listener socket */
-            if (i < fds_tail_max_listen &&
-                    listen_socket_find(listen_sd, i, fd, &vm_index)) {
+            /* check listener socket for the new connection */
+            if (unlikely(i < fds_tail_max_listen &&
+                    listen_socket_find(listen_sd, i, fd, &vm_index))) {
                 int new_sd, if_id;
 
                 /* Accept each incoming connection */
@@ -382,17 +382,17 @@ main (int argc, char *argv[])
 
                 /* receive ethernet packet */
                 pkt_len = axsw_qemu_recv(fd, &eth_pkt);
-                if (pkt_len < 0) {
+                if (unlikely(pkt_len < 0)) {
                     axsw_event_loop_close(&el_status, i);
                     axsw_logic_clean_vm_sd(&logic_status, fd);
                     continue;
-                } else if (pkt_len == 0) {
+                } else if (unlikely(pkt_len == 0)) {
                     continue;
                 }
 
                 /* forward the received message */
                 dst_sd = axsw_logic_forward(&logic_status, fd, &eth_pkt);
-                if (dst_sd < 0)
+                if (unlikely(dst_sd < 0))
                     continue;
 
                 IPRINTF(verbose, "Packet forwarded - destination sd: %d",
@@ -400,7 +400,7 @@ main (int argc, char *argv[])
 
                 /* send ethernet packet */
                 ret = axsw_qemu_send(dst_sd, &eth_pkt, pkt_len);
-                if (ret < 0) {
+                if (unlikely(ret < 0)) {
                     continue;
                 }
             }
@@ -408,7 +408,7 @@ main (int argc, char *argv[])
 
         axsw_event_loop_compress(&el_status);
 
-    } while (end_server == 0); /* End of serving running.    */
+    } while (likely(end_server == 0)); /* End of serving running.    */
 
     /* Clean up all of the sockets that are open */
     for (i = 0; i < el_status.fds_tail; i++) {

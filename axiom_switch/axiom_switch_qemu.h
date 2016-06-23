@@ -33,14 +33,14 @@ axsw_qemu_send(int sd, void *eth_pkt, size_t pkt_len)
 
     /* send the length of the ethernet packet */
     ret = send(sd, &axiom_msg_length, sizeof(axiom_msg_length), 0);
-    if (ret != sizeof(axiom_msg_length)) {
+    if (unlikely(ret != sizeof(axiom_msg_length))) {
         EPRINTF("length send error - return: %d errno: %d", ret, errno);
         return -1;
     }
 
     /* send ethernet packet */
     ret = send(sd, eth_pkt, pkt_len, 0);
-    if (ret != pkt_len) {
+    if (unlikely(ret != pkt_len)) {
         EPRINTF("message send error - return: %d errno: %d", ret, errno);
         return -1;
     }
@@ -68,27 +68,27 @@ axsw_qemu_recv(int sd, axiom_eth_pkt_t *eth_pkt)
 
     /* receive the length of the ethernet packet */
     ret = recv(sd, &axiom_msg_length, sizeof(axiom_msg_length), MSG_WAITALL);
-    if (ret < 0 && (errno == EWOULDBLOCK)) {
+    if (unlikely(ret < 0 && (errno == EWOULDBLOCK))) {
         goto skip;
-    } else if (ret <= 0) {
+    } else if (unlikely(ret <= 0)) {
         goto err;
     }
 
     axiom_msg_length = ntohl(axiom_msg_length);
-    if (axiom_msg_length > sizeof(*eth_pkt)) {
+    if (unlikely(axiom_msg_length > sizeof(*eth_pkt))) {
         EPRINTF("too long message - len: %d", axiom_msg_length);
         goto skip;
     }
 
     /* receive ethernet packet */
     ret = recv(sd, eth_pkt, axiom_msg_length, MSG_WAITALL);
-    if (ret < 0 && (errno == EWOULDBLOCK)) {
+    if (unlikely(ret < 0 && (errno == EWOULDBLOCK))) {
         goto skip;
-    } else if (ret <= 0) {
+    } else if (unlikely(ret <= 0)) {
         goto err;
     }
 
-    if (ret != axiom_msg_length) {
+    if (unlikely(ret != axiom_msg_length)) {
         EPRINTF("unexpected length - expected: %d received: %d",
                 axiom_msg_length, ret);
         goto skip;

@@ -5,14 +5,27 @@
  * \file axiom_utility.h
  *
  * \version     v0.6
- * \date        2016-04-29
+ * \date        2016-06-23
  *
  * This file contains the AXIOM NIC some utilities functions:
+ *  - branch prediction macros
  *  - timespec utility
  *  - timeval utility
  *  - usec/msec utility
  *
  */
+
+/***************** Preprocessor macros for branch prediction *****************/
+#ifndef __KERNEL__
+#ifdef __GNUC__
+#define likely(x)       __builtin_expect(!!(x), 1)
+#define unlikely(x)     __builtin_expect(!!(x), 0)
+#else /* !__GNUC__ */
+#define likely(x)       (x)
+#define unlikely(x)     (x)
+#endif /* __GNUC__ */
+#endif /* !__KERNEL */
+
 
 /************************* AXIOM timespec utility *****************************/
 
@@ -96,4 +109,5 @@ timespec2nsec(struct timespec ts)
 
     return ((uint64_t)(ts.tv_nsec) + ((uint64_t)(ts.tv_sec) * 1000000000));
 }
+
 #endif /* AXIOM_UTILITY_h */
