@@ -182,6 +182,13 @@ axiom_hw_read_ni_control(axiom_dev_t *dev)
 }
 
 void
+axiom_hw_set_rdma_zone(axiom_dev_t *dev, uint64_t start, uint64_t end)
+{
+    writeq(start, dev->vregs + AXIOMREG_IO_DMA_START);
+    writeq(end, dev->vregs + AXIOMREG_IO_DMA_END);
+}
+
+void
 axiom_hw_set_node_id(axiom_dev_t *dev, axiom_node_id_t node_id)
 {
     iowrite32(node_id, dev->vregs + AXIOMREG_IO_NODEID);

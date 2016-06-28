@@ -68,6 +68,11 @@
 #define AXIOMREG_IO_CONTROL                     0x00000040
 /*! \brief NODEID register - 32 bit r/w */
 #define AXIOMREG_IO_NODEID                      0x00000044
+/*! \brief DMA_START register - 64 bit w/o */
+#define AXIOMREG_IO_DMA_START                   0x00000048
+/*! \brief DMA_END register - 64 bit w/o */
+#define AXIOMREG_IO_DMA_END                     0x00000050
+
 
 
 /* Interrupt registers */

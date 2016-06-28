@@ -78,6 +78,11 @@ struct axiomnet_drvdata {
     /* IRQ */
     int irq;                            /*!< \brief IRQ descriptor */
 
+    /* DMA */
+    void *dma_vaddr;
+    dma_addr_t dma_paddr;
+    uint64_t dma_size;
+
     /* hardware ring */
     struct axiomnet_hw_tx_ring raw_tx_ring;/*!\brief RAW TX hardware ring */
     struct axiomnet_hw_rx_ring raw_rx_ring;/*!\brief RAW RX hardware ring */

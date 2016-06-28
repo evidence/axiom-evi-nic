@@ -123,6 +123,7 @@ typedef struct axiom_rdma_rx_hdr {
     axiom_port_type_t port_type;/*!< \brief port and type fields */
     uint8_t src;	        /*!< \brief source (for rx) identificator */
     uint16_t payload_size;      /*!< \brief size of payload */
+    uint32_t src_addr;          /*!< \brief source address of payload */
     uint32_t dst_addr;          /*!< \brief destination address of payload */
 } axiom_rdma_rx_hdr_t;
 

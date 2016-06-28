@@ -440,6 +440,37 @@ static int axiomnet_hw_tx_ring_init(struct axiomnet_drvdata *drvdata,
     return 0;
 }
 
+static void axiomnet_rdma_release(struct axiomnet_drvdata *drvdata)
+{
+    dma_free_coherent(drvdata->dev, drvdata->dma_size, drvdata->dma_vaddr,
+            drvdata->dma_paddr);
+}
+
+static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
+{
+    int ret;
+
+    drvdata->dma_size = (1 << 22);
+
+    drvdata->dma_vaddr = dma_zalloc_coherent(drvdata->dev, drvdata->dma_size,
+            &drvdata->dma_paddr, GFP_KERNEL);
+    if (drvdata->dma_vaddr == NULL) {
+        ret = -ENOMEM;
+        goto err;
+    }
+
+    IPRINTF(1, "DMA mapped - vaddr 0x%p paddr 0x%llx size 0x%llx",
+            drvdata->dma_vaddr, drvdata->dma_paddr, drvdata->dma_size);
+
+    axiom_hw_set_rdma_zone(drvdata->dev_api, drvdata->dma_paddr,
+            drvdata->dma_paddr + drvdata->dma_size - 1);
+
+    return 0;
+err:
+    DPRINTF("error: %d", ret);
+    return ret;
+}
+
 static int axiomnet_probe(struct platform_device *pdev)
 {
     struct axiomnet_drvdata *drvdata;
@@ -541,6 +572,13 @@ static int axiomnet_probe(struct platform_device *pdev)
         goto free_rx_ring;
     }
 
+    /* init RDMA */
+    err = axiomnet_rdma_init(drvdata);
+    if (err) {
+        dev_err(&pdev->dev, "could not init RDMA zone\n");
+        goto free_rx_ring;
+    }
+
     axiomnet_enable_irq(drvdata);
 
     IPRINTF(1, "AXIOM NIC driver loaded");
@@ -568,6 +606,8 @@ static int axiomnet_remove(struct platform_device *pdev)
     DPRINTF("start");
 
     axiomnet_disable_irq(drvdata);
+
+    axiomnet_rdma_release(drvdata);
 
     axiom_kthread_uninit(&drvdata->kthread_rx);
 

@@ -42,6 +42,9 @@
 
 /********************** Messages for the AXIOM switch *************************/
 
+/*! \brief Header size of the ethernet frame */
+#define AXIOM_ETH_HEADER_SIZE           14
+
 /*!
  * \brief control packet structure
  */
