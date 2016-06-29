@@ -33,10 +33,10 @@
 #define AXIOM_TYPE_LONG_DATA            2
 /*! \brief Axiom type RDMA WRITE (contains RDMA write) */
 #define AXIOM_TYPE_RDMA_WRITE           3
-/*! \brief Axiom type RDMA REQ (contains RDMA request) */
-#define AXIOM_TYPE_RDMA_REQ             4
-/*! \brief Axiom type RDMA RESPONSE (contains RDMA response - HW reserved) */
-#define AXIOM_TYPE_RDMA_RESPONE         5
+/*! \brief Axiom type RDMA READ (contains RDMA read) */
+#define AXIOM_TYPE_RDMA_READ            4
+/*! \brief Axiom type RDMA RESPONSE (contains RDMA response) */
+#define AXIOM_TYPE_RDMA_RESPONSE        5
 /*! \brief Axiom type INIT (contains an INIT - HW reserved) */
 #define AXIOM_TYPE_INIT                 6
 /*! \brief Axiom type ACK (contains an ACK - HW reserved) */
