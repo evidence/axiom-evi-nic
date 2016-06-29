@@ -163,36 +163,42 @@ axiom_recv_raw_avail(axiom_dev_t *dev);
 /*!
  * \brief This function writes data to a remote node memory.
  *
- * \param dev              The axiom device private data pointer
- * \param src_node         The local node Id that sends data to a remote node
- * \param dst_node         The remote node’s id where data will be stored
- * \param local_src_addr   The local address from where data will be transmitted
- * \param remore_dst_addr  The remote address where data will be stored
- * \param payload_size     Size of data to be sent in words
+ * \param dev             The axiom device private data pointer
+ * \param remote_id       The remote node id where data will be stored
+ * \param port            port of the rdma message
+ * \param payload_size    size of data to be transfer in 64bits words
+ * \param local_src_addr  local offset inside the RDMA zone where data
+ *                        will be read
+ * \param remote_dst_addr remote offset inside the RDMA zone where data
+ *                        will be stored
  *
  * \return Returns a unique positive message id on success, -1 otherwise.
+ * XXX: the return type is unsigned!
  */
 axiom_msg_id_t
-axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t src_node,
-        axiom_node_id_t dst_node, axiom_addr_t local_src_addr,
-        axiom_addr_t remote_dst_addr, uint16_t payload_size);
+axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
+        axiom_port_t port, axiom_rdma_payload_size_t payload_size,
+        axiom_addr_t local_src_addr, axiom_addr_t remote_dst_addr);
 
 /*!
- * \brief This function requests data from a remote node to be stored locally.
+ * \brief This function reads data from a remote node memory.
  *
  * \param dev             The axiom device private data pointer
- * \param src_node        The local node Id that requests data from a remote node
- * \param dst_node        The remote node id that will send the requested data
- * \param remote_src_addr The remote address from where data will be fetched
- * \param local_dst_addr  The local address where fetched data will be stored
- * \param payload_size    Size of data to be fetched in words
+ * \param remote_id       The remote node id where data will be read
+ * \param port            port of the rdma message
+ * \param payload_size    size of data to be transfer in 64bits words
+ * \param remote_src_addr remote offset inside the RDMA zone where data
+ *                        will be read
+ * \param local_dst_addr  local offset inside the RDMA zone where data
+ *                        will be stored
  *
  * \return Returns a unique positive message id on success, -1 otherwise.
+ * XXX: the return type is unsigned!
  */
 axiom_msg_id_t
-axiom_rdma_req(axiom_dev_t *dev, axiom_node_id_t src_node,
-        axiom_node_id_t dst_node, axiom_addr_t remore_src_addr,
-        axiom_addr_t local_dst_addr, uint16_t payload_size);
+axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
+        axiom_port_t port, axiom_rdma_payload_size_t payload_size,
+        axiom_addr_t remote_src_addr, axiom_addr_t local_dst_addr);
 
 /*!
  * \brief This function reads the NI status register.

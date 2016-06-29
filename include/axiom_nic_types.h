@@ -17,7 +17,7 @@ typedef uint8_t	            axiom_port_t;
 /*! \brief AXIOM type of RAW messages */
 typedef uint8_t	            axiom_type_t;
 /*! \brief AXIOM queue length type */
-typedef uint32_t            axiom_raw_len_t;
+typedef uint32_t            axiom_queue_len_t;
 /*! \brief AXIOM node identifier */
 typedef uint8_t             axiom_node_id_t;
 /*! \brief AXIOM message identifier */
@@ -25,7 +25,7 @@ typedef uint8_t             axiom_msg_id_t;
 /*! \brief AXIOM interface identifier */
 typedef uint8_t	            axiom_if_id_t;
 /*! \brief AXIOM address memory */
-typedef uint8_t*            axiom_addr_t;
+typedef uint32_t            axiom_addr_t;
 /*! \brief AXIOM payload size type for RAW messages */
 typedef uint8_t             axiom_raw_payload_size_t;
 /*! \brief AXIOM payload size type for RDMA messages */

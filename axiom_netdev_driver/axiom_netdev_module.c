@@ -159,7 +159,7 @@ inline static ssize_t axiomnet_raw_send(struct file *filep,
     }
 
     /* copy packet into the ring */
-    ret = axiom_hw_send_raw(tx_ring->drvdata->dev_api, header->tx.dst,
+    ret = axiom_hw_raw_tx(tx_ring->drvdata->dev_api, header->tx.dst,
             header->tx.port_type, header->tx.payload_size, &(raw_payload));
     if (unlikely(ret)) {
         len = -EFAULT;
@@ -199,7 +199,7 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_hw_rx_ring *rx_ring)
 
         raw_msg = &sw_queue->queue_desc[queue_slot];
 
-        axiom_hw_recv_raw(rx_ring->drvdata->dev_api, &raw_msg->header.rx.src,
+        axiom_hw_raw_rx(rx_ring->drvdata->dev_api, &raw_msg->header.rx.src,
                 &raw_msg->header.rx.port_type, &raw_msg->header.rx.payload_size,
                 &raw_msg->payload);
         port = raw_msg->header.rx.port_type.field.port;
