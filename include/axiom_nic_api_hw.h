@@ -28,7 +28,7 @@
  */
 axiom_msg_id_t
 axiom_hw_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id,
-        axiom_port_type_t port_type, axiom_payload_size_t payload_size,
+        axiom_port_type_t port_type, axiom_raw_payload_size_t payload_size,
         axiom_payload_t *payload);
 
 /*!
@@ -56,7 +56,7 @@ axiom_hw_raw_tx_avail(axiom_dev_t *dev);
  */
 axiom_msg_id_t
 axiom_hw_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
-        axiom_port_type_t *port_type, axiom_payload_size_t *payload_size,
+        axiom_port_type_t *port_type, axiom_raw_payload_size_t *payload_size,
         axiom_payload_t *payload);
 
 /*!

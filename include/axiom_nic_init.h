@@ -98,7 +98,7 @@ axiom_send_raw_init(axiom_dev_t *dev, axiom_node_id_t dst, axiom_type_t type,
  */
 inline static axiom_msg_id_t
 axiom_recv_raw_init(axiom_dev_t *dev, axiom_node_id_t *src, axiom_type_t *type,
-        axiom_init_cmd_t *cmd, axiom_payload_size_t *payload_size,
+        axiom_init_cmd_t *cmd, axiom_raw_payload_size_t *payload_size,
         axiom_init_payload_t *payload)
 {
     axiom_port_t port = AXIOM_RAW_PORT_INIT;

@@ -183,7 +183,7 @@ axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
 
 axiom_msg_id_t
 axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
-        axiom_type_t type, axiom_payload_size_t payload_size,
+        axiom_type_t type, axiom_raw_payload_size_t payload_size,
         void *payload)
 {
 #ifdef USE_IOCTL_SEND_RECV
@@ -245,7 +245,7 @@ axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
 axiom_msg_id_t
 axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
         axiom_port_t *port, axiom_type_t *type,
-        axiom_payload_size_t *payload_size, void *payload)
+        axiom_raw_payload_size_t *payload_size, void *payload)
 {
 #ifdef USE_IOCTL_SEND_RECV
     axiom_ioctl_raw_t raw_msg;

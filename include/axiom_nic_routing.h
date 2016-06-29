@@ -79,7 +79,7 @@ axiom_recv_raw_delivery(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
         axiom_if_id_t *payload_if_mask)
 {
     axiom_routing_payload_t payload;
-    axiom_payload_size_t payload_size = sizeof(payload);
+    axiom_raw_payload_size_t payload_size = sizeof(payload);
     axiom_port_t port;
     axiom_type_t type;
     axiom_msg_id_t ret;
@@ -144,7 +144,7 @@ axiom_recv_raw_set_routing(axiom_dev_t *dev, axiom_if_id_t *interface,
         axiom_routing_cmd_t *cmd)
 {
     axiom_routing_payload_t payload;
-    axiom_payload_size_t payload_size = sizeof(payload);
+    axiom_raw_payload_size_t payload_size = sizeof(payload);
     axiom_port_t port;
     axiom_type_t type;
     axiom_msg_id_t ret;

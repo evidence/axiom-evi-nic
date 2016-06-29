@@ -29,7 +29,7 @@ int main (int argc, char *argv[])
     axiom_if_id_t if_number;
     uint8_t if_features, enabled_mask;
     uint32_t status, control, payload;
-    axiom_payload_size_t payload_size;
+    axiom_raw_payload_size_t payload_size;
     axiom_err_t err;
 
     dev = axiom_open(NULL);

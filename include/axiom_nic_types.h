@@ -26,8 +26,10 @@ typedef uint8_t             axiom_msg_id_t;
 typedef uint8_t	            axiom_if_id_t;
 /*! \brief AXIOM address memory */
 typedef uint8_t*            axiom_addr_t;
-/*! \brief AXIOM payload size type */
-typedef uint8_t             axiom_payload_size_t;
+/*! \brief AXIOM payload size type for RAW messages */
+typedef uint8_t             axiom_raw_payload_size_t;
+/*! \brief AXIOM payload size type for RDMA messages */
+typedef uint16_t            axiom_rdma_payload_size_t;
 /*! \brief AXIOM error type */
 typedef uint8_t	            axiom_err_t;
 /*! \brief AXIOM device private data */
