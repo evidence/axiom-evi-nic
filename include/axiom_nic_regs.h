@@ -32,9 +32,10 @@
 /*! \brief size of ROUTING registers array elements */
 #define AXIOMREG_SIZE_ROUTING                   1
 /*! \brief size of RAW QUEUE registers array elements */
-#define AXIOMREG_SIZE_RAW_QUEUE                 132
+#define AXIOMREG_SIZE_RAW_QUEUE   \
+    (AXIOM_RAW_HEADER_SIZE + AXIOM_RAW_PAYLOAD_MAX_SIZE)
 /*! \brief size of RDMA QUEUE registers array elements */
-#define AXIOMREG_SIZE_RDMA_QUEUE                12
+#define AXIOMREG_SIZE_RDMA_QUEUE                AXIOM_RDMA_HEADER_SIZE
 
 /*! \brief QEMU board version */
 #define AXIOMREG_VER_BRD_QEMU                   0x01

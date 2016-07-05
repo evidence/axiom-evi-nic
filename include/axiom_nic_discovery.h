@@ -88,7 +88,7 @@ axiom_send_raw_discovery (axiom_dev_t *dev, axiom_if_id_t interface,
  *
  * \return Returns XXX
  */
-inline static axiom_msg_id_t
+inline static axiom_err_t
 axiom_recv_raw_discovery(axiom_dev_t *dev, axiom_if_id_t *interface,
         axiom_discovery_cmd_t *cmd, axiom_node_id_t *src_id,
         axiom_node_id_t *dst_id, axiom_if_id_t *payload_src_if,
@@ -105,7 +105,7 @@ axiom_recv_raw_discovery(axiom_dev_t *dev, axiom_if_id_t *interface,
     ret = axiom_recv_raw(dev, interface, &port, &type, &payload_size,
             &payload);
 
-    if ((ret != AXIOM_RET_OK) || (port != AXIOM_RAW_PORT_INIT) ||
+    if ((ret < AXIOM_RET_OK) || (port != AXIOM_RAW_PORT_INIT) ||
             (payload_size != sizeof(payload))) {
         EPRINTF("ret: %x port: %x[%x] type: %x payload_size: %d[%d] payload: %x",
                 ret, port, AXIOM_RAW_PORT_INIT, type, payload_size,

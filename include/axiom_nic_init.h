@@ -106,7 +106,7 @@ axiom_recv_raw_init(axiom_dev_t *dev, axiom_node_id_t *src, axiom_type_t *type,
 
     ret = axiom_recv_raw(dev, src, &port, type, payload_size, payload);
 
-    if ((ret != AXIOM_RET_OK) || (port != AXIOM_RAW_PORT_INIT))
+    if ((ret < AXIOM_RET_OK) || (port != AXIOM_RAW_PORT_INIT))
     {
         EPRINTF("ret: %x port: %x type: %x", ret, port, *type);
         return AXIOM_RET_ERROR;

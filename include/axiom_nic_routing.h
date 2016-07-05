@@ -90,17 +90,16 @@ axiom_recv_raw_delivery(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
     ret = axiom_recv_raw(dev, src_node_id, &port, &type, &payload_size,
             &payload);
 
-    if ((ret == AXIOM_RET_OK) && (port == AXIOM_RAW_PORT_INIT))
-    {
-        /* payload info */
-        *cmd = payload.command;
-        *payload_node_id = payload.node_id;
-        *payload_if_mask = payload.if_mask;
-
-        return AXIOM_RET_OK;
+    if ((ret < AXIOM_RET_OK) || (port != AXIOM_RAW_PORT_INIT)) {
+        return AXIOM_RET_ERROR;
     }
 
-    return AXIOM_RET_ERROR;
+    /* payload info */
+    *cmd = payload.command;
+    *payload_node_id = payload.node_id;
+    *payload_if_mask = payload.if_mask;
+
+    return AXIOM_RET_OK;
 }
 
 /*!
@@ -155,14 +154,13 @@ axiom_recv_raw_set_routing(axiom_dev_t *dev, axiom_if_id_t *interface,
     ret = axiom_recv_raw(dev, interface, &port, &type, &payload_size,
             &payload);
 
-    if ((ret == AXIOM_RET_OK) && (port == AXIOM_RAW_PORT_INIT))
-    {
-        /* payload info */
-        *cmd = payload.command;
-
-        return AXIOM_RET_OK;
+    if ((ret < AXIOM_RET_OK) || (port != AXIOM_RAW_PORT_INIT)) {
+        return AXIOM_RET_ERROR;
     }
 
-    return AXIOM_RET_ERROR;
+    /* payload info */
+    *cmd = payload.command;
+
+    return AXIOM_RET_OK;
 }
 #endif /* !AXIOM_NIC_ROUTING_H */

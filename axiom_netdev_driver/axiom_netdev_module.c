@@ -116,7 +116,7 @@ inline static int axiomnet_raw_rx_avail(struct axiomnet_hw_rx_ring *rx_ring,
     return avail;
 }
 
-inline static ssize_t axiomnet_raw_send(struct file *filep,
+inline static int axiomnet_raw_send(struct file *filep,
         const axiom_raw_hdr_t *header, const char __user *payload)
 {
     struct axiomnet_priv *priv = filep->private_data;
@@ -124,7 +124,6 @@ inline static ssize_t axiomnet_raw_send(struct file *filep,
     struct axiomnet_hw_tx_ring *tx_ring = &drvdata->raw_tx_ring;
     axiom_payload_t raw_payload;
     int ret;
-    ssize_t len;
 
     DPRINTF("start");
 
@@ -148,30 +147,29 @@ inline static ssize_t axiomnet_raw_send(struct file *filep,
     }
 
     if (unlikely(header->tx.payload_size > sizeof(raw_payload))) {
-        len = -EFBIG;
+        ret = -EFBIG;
         goto err;
     }
 
     ret = copy_from_user(&(raw_payload), payload, header->tx.payload_size);
     if (unlikely(ret)) {
-        len = -EFAULT;
+        ret = -EFAULT;
         goto err;
     }
 
     /* copy packet into the ring */
     ret = axiom_hw_raw_tx(tx_ring->drvdata->dev_api, header->tx.dst,
             header->tx.port_type, header->tx.payload_size, &(raw_payload));
-    if (unlikely(ret)) {
-        len = -EFAULT;
+    if (unlikely(ret < 0)) {
+        ret = -EFAULT;
     }
 
-    len = sizeof(*header) + header->tx.payload_size;
 err:
     mutex_unlock(&tx_ring->port.mutex);
 
     DPRINTF("end");
 
-    return len;
+    return ret;
 }
 
 inline static void axiom_raw_rx_dequeue(struct axiomnet_hw_rx_ring *rx_ring)
@@ -634,60 +632,6 @@ static struct platform_driver axiomnet_driver = {
 
 /************************ AxiomNet Char Device  ******************************/
 
-static ssize_t axiomnet_read(struct file *filep, char __user *buffer,
-        size_t len, loff_t *offset)
-{
-    axiom_raw_hdr_t header;
-    ssize_t ret;
-
-    DPRINTF("start");
-
-    /* XXX: we support only raw message for now */
-    header.rx.payload_size = len - sizeof(axiom_raw_hdr_t);
-
-    ret = axiomnet_raw_recv(filep, &header, buffer +
-            sizeof(axiom_raw_hdr_t));
-
-    if (ret < 0)
-        return ret;
-
-    if (copy_to_user(buffer, &header, sizeof(header))) {
-        return -EFAULT;
-    }
-
-    /* TODO: flush rx ring */
-    /* TODO: implement flush (fops) and ioctl to enable/disable auto flush */
-
-    DPRINTF("end");
-    return ret;
-}
-
-static ssize_t axiomnet_write(struct file *filep, const char __user *buffer,
-        size_t len, loff_t *offset)
-{
-    axiom_raw_hdr_t header;
-    ssize_t ret;
-
-    DPRINTF("start");
-
-    /* XXX: we support only raw message for now */
-    if (len < sizeof(header)) {
-        return -EFAULT;
-    }
-
-    if (copy_from_user(&(header), buffer, sizeof(header))) {
-        return -EFAULT;
-    }
-
-
-    ret = axiomnet_raw_send(filep, &header, buffer +
-            sizeof(axiom_raw_hdr_t));
-
-    DPRINTF("end");
-    return ret;
-
-}
-
 static void axiomnet_unbind(struct axiomnet_priv *priv) {
     struct axiomnet_drvdata *drvdata = priv->drvdata;
 
@@ -1009,8 +953,6 @@ static struct file_operations axiomnet_fops =
     .release = axiomnet_release,
     .unlocked_ioctl = axiomnet_ioctl,
     .mmap = axiomnet_mmap,
-    .read = axiomnet_read,
-    .write = axiomnet_write
 };
 
 static int axiomnet_alloc_chrdev(struct axiomnet_drvdata *drvdata,

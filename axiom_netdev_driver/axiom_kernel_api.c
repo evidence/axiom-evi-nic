@@ -26,6 +26,8 @@ MODULE_VERSION("v0.6");
 /*! \brief AXIOM HW device status */
 typedef struct axiom_dev {
     void __iomem *vregs;        /*!< \brief Memory mapped IO registers */
+    axiom_msg_id_t next_raw_id;
+    axiom_msg_id_t next_rdma_id;
 } axiom_dev_t;
 
 
@@ -39,6 +41,8 @@ axiom_hw_dev_alloc(void *vregs)
 
     dev = vmalloc(sizeof(*dev));
     dev->vregs = vregs;
+    dev->next_raw_id = 0;
+    dev->next_rdma_id = 0;
 
     return dev;
 }
@@ -61,6 +65,7 @@ axiom_hw_raw_tx(axiom_dev_t *dev, axiom_node_id_t dst_id,
 
     header.tx.port_type = port_type;
     header.tx.dst = dst_id;
+    header.tx.msg_id = dev->next_raw_id++;
     header.tx.payload_size = payload_size;
 
     base_reg = dev->vregs + AXIOMREG_IO_RAW_TX_DESC;
@@ -132,7 +137,8 @@ axiom_hw_raw_rx(axiom_dev_t *dev, axiom_node_id_t *src_id,
     if (i < AXIOM_RAW_PAYLOAD_MAX_SIZE) {
         axiom_hw_raw_rx_pop(dev);
     }
-    return 0;
+
+    return header.rx.msg_id;
 }
 
 axiom_queue_len_t
@@ -165,6 +171,7 @@ axiom_hw_rdma_tx(axiom_dev_t *dev, axiom_node_id_t remote_id,
 
     header.tx.port_type = port_type;
     header.tx.dst = remote_id;
+    header.tx.msg_id = dev->next_rdma_id++;
     header.tx.payload_size = payload_size;
     header.tx.src_addr = src_addr;
     header.tx.dst_addr = dst_addr;
@@ -173,10 +180,13 @@ axiom_hw_rdma_tx(axiom_dev_t *dev, axiom_node_id_t remote_id,
 
     /* write first 64-bit header */
     writeq(header.raw32[0], base_reg);
-    /* write last 32-bit header */
+    /* write next 32-bit header */
     iowrite32(header.raw32[2], base_reg + 8);
+    /* write last byte header */
+    iowrite8(header.raw[AXIOM_RDMA_HEADER_SIZE - 1],
+            base_reg + AXIOM_RDMA_HEADER_SIZE - 1);
 
-    return 0;
+    return header.tx.msg_id;
 }
 
 axiom_queue_len_t
@@ -201,8 +211,11 @@ axiom_hw_rdma_rx(axiom_dev_t *dev, axiom_node_id_t *remote_id,
 
     /* read first 64-bit header */
     header.raw32[0] = readq(base_reg);
-    /* read last 32-bit header */
+    /* read next 32-bit header */
     header.raw32[2] = ioread32(base_reg + 8);
+    /* read last byte header */
+    header.raw[AXIOM_RDMA_HEADER_SIZE - 1] =
+        ioread8(base_reg + AXIOM_RDMA_HEADER_SIZE - 1);
 
     *remote_id = header.rx.src;
     *port_type = header.rx.port_type;
@@ -210,7 +223,7 @@ axiom_hw_rdma_rx(axiom_dev_t *dev, axiom_node_id_t *remote_id,
     *src_addr = header.rx.src_addr;
     *dst_addr = header.rx.dst_addr;
 
-    return 0;
+    return header.rx.msg_id;
 }
 
 axiom_queue_len_t

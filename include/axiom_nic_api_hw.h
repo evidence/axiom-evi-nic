@@ -23,8 +23,7 @@
  * \param payload_size  size of data to be sent
  * \param payload       data to be sent
  *
- * \return Returns a unique positive message id on success, -1 otherwise.
- * XXX: the return type is unsigned!
+ * \return Returns a unique positive message id on success.
  */
 axiom_msg_id_t
 axiom_hw_raw_tx(axiom_dev_t *dev, axiom_node_id_t dst_id,
@@ -51,8 +50,7 @@ axiom_hw_raw_tx_avail(axiom_dev_t *dev);
  * \param payload_size  size of data received
  * \param payload       data received
  *
- * \return Returns a unique positive message id on success, -1 otherwise.
- * XXX: the return type is unsigned!
+ * \return Returns a unique positive message id on success.
  */
 axiom_msg_id_t
 axiom_hw_raw_rx(axiom_dev_t *dev, axiom_node_id_t *src_id,
@@ -81,8 +79,7 @@ axiom_hw_raw_rx_avail(axiom_dev_t *dev);
  * \param remote_dst_addr remote offset inside the RDMA zone where data
  *                        will be stored
  *
- * \return Returns a unique positive message id on success, -1 otherwise.
- * XXX: the return type is unsigned!
+ * \return Returns a unique positive message id on success.
  */
 axiom_msg_id_t
 axiom_hw_rdma_tx(axiom_dev_t *dev, axiom_node_id_t remote_id,
@@ -101,8 +98,7 @@ axiom_hw_rdma_tx(axiom_dev_t *dev, axiom_node_id_t remote_id,
  * \param local_dst_addr  local offset inside the RDMA zone where data
  *                        will be stored
  *
- * \return Returns a unique positive message id on success, -1 otherwise.
- * XXX: the return type is unsigned!
+ * \return Returns a unique positive message id on success.
  */
 axiom_msg_id_t
 axiom_hw_rdma_rx(axiom_dev_t *dev, axiom_node_id_t *remote_id,

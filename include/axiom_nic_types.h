@@ -31,7 +31,7 @@ typedef uint8_t             axiom_raw_payload_size_t;
 /*! \brief AXIOM payload size type for RDMA messages */
 typedef uint16_t            axiom_rdma_payload_size_t;
 /*! \brief AXIOM error type */
-typedef uint8_t	            axiom_err_t;
+typedef int	            axiom_err_t;
 /*! \brief AXIOM device private data */
 typedef struct axiom_dev    axiom_dev_t;
 /*! \brief AXIOM open arguments */
@@ -44,11 +44,11 @@ typedef uint64_t            axiom_flags_t;
 /*! \brief Return value OK */
 #define AXIOM_RET_OK            0
 /*! \brief Return value ERROR: generic error */
-#define AXIOM_RET_ERROR         1
+#define AXIOM_RET_ERROR         -1
 /*! \brief Return value NOTAVAIL: space not available */
-#define AXIOM_RET_NOTAVAIL      2
+#define AXIOM_RET_NOTAVAIL      -2
 /*! \brief Return value INTR: system call interrupted */
-#define AXIOM_RET_INTR          3
+#define AXIOM_RET_INTR          -3
 
 
 /****************************** Return Values *********************************/
