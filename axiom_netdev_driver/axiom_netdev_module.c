@@ -99,6 +99,8 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
     return serviced;
 }
 
+/****************************** RAW functions *********************************/
+
 inline static int axiomnet_raw_tx_avail(struct axiomnet_hw_tx_ring *tx_ring)
 {
     /*TODO: try to minimize the register read */
@@ -237,34 +239,6 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_hw_rx_ring *rx_ring)
     DPRINTF("end");
 }
 
-static bool axiomnet_rx_work_todo(void *data)
-{
-    struct axiomnet_hw_rx_ring *rx_ring = data;
-    return (axiom_hw_raw_rx_avail(rx_ring->drvdata->dev_api) != 0)
-        && (eviq_free_avail(&rx_ring->sw_queue.evi_queue) != 0);
-}
-
-static void axiomnet_rx_worker(void *data)
-{
-    struct axiomnet_hw_rx_ring *rx_ring = data;
-
-    /* fetch raw rx queue elements */
-    axiom_raw_rx_dequeue(rx_ring);
-}
-
-inline static int axiomnet_check_port(struct axiomnet_priv *priv)
-{
-    int port = priv->bind_port;
-
-    /* check bind */
-    if (port == AXIOMNET_PORT_INVALID) {
-        EPRINTF("port not assigned");
-        return -EFAULT;
-    }
-
-    return port;
-}
-
 inline static ssize_t axiomnet_raw_recv(struct file *filep,
         axiom_raw_hdr_t *header, char __user *payload)
 {
@@ -360,6 +334,70 @@ err:
     DPRINTF("end len:%zu", len);
     return len;
 }
+
+static long axiomnet_raw_flush(struct axiomnet_priv *priv) {
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    struct axiomnet_hw_rx_ring *rx_ring = &drvdata->raw_rx_ring;
+    struct axiomnet_sw_queue *sw_queue = &rx_ring->sw_queue;
+    int port = priv->bind_port;
+    unsigned long flags;
+    long ret = 0;
+
+    /* check bind */
+    if (port == AXIOMNET_PORT_INVALID) {
+        EPRINTF("port not assigned");
+        return -EFAULT;
+    }
+
+    if (mutex_lock_interruptible(&rx_ring->ports[port].mutex))
+        return -ERESTARTSYS;
+
+    /* take the lock to avoid enqueue during the flush */
+    spin_lock_irqsave(&sw_queue->queue_lock, flags);
+
+    while (axiomnet_raw_rx_avail(rx_ring, port) != 0) {
+        eviq_pnt_t queue_slot;
+
+        queue_slot = eviq_dequeue(&sw_queue->evi_queue, port);
+
+        /* XXX: impossible! */
+        if (queue_slot == EVIQ_NONE) {
+            ret = -EFAULT;
+            goto err;
+        }
+
+        eviq_free_push(&sw_queue->evi_queue, queue_slot);
+
+        DPRINTF("queue remove - queue_slot: %d port: %d", queue_slot, port);
+    }
+
+err:
+    spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
+
+    mutex_unlock(&rx_ring->ports[port].mutex);
+    return ret;
+}
+
+/***************************** RDMA functions *********************************/
+
+
+/**************************** Worker functions ********************************/
+static bool axiomnet_rx_work_todo(void *data)
+{
+    struct axiomnet_hw_rx_ring *rx_ring = data;
+    return (axiom_hw_raw_rx_avail(rx_ring->drvdata->dev_api) != 0)
+        && (eviq_free_avail(&rx_ring->sw_queue.evi_queue) != 0);
+}
+
+static void axiomnet_rx_worker(void *data)
+{
+    struct axiomnet_hw_rx_ring *rx_ring = data;
+
+    /* fetch raw rx queue elements */
+    axiom_raw_rx_dequeue(rx_ring);
+}
+
+/***************************** Init functions *********************************/
 
 static void axiomnet_sw_queue_free(struct axiomnet_sw_queue *queue)
 {
@@ -633,7 +671,7 @@ static struct platform_driver axiomnet_driver = {
     },
 };
 
-/************************ AxiomNet Char Device  ******************************/
+/****************************** Ports Handling  *******************************/
 
 static void axiomnet_unbind(struct axiomnet_priv *priv) {
     struct axiomnet_drvdata *drvdata = priv->drvdata;
@@ -684,13 +722,9 @@ exit:
     return ret;
 }
 
-static long axiomnet_raw_flush(struct axiomnet_priv *priv) {
-    struct axiomnet_drvdata *drvdata = priv->drvdata;
-    struct axiomnet_hw_rx_ring *rx_ring = &drvdata->raw_rx_ring;
-    struct axiomnet_sw_queue *sw_queue = &rx_ring->sw_queue;
+inline static int axiomnet_check_port(struct axiomnet_priv *priv)
+{
     int port = priv->bind_port;
-    unsigned long flags;
-    long ret = 0;
 
     /* check bind */
     if (port == AXIOMNET_PORT_INVALID) {
@@ -698,34 +732,10 @@ static long axiomnet_raw_flush(struct axiomnet_priv *priv) {
         return -EFAULT;
     }
 
-    if (mutex_lock_interruptible(&rx_ring->ports[port].mutex))
-        return -ERESTARTSYS;
-
-    /* take the lock to avoid enqueue during the flush */
-    spin_lock_irqsave(&sw_queue->queue_lock, flags);
-
-    while (axiomnet_raw_rx_avail(rx_ring, port) != 0) {
-        eviq_pnt_t queue_slot;
-
-        queue_slot = eviq_dequeue(&sw_queue->evi_queue, port);
-
-        /* XXX: impossible! */
-        if (queue_slot == EVIQ_NONE) {
-            ret = -EFAULT;
-            goto err;
-        }
-
-        eviq_free_push(&sw_queue->evi_queue, queue_slot);
-
-        DPRINTF("queue remove - queue_slot: %d port: %d", queue_slot, port);
-    }
-
-err:
-    spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
-
-    mutex_unlock(&rx_ring->ports[port].mutex);
-    return ret;
+    return port;
 }
+
+/************************ AxiomNet Char Device  ******************************/
 
 static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         unsigned long arg)
