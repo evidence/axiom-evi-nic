@@ -196,6 +196,29 @@ axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
         axiom_port_t port, axiom_rdma_payload_size_t payload_size,
         axiom_addr_t remote_src_addr, axiom_addr_t local_dst_addr);
 
+
+/*!
+ * \brief This function map in the userspace process the RDMA zone
+ *
+ * \param dev             The axiom device private data pointer
+ * \param size            return the size of the rdma zone
+ *
+ * \return Returns a pointer to the RDMA zone on success, NULL otherwise.
+ */
+void *
+axiom_rdma_mmap(axiom_dev_t *dev, uint64_t *size);
+
+
+/*!
+ * \brief This function unmap from the userspace process the RDMA zone
+ *
+ * \param dev             The axiom device private data pointer
+ *
+ * \return Returns AXIOM_RET_OK on success, an error otherwise.
+ */
+axiom_err_t
+axiom_rdma_munmap(axiom_dev_t *dev);
+
 /*!
  * \brief This function reads the NI status register.
  *

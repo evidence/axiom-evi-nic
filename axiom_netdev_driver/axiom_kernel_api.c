@@ -64,6 +64,7 @@ axiom_hw_raw_tx(axiom_dev_t *dev, axiom_node_id_t dst_id,
     int i;
 
     header.tx.port_type = port_type;
+    header.tx.port_type.field.s = 0;
     header.tx.dst = dst_id;
     header.tx.msg_id = dev->next_raw_id++;
     header.tx.payload_size = payload_size;
@@ -170,6 +171,7 @@ axiom_hw_rdma_tx(axiom_dev_t *dev, axiom_node_id_t remote_id,
     void __iomem *base_reg;
 
     header.tx.port_type = port_type;
+    header.tx.port_type.field.s = 0;
     header.tx.dst = remote_id;
     header.tx.msg_id = dev->next_rdma_id++;
     header.tx.payload_size = payload_size;

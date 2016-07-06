@@ -12,10 +12,12 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <sys/mman.h>
 
 #include "dprintf.h"
 #include "axiom_nic_api_user.h"
@@ -32,6 +34,8 @@
 typedef struct axiom_dev {
     int fd;             /*!< \brief file descriptor of the AXIOM char dev */
     axiom_flags_t flags;/*!< \brief axiom flags */
+    void *rdma_addr;    /*!< \brief rdma zone pointer */
+    uint64_t rdma_size; /*!< \brief rdma zone size */
 } axiom_dev_t;
 
 
@@ -319,6 +323,73 @@ axiom_flush_raw(axiom_dev_t *dev)
         EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
         return AXIOM_RET_ERROR;
     }
+
+    return AXIOM_RET_OK;
+}
+
+#define AXIOM_RDMA_FIXED_ADDR           ((void *)(0x30000000))
+void *
+axiom_rdma_mmap(axiom_dev_t *dev, uint64_t *size)
+{
+    void *addr;
+    int ret;
+
+    if (unlikely(!dev || dev->fd <= 0 || !size)) {
+        EPRINTF("axiom device is not opened");
+        return NULL;
+    }
+
+    if (unlikely(dev->rdma_addr)) {
+        EPRINTF("axiom rdma zone already mapped");
+        return NULL;
+    }
+
+    ret = ioctl(dev->fd, AXNET_RDMA_SIZE, size);
+    if (ret < 0) {
+        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        return NULL;
+    }
+
+    if (unlikely(*size <= 0)) {
+        EPRINTF("size error [%" PRIu64 "]", *size);
+        return NULL;
+    }
+
+    addr = mmap(AXIOM_RDMA_FIXED_ADDR, *size, PROT_READ | PROT_WRITE,
+            MAP_FIXED | MAP_SHARED, dev->fd, 0);
+    if (unlikely(addr == MAP_FAILED)) {
+        EPRINTF("mmap failed - addr: %p - error: %s", addr, strerror(errno));
+    }
+
+    dev->rdma_addr = addr;
+    dev->rdma_size = *size;
+
+    return addr;
+}
+
+axiom_err_t
+axiom_rdma_munmap(axiom_dev_t *dev)
+{
+    int ret;
+
+    if (unlikely(!dev || dev->fd <= 0)) {
+        EPRINTF("axiom device is not opened");
+        return AXIOM_RET_ERROR;
+    }
+
+    if (unlikely(!dev->rdma_addr)) {
+        EPRINTF("axiom rdma zone not mapped");
+        return AXIOM_RET_ERROR;
+    }
+
+    ret = munmap(dev->rdma_addr, dev->rdma_size);
+    if (unlikely(ret)) {
+        EPRINTF("munmap failed - error: %s", strerror(errno));
+        return AXIOM_RET_ERROR;
+    }
+
+    dev->rdma_addr = NULL;
+    dev->rdma_size = 0;
 
     return AXIOM_RET_OK;
 }

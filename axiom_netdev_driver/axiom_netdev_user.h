@@ -57,11 +57,15 @@ typedef struct axiom_ioctl_bind {
 #define AXNET_SEND_RAW          _IOW(AXNET_MAGIC, 110, axiom_ioctl_raw_t)
 /*! \brief AXIOM IOCTL to recv a raw message */
 #define AXNET_RECV_RAW          _IOWR(AXNET_MAGIC, 111, axiom_ioctl_raw_t)
-/*! \brief AXIOM IOCTL to send a raw message */
+/*! \brief AXIOM IOCTL to check if it is possible to send a raw message */
 #define AXNET_SEND_RAW_AVAIL    _IOW(AXNET_MAGIC, 112, int)
-/*! \brief AXIOM IOCTL to recv a raw message */
+/*! \brief AXIOM IOCTL to check if it is possible to receive a raw message */
 #define AXNET_RECV_RAW_AVAIL    _IOWR(AXNET_MAGIC, 113, int)
 /*! \brief AXIOM IOCTL to flush raw messages */
 #define AXNET_FLUSH_RAW         _IO(AXNET_MAGIC, 114)
+/*! \brief AXIOM IOCTL to get the size */
+#define AXNET_RDMA_SIZE         _IOR(AXNET_MAGIC, 115, uint64_t)
+/*! \brief AXIOM IOCTL to start a RDMA write */
+#define AXNET_RDMA_WRITE        _IOW(AXNET_MAGIC, 116, axiom_rdma_hdr_t)
 
 #endif /* !AXIOM_NETDEV_USER_h */

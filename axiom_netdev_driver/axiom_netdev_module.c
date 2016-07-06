@@ -442,6 +442,9 @@ static void axiomnet_rdma_release(struct axiomnet_drvdata *drvdata)
 {
     dma_free_coherent(drvdata->dev, drvdata->dma_size, drvdata->dma_vaddr,
             drvdata->dma_paddr);
+    drvdata->dma_vaddr = NULL;
+    drvdata->dma_paddr = 0;
+    drvdata->dma_size = 0;
 }
 
 static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
@@ -734,12 +737,14 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
     void __user* argp = (void __user*)arg;
     long ret = 0;
     uint32_t buf_uint32;
+    uint64_t buf_uint64;
     int buf_int, port;
     uint8_t buf_uint8;
     uint8_t buf_uint8_2;
     axiom_ioctl_routing_t buf_routing;
     axiom_ioctl_raw_t buf_raw;
     axiom_ioctl_bind_t buf_bind;
+    axiom_rdma_hdr_t buf_rdma;
 
     DPRINTF("start");
 
@@ -841,6 +846,19 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
     case AXNET_FLUSH_RAW:
         ret = axiomnet_raw_flush(priv);
         break;
+    case AXNET_RDMA_SIZE:
+        buf_uint64 = drvdata->dma_size;
+        put_user(buf_uint64, (uint64_t __user*)arg);
+        break;
+    case AXNET_RDMA_WRITE:
+        ret = copy_from_user(&buf_rdma, argp, sizeof(buf_rdma));
+        if (ret)
+            return -EFAULT;
+
+        ret = axiom_hw_rdma_tx(drvdata->dev_api, buf_rdma.tx.dst,
+                buf_rdma.tx.port_type, buf_rdma.tx.payload_size,
+                buf_rdma.tx.src_addr, buf_rdma.tx.dst_addr);
+        break;
     default:
         ret = -EINVAL;
     }
@@ -857,17 +875,18 @@ static int axiomnet_mmap(struct file *filep, struct vm_area_struct *vma)
     int err = 0;
     DPRINTF("start");
 
-    if (!drvdata)
+    if (!drvdata || !drvdata->dma_paddr)
         return -EINVAL;
 
     mutex_lock(&drvdata->lock);
-    if (size != AXIOMREG_IO_SIZE) {
+
+    if (size != drvdata->dma_size) {
         err= -EINVAL;
         goto err;
     }
 
     err = remap_pfn_range(vma, vma->vm_start,
-            drvdata->regs_res->start >> PAGE_SHIFT, size, vma->vm_page_prot);
+            drvdata->dma_paddr >> PAGE_SHIFT, size, vma->vm_page_prot);
     if (err) {
         goto err;
     }
