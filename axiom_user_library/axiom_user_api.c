@@ -219,8 +219,7 @@ axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
         return AXIOM_RET_ERROR;
     }
 
-    DPRINTF("dst: 0x%x payload_size: 0x%x", raw_msg.header.tx.dst,
-            raw_msg.header.tx.payload_size);
+    DPRINTF("dst: 0x%x port: %d payload_size: 0x%x", raw_msg.header.tx.dst, raw_msg.header.tx.port_type.field.port, raw_msg.header.tx.payload_size);
 
     return ret;
 }
@@ -261,6 +260,8 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
     *port = (raw_msg.header.rx.port_type.field.port & 0x7);
     *type = (raw_msg.header.rx.port_type.field.type & 0x7);
     *payload_size = raw_msg.header.rx.payload_size;
+
+    DPRINTF("src: 0x%x port: %d payload_size: 0x%x", raw_msg.header.rx.src, raw_msg.header.rx.port_type.field.port, raw_msg.header.rx.payload_size);
 
     return raw_msg.header.rx.msg_id;
 }
