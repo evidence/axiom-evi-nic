@@ -55,24 +55,21 @@ axiom_hw_dev_free(axiom_dev_t *dev)
 
 
 axiom_msg_id_t
-axiom_hw_raw_tx(axiom_dev_t *dev, axiom_node_id_t dst_id,
-        axiom_port_type_t port_type, axiom_raw_payload_size_t payload_size,
+axiom_hw_raw_tx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
         axiom_payload_t *payload)
 {
-    axiom_raw_hdr_t header;
+    axiom_raw_payload_size_t payload_size;
     void __iomem *base_reg;
     int i;
 
-    header.tx.port_type = port_type;
-    header.tx.port_type.field.s = 0;
-    header.tx.dst = dst_id;
-    header.tx.msg_id = dev->next_raw_id++;
-    header.tx.payload_size = payload_size;
+    header->tx.port_type.field.s = 0;
+    header->tx.msg_id = dev->next_raw_id++;
+    payload_size = header->tx.payload_size;
 
     base_reg = dev->vregs + AXIOMREG_IO_RAW_TX_DESC;
 
     /* write header */
-    iowrite32(header.raw32, base_reg);
+    iowrite32(header->raw32, base_reg);
 
     /* write payload */
     for (i = 0; i < payload_size && i < AXIOM_RAW_PAYLOAD_MAX_SIZE; i += 4) {
@@ -111,25 +108,21 @@ axiom_hw_raw_tx_push(axiom_dev_t *dev)
 }
 
 axiom_msg_id_t
-axiom_hw_raw_rx(axiom_dev_t *dev, axiom_node_id_t *src_id,
-        axiom_port_type_t *port_type, axiom_raw_payload_size_t *payload_size,
+axiom_hw_raw_rx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
         axiom_payload_t *payload)
 {
-    axiom_raw_hdr_t header;
+    axiom_raw_payload_size_t payload_size;
     void __iomem *base_reg;
     int i;
 
     base_reg = dev->vregs + AXIOMREG_IO_RAW_RX_DESC;
 
     /* read header */
-    header.raw32 = ioread32(base_reg);
-
-    *src_id = header.rx.src;
-    *port_type = header.rx.port_type;
-    *payload_size = header.rx.payload_size;
+    header->raw32 = ioread32(base_reg);
 
     /* read payload */
-    for (i = 0; i < *payload_size && i < AXIOM_RAW_PAYLOAD_MAX_SIZE; i += 4) {
+    payload_size = header->rx.payload_size;
+    for (i = 0; i < payload_size && i < AXIOM_RAW_PAYLOAD_MAX_SIZE; i += 4) {
         *((uint32_t *)&(payload->raw[i])) = ioread32(base_reg +
                 AXIOM_RAW_HEADER_SIZE + i);
     }
@@ -139,7 +132,7 @@ axiom_hw_raw_rx(axiom_dev_t *dev, axiom_node_id_t *src_id,
         axiom_hw_raw_rx_pop(dev);
     }
 
-    return header.rx.msg_id;
+    return header->rx.msg_id;
 }
 
 axiom_queue_len_t
@@ -163,32 +156,24 @@ axiom_hw_raw_rx_pop(axiom_dev_t *dev)
 }
 
 axiom_msg_id_t
-axiom_hw_rdma_tx(axiom_dev_t *dev, axiom_node_id_t remote_id,
-        axiom_port_type_t port_type, axiom_rdma_payload_size_t payload_size,
-        axiom_addr_t src_addr, axiom_addr_t dst_addr)
+axiom_hw_rdma_tx(axiom_dev_t *dev, axiom_rdma_hdr_t *header)
 {
-    axiom_rdma_hdr_t header;
     void __iomem *base_reg;
 
-    header.tx.port_type = port_type;
-    header.tx.port_type.field.s = 0;
-    header.tx.dst = remote_id;
-    header.tx.msg_id = dev->next_rdma_id++;
-    header.tx.payload_size = payload_size;
-    header.tx.src_addr = src_addr;
-    header.tx.dst_addr = dst_addr;
+    header->tx.port_type.field.s = 0;
+    header->tx.msg_id = dev->next_rdma_id++;
 
     base_reg = dev->vregs + AXIOMREG_IO_RDMA_TX_DESC;
 
     /* write first 64-bit header */
-    writeq(header.raw32[0], base_reg);
+    writeq(header->raw32[0], base_reg);
     /* write next 32-bit header */
-    iowrite32(header.raw32[2], base_reg + 8);
+    iowrite32(header->raw32[2], base_reg + 8);
     /* write last byte header */
-    iowrite8(header.raw[AXIOM_RDMA_HEADER_SIZE - 1],
+    iowrite8(header->raw[AXIOM_RDMA_HEADER_SIZE - 1],
             base_reg + AXIOM_RDMA_HEADER_SIZE - 1);
 
-    return header.tx.msg_id;
+    return header->tx.msg_id;
 }
 
 axiom_queue_len_t
@@ -202,30 +187,21 @@ axiom_hw_rdma_tx_avail(axiom_dev_t *dev)
 }
 
 axiom_msg_id_t
-axiom_hw_rdma_rx(axiom_dev_t *dev, axiom_node_id_t *remote_id,
-        axiom_port_type_t *port_type, axiom_rdma_payload_size_t *payload_size,
-        axiom_addr_t *src_addr, axiom_addr_t *dst_addr)
+axiom_hw_rdma_rx(axiom_dev_t *dev, axiom_rdma_hdr_t *header)
 {
-    axiom_rdma_hdr_t header;
     void __iomem *base_reg;
 
     base_reg = dev->vregs + AXIOMREG_IO_RDMA_RX_DESC;
 
     /* read first 64-bit header */
-    header.raw32[0] = readq(base_reg);
+    header->raw32[0] = readq(base_reg);
     /* read next 32-bit header */
-    header.raw32[2] = ioread32(base_reg + 8);
+    header->raw32[2] = ioread32(base_reg + 8);
     /* read last byte header */
-    header.raw[AXIOM_RDMA_HEADER_SIZE - 1] =
+    header->raw[AXIOM_RDMA_HEADER_SIZE - 1] =
         ioread8(base_reg + AXIOM_RDMA_HEADER_SIZE - 1);
 
-    *remote_id = header.rx.src;
-    *port_type = header.rx.port_type;
-    *payload_size = header.rx.payload_size;
-    *src_addr = header.rx.src_addr;
-    *dst_addr = header.rx.dst_addr;
-
-    return header.rx.msg_id;
+    return header->rx.msg_id;
 }
 
 axiom_queue_len_t

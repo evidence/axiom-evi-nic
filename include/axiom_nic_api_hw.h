@@ -17,17 +17,13 @@
  * \brief  This function sends raw data to a remote node.
  *
  * \param dev           The axiom device private data pointer
- * \param dst_id        The remote node id that will receive the raw data or
- *                      local interface that will send the raw data
- * \param port_type     port and type of the raw message
- * \param payload_size  size of data to be sent
+ * \param header        The header of packet
  * \param payload       data to be sent
  *
  * \return Returns a unique positive message id on success.
  */
 axiom_msg_id_t
-axiom_hw_raw_tx(axiom_dev_t *dev, axiom_node_id_t dst_id,
-        axiom_port_type_t port_type, axiom_raw_payload_size_t payload_size,
+axiom_hw_raw_tx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
         axiom_payload_t *payload);
 
 /*!
@@ -44,17 +40,13 @@ axiom_hw_raw_tx_avail(axiom_dev_t *dev);
  * \brief This function receives raw data to a remote node.
  *
  * \param dev           The axiom device private data pointer
- * \param src_id        The source node id that sent the raw data or local
- *                      interface that received the raw data
- * \param port_type     port and type of the raw message
- * \param payload_size  size of data received
+ * \param header        The header of packet
  * \param payload       data received
  *
  * \return Returns a unique positive message id on success.
  */
 axiom_msg_id_t
-axiom_hw_raw_rx(axiom_dev_t *dev, axiom_node_id_t *src_id,
-        axiom_port_type_t *port_type, axiom_raw_payload_size_t *payload_size,
+axiom_hw_raw_rx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
         axiom_payload_t *payload);
 
 /*!
@@ -70,40 +62,34 @@ axiom_hw_raw_rx_avail(axiom_dev_t *dev);
 /*!
  * \brief This function writes data to a remote node memory.
  *
- * \param dev             The axiom device private data pointer
- * \param remote_id          The remote node id where data will be stored
- * \param port_type       port and type of the rdma message
- * \param payload_size    size of data to be transfer in 64bits words
- * \param local_src_addr  local offset inside the RDMA zone where data
- *                        will be read
- * \param remote_dst_addr remote offset inside the RDMA zone where data
- *                        will be stored
+ * \param dev           The axiom device private data pointer
+ * \param header        The header of packet
  *
- * \return Returns a unique positive message id on success.
+ * \return Returns a unique positive message id.
  */
 axiom_msg_id_t
-axiom_hw_rdma_tx(axiom_dev_t *dev, axiom_node_id_t remote_id,
-        axiom_port_type_t port_type, axiom_rdma_payload_size_t payload_size,
-        axiom_addr_t src_addr, axiom_addr_t dst_addr);
+axiom_hw_rdma_tx(axiom_dev_t *dev, axiom_rdma_hdr_t *header);
+
+/*!
+ * \brief This function checks the space available in the RDMA TX queue.
+ *
+ * \param dev           The axiom device private data pointer
+ *
+ * \return Returns a value != 0 if there is space available, 0 otherwise.
+ */
+axiom_queue_len_t
+axiom_hw_rdma_tx_avail(axiom_dev_t *dev);
 
 /*!
  * \brief This function reads data from a remote node memory.
  *
- * \param dev             The axiom device private data pointer
- * \param remote_id          The remote node id where data will be read
- * \param port_type       port and type of the rdma message
- * \param payload_size    size of data to be transfer in 64bits words
- * \param remote_src_addr remote offset inside the RDMA zone where data
- *                        will be read
- * \param local_dst_addr  local offset inside the RDMA zone where data
- *                        will be stored
+ * \param dev           The axiom device private data pointer
+ * \param header        The header of packet
  *
- * \return Returns a unique positive message id on success.
+ * \return Returns a unique positive message id.
  */
 axiom_msg_id_t
-axiom_hw_rdma_rx(axiom_dev_t *dev, axiom_node_id_t *remote_id,
-        axiom_port_type_t *port_type, axiom_rdma_payload_size_t *payload_size,
-        axiom_addr_t *src_addr, axiom_addr_t *dst_addr);
+axiom_hw_rdma_rx(axiom_dev_t *dev, axiom_rdma_hdr_t *header);
 
 /*!
  * \brief This function reads the NI status register.

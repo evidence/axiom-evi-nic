@@ -56,7 +56,7 @@ static void axiomnet_destroy_chrdev(struct axiomnet_drvdata *drvdata,
 
 
 
-/*********************** AxiomNet Device Driver ******************************/
+/************************ AxiomNet Device Driver ******************************/
 
 /* Match table for of_platform binding */
 static const struct of_device_id axiomnet_of_match[] = {
@@ -89,7 +89,11 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
     }
 
     if (irq_pending & AXIOMREG_IRQ_RAW_TX) {
-        wake_up(&drvdata->raw_tx_ring.port.wait_queue);
+        wake_up(&(drvdata->raw_tx_ring.port.wait_queue));
+    }
+
+    if (irq_pending & AXIOMREG_IRQ_RDMA_TX) {
+        wake_up(&(drvdata->rdma_tx_ring.port.wait_queue));
     }
 
     iowrite32(irq_pending, drvdata->vregs + AXIOMREG_IO_ACKIRQ);
@@ -101,13 +105,13 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
 
 /****************************** RAW functions *********************************/
 
-inline static int axiomnet_raw_tx_avail(struct axiomnet_hw_tx_ring *tx_ring)
+inline static int axiomnet_raw_tx_avail(struct axiomnet_raw_tx_hwring *tx_ring)
 {
     /*TODO: try to minimize the register read */
     return axiom_hw_raw_tx_avail(tx_ring->drvdata->dev_api);
 }
 
-inline static int axiomnet_raw_rx_avail(struct axiomnet_hw_rx_ring *rx_ring,
+inline static int axiomnet_raw_rx_avail(struct axiomnet_raw_rx_hwring *rx_ring,
         int port)
 {
     int avail;
@@ -119,11 +123,11 @@ inline static int axiomnet_raw_rx_avail(struct axiomnet_hw_rx_ring *rx_ring,
 }
 
 inline static int axiomnet_raw_send(struct file *filep,
-        const axiom_raw_hdr_t *header, const char __user *payload)
+        axiom_raw_hdr_t *header, const char __user *payload)
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
-    struct axiomnet_hw_tx_ring *tx_ring = &drvdata->raw_tx_ring;
+    struct axiomnet_raw_tx_hwring *tx_ring = &drvdata->raw_tx_ring;
     axiom_payload_t raw_payload;
     int ret;
 
@@ -160,8 +164,7 @@ inline static int axiomnet_raw_send(struct file *filep,
     }
 
     /* copy packet into the ring */
-    ret = axiom_hw_raw_tx(tx_ring->drvdata->dev_api, header->tx.dst,
-            header->tx.port_type, header->tx.payload_size, &(raw_payload));
+    ret = axiom_hw_raw_tx(tx_ring->drvdata->dev_api, header, &(raw_payload));
     if (unlikely(ret < 0)) {
         ret = -EFAULT;
     }
@@ -174,9 +177,9 @@ err:
     return ret;
 }
 
-inline static void axiom_raw_rx_dequeue(struct axiomnet_hw_rx_ring *rx_ring)
+inline static void axiom_raw_rx_dequeue(struct axiomnet_raw_rx_hwring *rx_ring)
 {
-    struct axiomnet_sw_queue *sw_queue = &rx_ring->sw_queue;
+    struct axiomnet_raw_queue *sw_queue = &rx_ring->sw_queue;
     unsigned long flags;
     uint32_t received = 0;
     int port;
@@ -199,9 +202,8 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_hw_rx_ring *rx_ring)
 
         raw_msg = &sw_queue->queue_desc[queue_slot];
 
-        axiom_hw_raw_rx(rx_ring->drvdata->dev_api, &raw_msg->header.rx.src,
-                &raw_msg->header.rx.port_type, &raw_msg->header.rx.payload_size,
-                &raw_msg->payload);
+        axiom_hw_raw_rx(rx_ring->drvdata->dev_api, &(raw_msg->header),
+                &(raw_msg->payload));
         port = raw_msg->header.rx.port_type.field.port;
 
         /* check valid port */
@@ -244,11 +246,11 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
-    struct axiomnet_hw_rx_ring *rx_ring = &drvdata->raw_rx_ring;
+    struct axiomnet_raw_rx_hwring *rx_ring = &drvdata->raw_rx_ring;
     int port = priv->bind_port, wakeup_kthread = 0, ret;
     ssize_t len;
 
-    struct axiomnet_sw_queue *sw_queue = &rx_ring->sw_queue;
+    struct axiomnet_raw_queue *sw_queue = &rx_ring->sw_queue;
     axiom_raw_msg_t *raw_msg;
     eviq_pnt_t queue_slot;
     unsigned long flags;
@@ -337,8 +339,8 @@ err:
 
 static long axiomnet_raw_flush(struct axiomnet_priv *priv) {
     struct axiomnet_drvdata *drvdata = priv->drvdata;
-    struct axiomnet_hw_rx_ring *rx_ring = &drvdata->raw_rx_ring;
-    struct axiomnet_sw_queue *sw_queue = &rx_ring->sw_queue;
+    struct axiomnet_raw_rx_hwring *rx_ring = &drvdata->raw_rx_ring;
+    struct axiomnet_raw_queue *sw_queue = &rx_ring->sw_queue;
     int port = priv->bind_port;
     unsigned long flags;
     long ret = 0;
@@ -379,19 +381,70 @@ err:
 }
 
 /***************************** RDMA functions *********************************/
+inline static int axiomnet_rdma_tx_avail(struct axiomnet_rdma_tx_hwring *tx_ring)
+{
+    /*TODO: try to minimize the register read */
+    return axiom_hw_rdma_tx_avail(tx_ring->drvdata->dev_api);
+}
 
+inline static int axiomnet_rdma_write(struct file *filep,
+        axiom_rdma_hdr_t *header)
+{
+    struct axiomnet_priv *priv = filep->private_data;
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
+    int ret;
+
+    DPRINTF("start");
+
+    if (mutex_lock_interruptible(&tx_ring->port.mutex))
+        return -ERESTARTSYS;
+
+    /* check slot available in the HW ring */
+    while (axiomnet_rdma_tx_avail(tx_ring) == 0) { /* no space to write */
+        mutex_unlock(&tx_ring->port.mutex);
+
+        /* no blocking write */
+        if (filep->f_flags & O_NONBLOCK)
+            return -EAGAIN;
+
+        /* put the process in the wait_queue to wait new space (irq) */
+        if (wait_event_interruptible(tx_ring->port.wait_queue,
+                    axiomnet_rdma_tx_avail(tx_ring) != 0))
+            return -ERESTARTSYS;
+
+        if (mutex_lock_interruptible(&tx_ring->port.mutex))
+            return -ERESTARTSYS;
+    }
+
+    /* copy packet into the ring */
+    ret = axiom_hw_rdma_tx(drvdata->dev_api, header);
+    if (unlikely(ret < 0)) {
+        ret = -EFAULT;
+        goto err;
+    }
+
+    /* TODO: wait the reply */
+
+err:
+    mutex_unlock(&tx_ring->port.mutex);
+
+    DPRINTF("end");
+
+    return ret;
+}
 
 /**************************** Worker functions ********************************/
 static bool axiomnet_rx_work_todo(void *data)
 {
-    struct axiomnet_hw_rx_ring *rx_ring = data;
+    struct axiomnet_raw_rx_hwring *rx_ring = data;
     return (axiom_hw_raw_rx_avail(rx_ring->drvdata->dev_api) != 0)
         && (eviq_free_avail(&rx_ring->sw_queue.evi_queue) != 0);
 }
 
 static void axiomnet_rx_worker(void *data)
 {
-    struct axiomnet_hw_rx_ring *rx_ring = data;
+    struct axiomnet_raw_rx_hwring *rx_ring = data;
 
     /* fetch raw rx queue elements */
     axiom_raw_rx_dequeue(rx_ring);
@@ -399,7 +452,7 @@ static void axiomnet_rx_worker(void *data)
 
 /***************************** Init functions *********************************/
 
-static void axiomnet_sw_queue_free(struct axiomnet_sw_queue *queue)
+static void axiomnet_raw_queue_free(struct axiomnet_raw_queue *queue)
 {
     if (queue->queue_desc) {
         kfree(queue->queue_desc);
@@ -409,21 +462,21 @@ static void axiomnet_sw_queue_free(struct axiomnet_sw_queue *queue)
     eviq_release(&queue->evi_queue);
 }
 
-static int axiomnet_sw_queue_alloc(struct axiomnet_sw_queue *queue)
+static int axiomnet_raw_queue_alloc(struct axiomnet_raw_queue *queue)
 {
     int err;
 
     spin_lock_init(&queue->queue_lock);
 
-    err = eviq_init(&queue->evi_queue, AXIOMNET_SW_QUEUE_NUM,
-            AXIOMNET_SW_QUEUE_FREE_LEN);
+    err = eviq_init(&queue->evi_queue, AXIOMNET_RAW_QUEUE_NUM,
+            AXIOMNET_RAW_QUEUE_FREE_LEN);
     if (err) {
         return -ENOMEM;
     }
 
 
-    queue->queue_desc = kcalloc(AXIOMNET_SW_QUEUE_FREE_LEN, sizeof(*(queue->queue_desc)),
-            GFP_KERNEL);
+    queue->queue_desc = kcalloc(AXIOMNET_RAW_QUEUE_FREE_LEN,
+            sizeof(*(queue->queue_desc)), GFP_KERNEL);
     if (queue->queue_desc == NULL) {
         err = -ENOMEM;
         goto err;
@@ -436,14 +489,14 @@ err:
     return err;
 }
 
-static void axiomnet_hw_rx_ring_release(struct axiomnet_drvdata *drvdata,
-            struct axiomnet_hw_rx_ring *rx_ring)
+static void axiomnet_raw_rx_hwring_release(struct axiomnet_drvdata *drvdata,
+            struct axiomnet_raw_rx_hwring *rx_ring)
 {
-    axiomnet_sw_queue_free(&rx_ring->sw_queue);
+    axiomnet_raw_queue_free(&rx_ring->sw_queue);
 }
 
-static int axiomnet_hw_rx_ring_init(struct axiomnet_drvdata *drvdata,
-        struct axiomnet_hw_rx_ring *rx_ring)
+static int axiomnet_raw_rx_hwring_init(struct axiomnet_drvdata *drvdata,
+        struct axiomnet_raw_rx_hwring *rx_ring)
 {
     int err, port;
 
@@ -454,7 +507,7 @@ static int axiomnet_hw_rx_ring_init(struct axiomnet_drvdata *drvdata,
         init_waitqueue_head(&rx_ring->ports[port].wait_queue);
     }
 
-    err = axiomnet_sw_queue_alloc(&rx_ring->sw_queue);
+    err = axiomnet_raw_queue_alloc(&rx_ring->sw_queue);
     if (err) {
         goto err;
     }
@@ -466,8 +519,18 @@ err:
     return err;
 }
 
-static int axiomnet_hw_tx_ring_init(struct axiomnet_drvdata *drvdata,
-        struct axiomnet_hw_tx_ring *tx_ring)
+static int axiomnet_raw_tx_hwring_init(struct axiomnet_drvdata *drvdata,
+        struct axiomnet_raw_tx_hwring *tx_ring)
+{
+    tx_ring->drvdata = drvdata;
+
+    mutex_init(&tx_ring->port.mutex);
+    init_waitqueue_head(&tx_ring->port.wait_queue);
+    return 0;
+}
+
+static int axiomnet_rdma_tx_hwring_init(struct axiomnet_drvdata *drvdata,
+        struct axiomnet_rdma_tx_hwring *tx_ring)
 {
     tx_ring->drvdata = drvdata;
 
@@ -590,14 +653,21 @@ static int axiomnet_probe(struct platform_device *pdev)
     }
 
     /* init RAW TX ring */
-    err = axiomnet_hw_tx_ring_init(drvdata, &drvdata->raw_tx_ring);
+    err = axiomnet_raw_tx_hwring_init(drvdata, &drvdata->raw_tx_ring);
     if (err) {
-        dev_err(&pdev->dev, "could not init TX ring\n");
+        dev_err(&pdev->dev, "could not init raw TX ring\n");
+        goto free_cdev;
+    }
+
+    /* init RDMA TX ring */
+    err = axiomnet_rdma_tx_hwring_init(drvdata, &drvdata->rdma_tx_ring);
+    if (err) {
+        dev_err(&pdev->dev, "could not init RDMA TX ring\n");
         goto free_cdev;
     }
 
     /* init RAW RX ring */
-    err = axiomnet_hw_rx_ring_init(drvdata, &drvdata->raw_rx_ring);
+    err = axiomnet_raw_rx_hwring_init(drvdata, &drvdata->raw_rx_ring);
     if (err) {
         dev_err(&pdev->dev, "could not init RX ring\n");
         goto free_tx_ring;
@@ -625,7 +695,7 @@ static int axiomnet_probe(struct platform_device *pdev)
 
     return 0;
 free_rx_ring:
-    axiomnet_hw_rx_ring_release(drvdata, &drvdata->raw_rx_ring);
+    axiomnet_raw_rx_hwring_release(drvdata, &drvdata->raw_rx_ring);
 free_tx_ring:
 free_cdev:
     axiomnet_destroy_chrdev(drvdata, &chrdev);
@@ -650,7 +720,7 @@ static int axiomnet_remove(struct platform_device *pdev)
 
     axiom_kthread_uninit(&drvdata->kthread_rx);
 
-    axiomnet_hw_rx_ring_release(drvdata, &drvdata->raw_rx_ring);
+    axiomnet_raw_rx_hwring_release(drvdata, &drvdata->raw_rx_ring);
 
     axiomnet_destroy_chrdev(drvdata, &chrdev);
     free_irq(drvdata->irq, drvdata);
@@ -742,8 +812,8 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
-    struct axiomnet_hw_rx_ring *rx_ring;
-    struct axiomnet_hw_tx_ring *tx_ring;
+    struct axiomnet_raw_rx_hwring *rx_ring;
+    struct axiomnet_raw_tx_hwring *tx_ring;
     void __user* argp = (void __user*)arg;
     long ret = 0;
     uint32_t buf_uint32;
@@ -864,10 +934,13 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         ret = copy_from_user(&buf_rdma, argp, sizeof(buf_rdma));
         if (ret)
             return -EFAULT;
+        ret = axiomnet_rdma_write(filep, &(buf_rdma));
+        break;
+    case AXNET_RDMA_READ:
+        ret = copy_from_user(&buf_rdma, argp, sizeof(buf_rdma));
+        if (ret)
+            return -EFAULT;
 
-        ret = axiom_hw_rdma_tx(drvdata->dev_api, buf_rdma.tx.dst,
-                buf_rdma.tx.port_type, buf_rdma.tx.payload_size,
-                buf_rdma.tx.src_addr, buf_rdma.tx.dst_addr);
         break;
     default:
         ret = -EINVAL;

@@ -26,15 +26,15 @@
 #define AXIOMNET_MAX_OPEN       16
 
 /*! \brief number of AXIOM software queue */
-#define AXIOMNET_SW_QUEUE_NUM           AXIOM_RAW_PORT_MAX
+#define AXIOMNET_RAW_QUEUE_NUM           AXIOM_RAW_PORT_MAX
 /*! \brief number of free elements in the AXIOM free queue */
-#define AXIOMNET_SW_QUEUE_FREE_LEN      (256 * AXIOMNET_SW_QUEUE_NUM)
+#define AXIOMNET_RAW_QUEUE_FREE_LEN      (256 * AXIOMNET_RAW_QUEUE_NUM)
 
 /*! \brief Invalid number of AXIOM port */
 #define AXIOMNET_PORT_INVALID   -1
 
-/*! \brief Structure to handle an AXIOM software queue */
-struct axiomnet_sw_queue {
+/*! \brief Structure to handle an AXIOM software RAW queue */
+struct axiomnet_raw_queue {
     spinlock_t queue_lock;              /*!< \brief queue lock */
     evi_queue_t evi_queue;              /*!< \brief queue manager */
     axiom_raw_msg_t *queue_desc;        /*!< \brief queue elements */
@@ -46,16 +46,23 @@ struct axiomnet_sw_port {
     wait_queue_head_t wait_queue;       /*!< \brief port wait queue */
 };
 
-/*! \brief Structure to handle an AXIOM hardware RX ring */
-struct axiomnet_hw_rx_ring {
+/*! \brief Structure to handle an AXIOM hardware RAW RX ring */
+struct axiomnet_raw_rx_hwring {
     struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM driver data */
-    struct axiomnet_sw_queue sw_queue;  /*!< \brief AXIOM software queue */
+    struct axiomnet_raw_queue sw_queue;  /*!< \brief AXIOM software queue */
     /*!< \brief ports of this ring */
     struct axiomnet_sw_port ports[AXIOM_RAW_PORT_MAX];
 };
 
-/*! \brief Structure to handle an AXIOM hardware TX ring */
-struct axiomnet_hw_tx_ring {
+/*! \brief Structure to handle an AXIOM hardware RAW TX ring */
+struct axiomnet_raw_tx_hwring {
+    struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM driver data */
+    /*!< \brief port of this ring, the TX ring has only 1 port */
+    struct axiomnet_sw_port port;
+};
+
+/*! \brief Structure to handle an AXIOM hardware RDMA TX ring */
+struct axiomnet_rdma_tx_hwring {
     struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM driver data */
     /*!< \brief port of this ring, the TX ring has only 1 port */
     struct axiomnet_sw_port port;
@@ -84,8 +91,9 @@ struct axiomnet_drvdata {
     uint64_t dma_size;
 
     /* hardware ring */
-    struct axiomnet_hw_tx_ring raw_tx_ring;/*!\brief RAW TX hardware ring */
-    struct axiomnet_hw_rx_ring raw_rx_ring;/*!\brief RAW RX hardware ring */
+    struct axiomnet_raw_tx_hwring raw_tx_ring;  /*!\brief RAW TX ring */
+    struct axiomnet_raw_rx_hwring raw_rx_ring;  /*!\brief RAW RX ring */
+    struct axiomnet_rdma_tx_hwring rdma_tx_ring;/*!\brief RDMA TX ring */
 
     /* kthread */
     struct axiom_kthread kthread_tx; /*!< \brief kthread for TX */

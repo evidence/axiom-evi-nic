@@ -67,5 +67,7 @@ typedef struct axiom_ioctl_bind {
 #define AXNET_RDMA_SIZE         _IOR(AXNET_MAGIC, 115, uint64_t)
 /*! \brief AXIOM IOCTL to start a RDMA write */
 #define AXNET_RDMA_WRITE        _IOW(AXNET_MAGIC, 116, axiom_rdma_hdr_t)
+/*! \brief AXIOM IOCTL to start a RDMA read */
+#define AXNET_RDMA_READ         _IOW(AXNET_MAGIC, 117, axiom_rdma_hdr_t)
 
 #endif /* !AXIOM_NETDEV_USER_h */

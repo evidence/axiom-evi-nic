@@ -359,6 +359,7 @@ axiom_rdma_mmap(axiom_dev_t *dev, uint64_t *size)
             MAP_FIXED | MAP_SHARED, dev->fd, 0);
     if (unlikely(addr == MAP_FAILED)) {
         EPRINTF("mmap failed - addr: %p - error: %s", addr, strerror(errno));
+        return NULL;
     }
 
     dev->rdma_addr = addr;
@@ -415,6 +416,7 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
 
     rdma_hdr.tx.port_type.field.type = AXIOM_TYPE_RDMA_WRITE;
     rdma_hdr.tx.port_type.field.port = port;
+    rdma_hdr.tx.port_type.field.s = 0;
     rdma_hdr.tx.dst = remote_id;
     rdma_hdr.tx.payload_size = payload_size;
     rdma_hdr.tx.src_addr = local_src_addr;
