@@ -436,6 +436,47 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
     return ret;
 }
 
+axiom_err_t
+axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
+        axiom_port_t port, axiom_rdma_payload_size_t payload_size,
+        axiom_addr_t remote_src_addr, axiom_addr_t local_dst_addr)
+{
+    axiom_rdma_hdr_t rdma_hdr;
+    int ret;
+
+    if (unlikely(!dev || dev->fd <= 0)) {
+        EPRINTF("axiom device is not opened");
+        return AXIOM_RET_ERROR;
+    }
+
+    if (unlikely(payload_size > AXIOM_RDMA_PAYLOAD_MAX_SIZE)) {
+        EPRINTF("payload size too big - size: %d [%d]", payload_size,
+                AXIOM_RAW_PAYLOAD_MAX_SIZE);
+        return AXIOM_RET_ERROR;
+    }
+
+    rdma_hdr.tx.port_type.field.type = AXIOM_TYPE_RDMA_WRITE;
+    rdma_hdr.tx.port_type.field.port = port;
+    rdma_hdr.tx.port_type.field.s = 0;
+    rdma_hdr.tx.dst = remote_id;
+    rdma_hdr.tx.payload_size = payload_size;
+    rdma_hdr.tx.src_addr = remote_src_addr;
+    rdma_hdr.tx.dst_addr = local_dst_addr;
+
+
+    ret = ioctl(dev->fd, AXNET_RDMA_READ, &rdma_hdr);
+    if (unlikely(ret < 0)) {
+        if (errno == EAGAIN)
+            return AXIOM_RET_NOTAVAIL;
+        if (errno == EINTR)
+            return AXIOM_RET_INTR;
+        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        return AXIOM_RET_ERROR;
+    }
+
+    return ret;
+}
+
 uint32_t
 axiom_read_ni_status(axiom_dev_t *dev)
 {
