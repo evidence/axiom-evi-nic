@@ -54,5 +54,7 @@
 #define AXIOM_CMD_BARRIER_REQ        18
 /*! \brief Barrier: sync reply */
 #define AXIOM_CMD_BARRIER_REPLY      19
+/*! \brief SPAWN: spawner request */
+#define AXIOM_CMD_SPAWN_REQ          20
 
 #endif /* !AXIOM_NIC_RAW_COMMANDS_h */

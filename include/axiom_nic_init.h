@@ -90,6 +90,25 @@ typedef struct axiom_barrier_reply_payload {
     //uint8_t  spare[sizeof(axiom_init_payload_t)-4];
 } axiom_barrier_reply_payload_t;
 
+#define AXIOM_SPAWN_FLAG_RESET 0x01
+#define AXIOM_SPAWN_FLAG_EXEC  0x02
+
+#define AXIOM_SPAWN_TYPE_EXE 0
+#define AXIOM_SPAWN_TYPE_ARG 1
+#define AXIOM_SPAWN_TYPE_ENV 2
+#define AXIOM_SPAWN_TYPE_CWD 3
+
+#define AXIOM_SPAWN_HEADER_SIZE 4
+#define AXIOM_SPAWN_MAX_DATA_SIZE (AXIOM_RAW_PAYLOAD_MAX_SIZE-AXIOM_SPAWN_HEADER_SIZE)
+
+typedef struct axiom_spawn_req_payload {
+    uint8_t command;       /*!< \brief Command of spawn request messages */
+    uint8_t flags;         /*!< \brief Flags */
+    uint8_t application; /*!< \brief Application identification */
+    uint8_t type;
+    uint8_t data[AXIOM_SPAWN_MAX_DATA_SIZE];
+} __attribute__((__packed__)) axiom_spawn_req_payload_t;
+
 /******************************* Functions ************************************/
 
 /*!
