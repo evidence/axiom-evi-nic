@@ -25,19 +25,39 @@
 /*! \brief max concurrent open allowed on an AXIOM char device */
 #define AXIOMNET_MAX_OPEN       16
 
-/*! \brief number of AXIOM software queue */
+/*! \brief number of AXIOM software RAW queue */
 #define AXIOMNET_RAW_QUEUE_NUM           AXIOM_RAW_PORT_MAX
-/*! \brief number of free elements in the AXIOM free queue */
+/*! \brief number of free elements in the AXIOM free RAW queue */
 #define AXIOMNET_RAW_QUEUE_FREE_LEN      (256 * AXIOMNET_RAW_QUEUE_NUM)
 
+/*! \brief number of AXIOM software RDMA queue */
+#define AXIOMNET_RDMA_QUEUE_NUM          0
+/*! \brief number of free elements in the AXIOM free RDMA queue */
+#define AXIOMNET_RDMA_QUEUE_FREE_LEN     AXIOM_MSG_ID_MAX
+
 /*! \brief Invalid number of AXIOM port */
-#define AXIOMNET_PORT_INVALID   -1
+#define AXIOMNET_PORT_INVALID           -1
+
+/*! \brief Structure to handle msg id assignment */
+typedef struct axiom_rdma_status {
+    wait_queue_head_t wait_queue;       /*!< \brief wait queue */
+    bool ack_received;                  /*!< \brief Is ack received? */
+    axiom_msg_id_t msg_id;
+    axiom_node_id_t remote_id;
+} axiom_rdma_status_t;
 
 /*! \brief Structure to handle an AXIOM software RAW queue */
 struct axiomnet_raw_queue {
     spinlock_t queue_lock;              /*!< \brief queue lock */
     evi_queue_t evi_queue;              /*!< \brief queue manager */
     axiom_raw_msg_t *queue_desc;        /*!< \brief queue elements */
+};
+
+/*! \brief Structure to handle an AXIOM software RDMA queue */
+struct axiomnet_rdma_queue {
+    spinlock_t queue_lock;              /*!< \brief queue lock */
+    evi_queue_t evi_queue;              /*!< \brief queue manager */
+    axiom_rdma_status_t *queue_desc;    /*!< \brief queue elements */
 };
 
 /*!< \brief AXIOM struct to handle software port */
@@ -49,7 +69,7 @@ struct axiomnet_sw_port {
 /*! \brief Structure to handle an AXIOM hardware RAW RX ring */
 struct axiomnet_raw_rx_hwring {
     struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM driver data */
-    struct axiomnet_raw_queue sw_queue;  /*!< \brief AXIOM software queue */
+    struct axiomnet_raw_queue sw_queue; /*!< \brief AXIOM software queue */
     /*!< \brief ports of this ring */
     struct axiomnet_sw_port ports[AXIOM_RAW_PORT_MAX];
 };
@@ -64,8 +84,18 @@ struct axiomnet_raw_tx_hwring {
 /*! \brief Structure to handle an AXIOM hardware RDMA TX ring */
 struct axiomnet_rdma_tx_hwring {
     struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM driver data */
+    struct axiomnet_rdma_queue sw_queue;/*!< \brief AXIOM software queue */
     /*!< \brief port of this ring, the TX ring has only 1 port */
     struct axiomnet_sw_port port;
+};
+
+/*! \brief Structure to handle an AXIOM hardware RDMA RX ring */
+struct axiomnet_rdma_rx_hwring {
+    struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM driver data */
+    struct axiomnet_rdma_queue *tx_sw_queue;
+    //struct axiomnet_rdma_queue sw_queue; /*!< \brief AXIOM software queue */
+    /*!< \brief ports of this ring */
+    //struct axiomnet_sw_port ports[AXIOM_RAW_PORT_MAX];
 };
 
 /*! \brief AXIOM device driver data */
@@ -94,10 +124,11 @@ struct axiomnet_drvdata {
     struct axiomnet_raw_tx_hwring raw_tx_ring;  /*!\brief RAW TX ring */
     struct axiomnet_raw_rx_hwring raw_rx_ring;  /*!\brief RAW RX ring */
     struct axiomnet_rdma_tx_hwring rdma_tx_ring;/*!\brief RDMA TX ring */
+    struct axiomnet_rdma_rx_hwring rdma_rx_ring;/*!\brief RDMA RX ring */
 
     /* kthread */
-    struct axiom_kthread kthread_tx; /*!< \brief kthread for TX */
-    struct axiom_kthread kthread_rx; /*!< \brief kthread for RX */
+    struct axiom_kthread kthread_raw; /*!< \brief kthread for RAW */
+    struct axiom_kthread kthread_rdma; /*!< \brief kthread for RDMA */
 };
 
 /*! \brief AXIOM char device status */

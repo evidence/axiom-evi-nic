@@ -92,6 +92,16 @@ axiom_msg_id_t
 axiom_hw_rdma_rx(axiom_dev_t *dev, axiom_rdma_hdr_t *header);
 
 /*!
+ * \brief This function checks the space available in the RDMA RX queue.
+ *
+ * \param dev           The axiom device private data pointer
+ *
+ * \return Returns a value != 0 if there is space available, 0 otherwise.
+ */
+axiom_queue_len_t
+axiom_hw_rdma_rx_avail(axiom_dev_t *dev);
+
+/*!
  * \brief This function reads the NI status register.
  *
  * \param dev           The axiom device private data pointer

@@ -12,9 +12,6 @@
  *
  */
 
-/*! \brief Invalid node ID */
-#define AXIOM_NULL_NODE         255
-
 /*!
  * \brief Axiom topology structure
  *

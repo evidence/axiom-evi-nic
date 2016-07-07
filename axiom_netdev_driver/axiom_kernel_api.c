@@ -27,7 +27,6 @@ MODULE_VERSION("v0.6");
 typedef struct axiom_dev {
     void __iomem *vregs;        /*!< \brief Memory mapped IO registers */
     axiom_msg_id_t next_raw_id;
-    axiom_msg_id_t next_rdma_id;
 } axiom_dev_t;
 
 
@@ -42,7 +41,6 @@ axiom_hw_dev_alloc(void *vregs)
     dev = vmalloc(sizeof(*dev));
     dev->vregs = vregs;
     dev->next_raw_id = 0;
-    dev->next_rdma_id = 0;
 
     return dev;
 }
@@ -161,7 +159,6 @@ axiom_hw_rdma_tx(axiom_dev_t *dev, axiom_rdma_hdr_t *header)
     void __iomem *base_reg;
 
     header->tx.port_type.field.s = 0;
-    header->tx.msg_id = dev->next_rdma_id++;
 
     base_reg = dev->vregs + AXIOMREG_IO_RDMA_TX_DESC;
 

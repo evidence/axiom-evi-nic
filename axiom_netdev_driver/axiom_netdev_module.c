@@ -85,11 +85,15 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
     irq_pending = ioread32(drvdata->vregs + AXIOMREG_IO_PNDIRQ);
 
     if (irq_pending & AXIOMREG_IRQ_RAW_RX) {
-        axiom_kthread_wakeup(&drvdata->kthread_rx);
+        axiom_kthread_wakeup(&drvdata->kthread_raw);
     }
 
     if (irq_pending & AXIOMREG_IRQ_RAW_TX) {
         wake_up(&(drvdata->raw_tx_ring.port.wait_queue));
+    }
+
+    if (irq_pending & AXIOMREG_IRQ_RDMA_RX) {
+        axiom_kthread_wakeup(&drvdata->kthread_rdma);
     }
 
     if (irq_pending & AXIOMREG_IRQ_RDMA_TX) {
@@ -327,7 +331,7 @@ free_enqueue:
     spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
 
     if (wakeup_kthread) {
-        axiom_kthread_wakeup(&drvdata->kthread_rx);
+        axiom_kthread_wakeup(&drvdata->kthread_raw);
     }
 
 err:
@@ -384,15 +388,21 @@ err:
 inline static int axiomnet_rdma_tx_avail(struct axiomnet_rdma_tx_hwring *tx_ring)
 {
     /*TODO: try to minimize the register read */
-    return axiom_hw_rdma_tx_avail(tx_ring->drvdata->dev_api);
+    return axiom_hw_rdma_tx_avail(tx_ring->drvdata->dev_api) &&
+        eviq_free_avail(&tx_ring->sw_queue.evi_queue);
 }
 
-inline static int axiomnet_rdma_write(struct file *filep,
+inline static int axiomnet_rdma_tx(struct file *filep,
         axiom_rdma_hdr_t *header)
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
+    struct axiomnet_rdma_queue *sw_queue = &tx_ring->sw_queue;
+    axiom_rdma_status_t *rdma_status;
+    eviq_pnt_t queue_slot = EVIQ_NONE;
+    unsigned long flags;
+    bool wakeup_thread = false;
     int ret;
 
     DPRINTF("start");
@@ -417,32 +427,113 @@ inline static int axiomnet_rdma_write(struct file *filep,
             return -ERESTARTSYS;
     }
 
-    /* copy packet into the ring */
-    ret = axiom_hw_rdma_tx(drvdata->dev_api, header);
-    if (unlikely(ret < 0)) {
+    spin_lock_irqsave(&sw_queue->queue_lock, flags);
+    queue_slot = eviq_free_pop(&sw_queue->evi_queue);
+    spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
+
+    /* impossible */
+    if (unlikely(queue_slot == EVIQ_NONE)) {
         ret = -EFAULT;
         goto err;
     }
 
-    /* TODO: wait the reply */
+    rdma_status = &(sw_queue->queue_desc[queue_slot]);
+    rdma_status->ack_received = 0;
+    rdma_status->remote_id = header->tx.dst;
+    header->tx.msg_id = rdma_status->msg_id;
+
+    /* copy packet into the ring */
+    ret = axiom_hw_rdma_tx(drvdata->dev_api, header);
+    if (unlikely(ret != header->tx.msg_id)) {
+        ret = -EFAULT;
+        goto err;
+    }
+
+    /* XXX: maybe we can unlock the mutex */
+
+    /* wait the reply */
+    while (rdma_status->ack_received == 0) {
+        mutex_unlock(&tx_ring->port.mutex);
+
+        /* no blocking write */
+        if (filep->f_flags & O_NONBLOCK)
+            return -EAGAIN;
+
+        /* put the process in the wait_queue to wait the ack */
+        if (wait_event_interruptible(rdma_status->wait_queue,
+                    rdma_status->ack_received != 0))
+            return -ERESTARTSYS;
+
+        if (mutex_lock_interruptible(&tx_ring->port.mutex))
+            return -ERESTARTSYS;
+    }
+
+    rdma_status->ack_received = 0;
+    rdma_status->remote_id = AXIOM_NULL_NODE;
+
+    spin_lock_irqsave(&sw_queue->queue_lock, flags);
+    /* send a notification to other thread if the free queue was empty */
+    if (eviq_free_avail(&sw_queue->evi_queue) == 0) {
+        wakeup_thread = 1;
+    }
+    eviq_free_push(&sw_queue->evi_queue, queue_slot);
+    spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
 
 err:
     mutex_unlock(&tx_ring->port.mutex);
+
+    if (wakeup_thread) {
+        wake_up(&(tx_ring->port.wait_queue));
+    }
 
     DPRINTF("end");
 
     return ret;
 }
 
+inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring)
+{
+    axiom_rdma_hdr_t rdma_hdr;
+    axiom_msg_id_t msg_id;
+
+    /* something to read */
+    while (axiom_hw_rdma_rx_avail(rx_ring->drvdata->dev_api) != 0) {
+        axiom_rdma_status_t *rdma_status;
+
+        msg_id = axiom_hw_rdma_rx(rx_ring->drvdata->dev_api, &rdma_hdr);
+
+        if (unlikely(rdma_hdr.rx.port_type.field.s != 1)) {
+            /* TODO: for now is impossible, the HW never propagate this
+             * descriptor to the SW */
+            EPRINTF("wrong RDMA descriptor received - discarded");
+            continue;
+        }
+
+        rdma_status = &(rx_ring->tx_sw_queue->queue_desc[msg_id]);
+
+        if ((rdma_status->ack_received == 1) || (rdma_status->remote_id !=
+                rdma_hdr.rx.src)) {
+            EPRINTF("unexpected RDMA descriptor received - discarded");
+            continue;
+        }
+
+        rdma_status->ack_received = 1;
+
+        /* wake up waitinig process */
+        wake_up(&(rdma_status->wait_queue));
+    }
+
+}
+
 /**************************** Worker functions ********************************/
-static bool axiomnet_rx_work_todo(void *data)
+static bool axiomnet_raw_rx_work_todo(void *data)
 {
     struct axiomnet_raw_rx_hwring *rx_ring = data;
     return (axiom_hw_raw_rx_avail(rx_ring->drvdata->dev_api) != 0)
         && (eviq_free_avail(&rx_ring->sw_queue.evi_queue) != 0);
 }
 
-static void axiomnet_rx_worker(void *data)
+static void axiomnet_raw_rx_worker(void *data)
 {
     struct axiomnet_raw_rx_hwring *rx_ring = data;
 
@@ -450,49 +541,31 @@ static void axiomnet_rx_worker(void *data)
     axiom_raw_rx_dequeue(rx_ring);
 }
 
+static bool axiomnet_rdma_rx_work_todo(void *data)
+{
+    struct axiomnet_rdma_rx_hwring *rx_ring = data;
+    return (axiom_hw_rdma_rx_avail(rx_ring->drvdata->dev_api) != 0);
+}
+
+static void axiomnet_rdma_rx_worker(void *data)
+{
+    struct axiomnet_rdma_rx_hwring *rx_ring = data;
+
+    /* fetch rdma rx queue elements */
+    axiom_rdma_rx_dequeue(rx_ring);
+}
+
 /***************************** Init functions *********************************/
-
-static void axiomnet_raw_queue_free(struct axiomnet_raw_queue *queue)
-{
-    if (queue->queue_desc) {
-        kfree(queue->queue_desc);
-        queue->queue_desc = NULL;
-    }
-
-    eviq_release(&queue->evi_queue);
-}
-
-static int axiomnet_raw_queue_alloc(struct axiomnet_raw_queue *queue)
-{
-    int err;
-
-    spin_lock_init(&queue->queue_lock);
-
-    err = eviq_init(&queue->evi_queue, AXIOMNET_RAW_QUEUE_NUM,
-            AXIOMNET_RAW_QUEUE_FREE_LEN);
-    if (err) {
-        return -ENOMEM;
-    }
-
-
-    queue->queue_desc = kcalloc(AXIOMNET_RAW_QUEUE_FREE_LEN,
-            sizeof(*(queue->queue_desc)), GFP_KERNEL);
-    if (queue->queue_desc == NULL) {
-        err = -ENOMEM;
-        goto err;
-    }
-
-    return 0;
-err:
-    eviq_release(&queue->evi_queue);
-    DPRINTF("error: %d", err);
-    return err;
-}
 
 static void axiomnet_raw_rx_hwring_release(struct axiomnet_drvdata *drvdata,
             struct axiomnet_raw_rx_hwring *rx_ring)
 {
-    axiomnet_raw_queue_free(&rx_ring->sw_queue);
+    if (rx_ring->sw_queue.queue_desc) {
+        kfree(rx_ring->sw_queue.queue_desc);
+        rx_ring->sw_queue.queue_desc = NULL;
+    }
+
+    eviq_release(&rx_ring->sw_queue.evi_queue);
 }
 
 static int axiomnet_raw_rx_hwring_init(struct axiomnet_drvdata *drvdata,
@@ -507,13 +580,26 @@ static int axiomnet_raw_rx_hwring_init(struct axiomnet_drvdata *drvdata,
         init_waitqueue_head(&rx_ring->ports[port].wait_queue);
     }
 
-    err = axiomnet_raw_queue_alloc(&rx_ring->sw_queue);
+    spin_lock_init(&rx_ring->sw_queue.queue_lock);
+
+    err = eviq_init(&rx_ring->sw_queue.evi_queue, AXIOMNET_RAW_QUEUE_NUM,
+            AXIOMNET_RAW_QUEUE_FREE_LEN);
     if (err) {
+        err = -ENOMEM;
         goto err;
+    }
+
+    rx_ring->sw_queue.queue_desc = kcalloc(AXIOMNET_RAW_QUEUE_FREE_LEN,
+            sizeof(*(rx_ring->sw_queue.queue_desc)), GFP_KERNEL);
+    if (rx_ring->sw_queue.queue_desc == NULL) {
+        err = -ENOMEM;
+        goto release_eviq;
     }
 
     return 0;
 
+release_eviq:
+    eviq_release(&rx_ring->sw_queue.evi_queue);
 err:
     DPRINTF("error: %d", err);
     return err;
@@ -529,14 +615,65 @@ static int axiomnet_raw_tx_hwring_init(struct axiomnet_drvdata *drvdata,
     return 0;
 }
 
+static void axiomnet_rdma_tx_hwring_release(struct axiomnet_drvdata *drvdata,
+            struct axiomnet_rdma_tx_hwring *tx_ring)
+{
+    if (tx_ring->sw_queue.queue_desc) {
+        kfree(tx_ring->sw_queue.queue_desc);
+        tx_ring->sw_queue.queue_desc = NULL;
+    }
+
+    eviq_release(&tx_ring->sw_queue.evi_queue);
+}
+
+static int axiomnet_rdma_rx_hwring_init(struct axiomnet_drvdata *drvdata,
+        struct axiomnet_rdma_rx_hwring *rx_ring)
+{
+    rx_ring->drvdata = drvdata;
+    rx_ring->tx_sw_queue = &(drvdata->rdma_tx_ring.sw_queue);
+
+    return 0;
+}
+
 static int axiomnet_rdma_tx_hwring_init(struct axiomnet_drvdata *drvdata,
         struct axiomnet_rdma_tx_hwring *tx_ring)
 {
+    int err, i;
+
     tx_ring->drvdata = drvdata;
 
     mutex_init(&tx_ring->port.mutex);
     init_waitqueue_head(&tx_ring->port.wait_queue);
+
+    spin_lock_init(&tx_ring->sw_queue.queue_lock);
+
+    err = eviq_init(&tx_ring->sw_queue.evi_queue, AXIOMNET_RDMA_QUEUE_NUM,
+            AXIOMNET_RDMA_QUEUE_FREE_LEN);
+    if (err) {
+        err = -ENOMEM;
+        goto err;
+    }
+
+    tx_ring->sw_queue.queue_desc = kcalloc(AXIOMNET_RDMA_QUEUE_FREE_LEN,
+            sizeof(*(tx_ring->sw_queue.queue_desc)), GFP_KERNEL);
+    if (tx_ring->sw_queue.queue_desc == NULL) {
+        err = -ENOMEM;
+        goto release_eviq;
+    }
+
+    for (i = 0; i < AXIOMNET_RDMA_QUEUE_FREE_LEN; i++) {
+        tx_ring->sw_queue.queue_desc[i].msg_id = i;
+        tx_ring->sw_queue.queue_desc[i].remote_id = AXIOM_NULL_NODE;
+        init_waitqueue_head(&(tx_ring->sw_queue.queue_desc[i].wait_queue));
+    }
+
     return 0;
+
+release_eviq:
+    eviq_release(&tx_ring->sw_queue.evi_queue);
+err:
+    DPRINTF("error: %d", err);
+    return err;
 }
 
 static void axiomnet_rdma_release(struct axiomnet_drvdata *drvdata)
@@ -669,23 +806,38 @@ static int axiomnet_probe(struct platform_device *pdev)
     /* init RAW RX ring */
     err = axiomnet_raw_rx_hwring_init(drvdata, &drvdata->raw_rx_ring);
     if (err) {
-        dev_err(&pdev->dev, "could not init RX ring\n");
+        dev_err(&pdev->dev, "could not init raw RX ring\n");
         goto free_tx_ring;
     }
 
-    /* init RX kthread */
-    err = axiom_kthread_init(&drvdata->kthread_rx, axiomnet_rx_worker,
-            axiomnet_rx_work_todo, &drvdata->raw_rx_ring, "RX");
+    /* init RDMA RX ring */
+    err = axiomnet_rdma_rx_hwring_init(drvdata, &drvdata->rdma_rx_ring);
+    if (err) {
+        dev_err(&pdev->dev, "could not init RDMA RX ring\n");
+        goto free_rx_ring;
+    }
+
+    /* init RAW kthread */
+    err = axiom_kthread_init(&drvdata->kthread_raw, axiomnet_raw_rx_worker,
+            axiomnet_raw_rx_work_todo, &drvdata->raw_rx_ring, "RAW kthread");
     if (err) {
         dev_err(&pdev->dev, "could not init kthread\n");
         goto free_rx_ring;
+    }
+
+    /* init RDMA kthread */
+    err = axiom_kthread_init(&drvdata->kthread_rdma, axiomnet_rdma_rx_worker,
+            axiomnet_rdma_rx_work_todo, &drvdata->rdma_rx_ring, "RDMA kthread");
+    if (err) {
+        dev_err(&pdev->dev, "could not init kthread\n");
+        goto free_raw_kthread;
     }
 
     /* init RDMA */
     err = axiomnet_rdma_init(drvdata);
     if (err) {
         dev_err(&pdev->dev, "could not init RDMA zone\n");
-        goto free_rx_ring;
+        goto free_rdma_kthread;
     }
 
     axiomnet_enable_irq(drvdata);
@@ -694,9 +846,14 @@ static int axiomnet_probe(struct platform_device *pdev)
     DPRINTF("end");
 
     return 0;
+free_rdma_kthread:
+    axiom_kthread_uninit(&drvdata->kthread_rdma);
+free_raw_kthread:
+    axiom_kthread_uninit(&drvdata->kthread_raw);
 free_rx_ring:
     axiomnet_raw_rx_hwring_release(drvdata, &drvdata->raw_rx_ring);
 free_tx_ring:
+    axiomnet_rdma_tx_hwring_release(drvdata, &drvdata->rdma_tx_ring);
 free_cdev:
     axiomnet_destroy_chrdev(drvdata, &chrdev);
 free_irq:
@@ -718,9 +875,10 @@ static int axiomnet_remove(struct platform_device *pdev)
 
     axiomnet_rdma_release(drvdata);
 
-    axiom_kthread_uninit(&drvdata->kthread_rx);
+    axiom_kthread_uninit(&drvdata->kthread_raw);
 
     axiomnet_raw_rx_hwring_release(drvdata, &drvdata->raw_rx_ring);
+    axiomnet_rdma_tx_hwring_release(drvdata, &drvdata->rdma_tx_ring);
 
     axiomnet_destroy_chrdev(drvdata, &chrdev);
     free_irq(drvdata->irq, drvdata);
@@ -931,16 +1089,11 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         put_user(buf_uint64, (uint64_t __user*)arg);
         break;
     case AXNET_RDMA_WRITE:
-        ret = copy_from_user(&buf_rdma, argp, sizeof(buf_rdma));
-        if (ret)
-            return -EFAULT;
-        ret = axiomnet_rdma_write(filep, &(buf_rdma));
-        break;
     case AXNET_RDMA_READ:
         ret = copy_from_user(&buf_rdma, argp, sizeof(buf_rdma));
         if (ret)
             return -EFAULT;
-
+        ret = axiomnet_rdma_tx(filep, &(buf_rdma));
         break;
     default:
         ret = -EINVAL;

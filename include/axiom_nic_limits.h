@@ -19,6 +19,8 @@
 #define AXIOM_RAW_PORT_MAX                      8
 /*! \brief Max number of type available */
 #define AXIOM_TYPE_MAX                          8
+/*! \brief Max number of message id available */
+#define AXIOM_MSG_ID_MAX                        256
 
 /*! \brief Header size in the raw message */
 #define AXIOM_RAW_HEADER_SIZE                   4
@@ -33,5 +35,8 @@
  *         granularity
  */
 #define AXIOM_RDMA_PAYLOAD_ORDER                3
+
+/*! \brief Invalid node ID */
+#define AXIOM_NULL_NODE                         255
 
 #endif /* !AXIOM_NIC_LIMITS_h */

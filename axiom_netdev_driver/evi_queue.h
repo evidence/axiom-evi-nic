@@ -74,23 +74,24 @@ eviq_init(evi_queue_t *q, int queues, int free_elems)
     q->queues = queues;
     q->free_elems = free_elems;
 
-    q->head = EVI_MALLOC(queues * sizeof(*(q->head)));
-    if (q->head == NULL)
-        goto err;
+    if (queues > 0) {
+        q->head = EVI_MALLOC(queues * sizeof(*(q->head)));
+        if (q->head == NULL)
+            goto err;
 
-    q->tail = EVI_MALLOC(queues* sizeof(*(q->tail)));
-    if (q->tail == NULL)
-        goto err;
+        q->tail = EVI_MALLOC(queues* sizeof(*(q->tail)));
+        if (q->tail == NULL)
+            goto err;
+
+        for (i = 0; i < queues; i++) {
+            q->head[i] = EVIQ_NONE;
+            q->tail[i] = EVIQ_NONE;
+        }
+    }
 
     q->next = EVI_MALLOC(free_elems * sizeof(*(q->next)));
-    if (q->tail == NULL)
+    if (q->next == NULL)
         goto err;
-
-
-    for (i = 0; i < queues; i++) {
-        q->head[i] = EVIQ_NONE;
-        q->tail[i] = EVIQ_NONE;
-    }
 
     q->free = 0;
 
@@ -168,6 +169,9 @@ eviq_free_push(evi_queue_t *q, eviq_pnt_t slot)
 inline static int
 eviq_avail(evi_queue_t *q, int queue_id)
 {
+    if (unlikely(q->queues == 0))
+        return 0;
+
     return (q->head[queue_id] != EVIQ_NONE);
 }
 
@@ -183,6 +187,9 @@ inline static void
 eviq_enqueue(evi_queue_t *q, int queue_id, eviq_pnt_t slot)
 {
     eviq_pnt_t old_tail;
+
+    if (unlikely(q->queues == 0))
+        return;
 
     /* insert at the tail */
     q->next[slot] = EVIQ_NONE;
@@ -210,6 +217,9 @@ inline static eviq_pnt_t
 eviq_dequeue(evi_queue_t *q, int queue_id)
 {
     eviq_pnt_t slot, new_head;
+
+    if (unlikely(q->queues == 0))
+        return EVIQ_NONE;
 
     /* remove slot at the head of the queue */
     slot = q->head[queue_id];
