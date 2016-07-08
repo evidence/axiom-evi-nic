@@ -80,7 +80,7 @@ axiom_hw_raw_tx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
         axiom_hw_raw_tx_push(dev);
     }
 
-    DPRINTF("header: %x", header.raw32);
+    DPRINTF("header: %x", header->raw32);
 
     return 0;
 }

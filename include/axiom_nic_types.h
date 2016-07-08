@@ -42,19 +42,24 @@ typedef uint64_t            axiom_flags_t;
 
 /****************************** Return Values *********************************/
 /*! \brief Return value OK */
-#define AXIOM_RET_OK            0
+#define AXIOM_RET_OK                    0
 /*! \brief Return value ERROR: generic error */
-#define AXIOM_RET_ERROR         -1
+#define AXIOM_RET_ERROR                 -1
 /*! \brief Return value NOTAVAIL: space not available */
-#define AXIOM_RET_NOTAVAIL      -2
+#define AXIOM_RET_NOTAVAIL              -2
 /*! \brief Return value INTR: system call interrupted */
-#define AXIOM_RET_INTR          -3
+#define AXIOM_RET_INTR                  -3
 
 
-/****************************** Return Values *********************************/
+/******************************* Axiom flags **********************************/
 /*! \brief Use no blocking I/O for send/read API */
 #define AXIOM_FLAG_NOBLOCK              0x00000001
 /*! \brief Avoid flush of RX port queue after the axiom_bind() API */
 #define AXIOM_FLAG_NOFLUSH              0x00000002
+
+
+/*! \brief Invalid node ID */
+#define AXIOM_NULL_NODE                 255
+
 
 #endif /* !AXIOM_NIC_TYPES_h */

@@ -1,7 +1,7 @@
 AXIOM_INCLUDE := ../include
 AXIOM_DRIVER :=	../axiom_netdev_driver
 
-APPS := axiom_user_test axiom_user_test_rdma
+APPS := axiom_user_test
 HEADERS := $(AXIOM_INCLUDE)/*.h
 LIBS := libaxiom_user_api.a
 CLEANFILES = $(APPS) $(LIBS) *.o
@@ -35,11 +35,7 @@ axiom_user_api.o: axiom_user_api.c $(HEADERS) $(AXIOM_DRIVER)/axiom_netdev_user.
 
 axiom_user_test: axiom_user_test.o libaxiom_user_api.a
 
-axiom_user_test_rdma: axiom_user_test_rdma.o libaxiom_user_api.a
-
 axiom_user_test.o: axiom_user_test.c $(HEADERS)
-
-axiom_user_test_rdma.o: axiom_user_test_rdma.c $(HEADERS)
 
 
 install: all

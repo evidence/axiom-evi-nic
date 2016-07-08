@@ -36,7 +36,4 @@
  */
 #define AXIOM_RDMA_PAYLOAD_ORDER                3
 
-/*! \brief Invalid node ID */
-#define AXIOM_NULL_NODE                         255
-
 #endif /* !AXIOM_NIC_LIMITS_h */

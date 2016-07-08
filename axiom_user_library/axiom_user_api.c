@@ -91,7 +91,7 @@ axiom_update_flags(axiom_dev_t *dev, axiom_flags_t update_flags)
 
         fd_flags = fcntl(dev->fd, F_GETFL);
         if (fd_flags == -1) {
-            EPRINTF("fcntl error - errno: %d", errno);
+            EPRINTF("fcntl error - errno: %s", strerror(errno));
             return AXIOM_RET_ERROR;
         }
 
@@ -101,7 +101,7 @@ axiom_update_flags(axiom_dev_t *dev, axiom_flags_t update_flags)
             fd_flags &= ~O_NONBLOCK;
 
         if (fcntl(dev->fd, F_SETFL, fd_flags) == -1) {
-            EPRINTF("fcntl error - errno: %d", errno);
+            EPRINTF("fcntl error - errno: %s", strerror(errno));
             return AXIOM_RET_ERROR;
         }
     }
@@ -152,7 +152,7 @@ axiom_bind(axiom_dev_t *dev, axiom_port_t port)
     ret = ioctl(dev->fd, AXNET_BIND, &ioctl_bind);
 
     if (ret < 0) {
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         return AXIOM_RET_ERROR;
     }
 
@@ -215,7 +215,7 @@ axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
             return AXIOM_RET_NOTAVAIL;
         if (errno == EINTR)
             return AXIOM_RET_INTR;
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         return AXIOM_RET_ERROR;
     }
 
@@ -253,7 +253,7 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
             return AXIOM_RET_NOTAVAIL;
         if (errno == EINTR)
             return AXIOM_RET_INTR;
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         return AXIOM_RET_ERROR;
     }
 
@@ -279,7 +279,7 @@ axiom_send_raw_avail(axiom_dev_t *dev)
     ret = ioctl(dev->fd, AXNET_SEND_RAW_AVAIL, &avail);
 
     if (unlikely(ret < 0)) {
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         return -1;
     }
 
@@ -300,7 +300,7 @@ axiom_recv_raw_avail(axiom_dev_t *dev)
     ret = ioctl(dev->fd, AXNET_RECV_RAW_AVAIL, &avail);
 
     if (unlikely(ret < 0)) {
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         return -1;
     }
 
@@ -320,7 +320,7 @@ axiom_flush_raw(axiom_dev_t *dev)
     ret = ioctl(dev->fd, AXNET_FLUSH_RAW);
 
     if (unlikely(ret < 0)) {
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         return AXIOM_RET_ERROR;
     }
 
@@ -346,7 +346,7 @@ axiom_rdma_mmap(axiom_dev_t *dev, uint64_t *size)
 
     ret = ioctl(dev->fd, AXNET_RDMA_SIZE, size);
     if (ret < 0) {
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         return NULL;
     }
 
@@ -358,7 +358,7 @@ axiom_rdma_mmap(axiom_dev_t *dev, uint64_t *size)
     addr = mmap(AXIOM_RDMA_FIXED_ADDR, *size, PROT_READ | PROT_WRITE,
             MAP_FIXED | MAP_SHARED, dev->fd, 0);
     if (unlikely(addr == MAP_FAILED)) {
-        EPRINTF("mmap failed - addr: %p - error: %s", addr, strerror(errno));
+        EPRINTF("mmap failed - addr: %p - errno: %s", addr, strerror(errno));
         return NULL;
     }
 
@@ -385,7 +385,7 @@ axiom_rdma_munmap(axiom_dev_t *dev)
 
     ret = munmap(dev->rdma_addr, dev->rdma_size);
     if (unlikely(ret)) {
-        EPRINTF("munmap failed - error: %s", strerror(errno));
+        EPRINTF("munmap failed - errno: %s", strerror(errno));
         return AXIOM_RET_ERROR;
     }
 
@@ -408,7 +408,8 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
         return AXIOM_RET_ERROR;
     }
 
-    if (unlikely(payload_size > AXIOM_RDMA_PAYLOAD_MAX_SIZE)) {
+    if (unlikely(payload_size >
+                (AXIOM_RDMA_PAYLOAD_MAX_SIZE >> AXIOM_RDMA_PAYLOAD_ORDER))) {
         EPRINTF("payload size too big - size: %d [%d]", payload_size,
                 AXIOM_RAW_PAYLOAD_MAX_SIZE);
         return AXIOM_RET_ERROR;
@@ -429,7 +430,7 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
             return AXIOM_RET_NOTAVAIL;
         if (errno == EINTR)
             return AXIOM_RET_INTR;
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         return AXIOM_RET_ERROR;
     }
 
@@ -455,7 +456,7 @@ axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
         return AXIOM_RET_ERROR;
     }
 
-    rdma_hdr.tx.port_type.field.type = AXIOM_TYPE_RDMA_WRITE;
+    rdma_hdr.tx.port_type.field.type = AXIOM_TYPE_RDMA_READ;
     rdma_hdr.tx.port_type.field.port = port;
     rdma_hdr.tx.port_type.field.s = 0;
     rdma_hdr.tx.dst = remote_id;
@@ -470,7 +471,7 @@ axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
             return AXIOM_RET_NOTAVAIL;
         if (errno == EINTR)
             return AXIOM_RET_INTR;
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         return AXIOM_RET_ERROR;
     }
 
@@ -491,7 +492,7 @@ axiom_read_ni_status(axiom_dev_t *dev)
     ret = ioctl(dev->fd, AXNET_GET_STATUS, &status);
 
     if (ret < 0) {
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
     }
 
     return status;
@@ -510,7 +511,7 @@ axiom_set_ni_control(axiom_dev_t *dev, uint32_t reg_mask)
     ret = ioctl(dev->fd, AXNET_SET_CONTROL, &reg_mask);
 
     if (ret < 0) {
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
     }
 }
 
@@ -528,7 +529,7 @@ axiom_read_ni_control(axiom_dev_t *dev)
     ret = ioctl(dev->fd, AXNET_GET_CONTROL, &control);
 
     if (ret < 0) {
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
     }
 
     return control;
@@ -548,7 +549,7 @@ axiom_set_node_id(axiom_dev_t *dev, axiom_node_id_t node_id)
     ret = ioctl(dev->fd, AXNET_SET_NODEID, &node_id);
 
     if (ret < 0) {
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
     }
 }
 
@@ -566,7 +567,7 @@ axiom_get_node_id(axiom_dev_t *dev)
     ret = ioctl(dev->fd, AXNET_GET_NODEID, &node_id);
 
     if (ret < 0) {
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
     }
 
     return node_id;
@@ -590,7 +591,7 @@ axiom_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
     ret = ioctl(dev->fd, AXNET_SET_ROUTING, &routing);
 
     if (ret < 0) {
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         return AXIOM_RET_ERROR;
     }
 
@@ -615,7 +616,7 @@ axiom_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
     ret = ioctl(dev->fd, AXNET_GET_ROUTING, &routing);
 
     if (ret < 0) {
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         return AXIOM_RET_ERROR;
     }
 
@@ -665,7 +666,7 @@ axiom_get_if_number(axiom_dev_t *dev, axiom_if_id_t *if_number)
     ret = ioctl(dev->fd, AXNET_GET_IFNUMBER, if_number);
 
     if (ret < 0) {
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         return AXIOM_RET_ERROR;
     }
 
@@ -687,7 +688,7 @@ axiom_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
     ret = ioctl(dev->fd, AXNET_GET_IFINFO, &buf_if);
 
     if (ret < 0) {
-        EPRINTF("ioctl error - ret: %d errno: %d", ret, errno);
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         return AXIOM_RET_ERROR;
     }
 
