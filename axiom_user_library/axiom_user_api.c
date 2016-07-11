@@ -156,7 +156,7 @@ axiom_bind(axiom_dev_t *dev, axiom_port_t port)
         return AXIOM_RET_ERROR;
     }
 
-    return AXIOM_RET_OK;
+    return ioctl_bind.port;
 }
 
 axiom_err_t

@@ -917,32 +917,48 @@ static void axiomnet_unbind(struct axiomnet_priv *priv) {
     priv->bind_port = AXIOMNET_PORT_INVALID;
 }
 
-static long axiomnet_bind(struct axiomnet_priv *priv, int port) {
+static long axiomnet_bind(struct axiomnet_priv *priv, uint8_t *port) {
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     long ret = 0;
 
     /* unbind previous bind */
     axiomnet_unbind(priv);
 
-    if (port >= AXIOM_RAW_PORT_MAX) {
-        return -EFBIG;
-    }
-
     mutex_lock(&drvdata->lock);
 
-    DPRINTF("port: 0x%x port_used: 0x%x", port, drvdata->port_used);
+    if (*port == AXIOM_PORT_ANY) {
+        int i;
+        /* assign first port available */
+        for (i = 0; i < AXIOM_RAW_PORT_MAX; i++) {
+            if (!((1 << i) & drvdata->port_used)) {
+                *port = i;
+                break;
+            }
+        }
+
+        if (*port == AXIOM_PORT_ANY) {
+            ret = -EBUSY;
+            goto exit;
+        }
+    } else if (*port >= AXIOM_RAW_PORT_MAX) {
+        ret = -EFBIG;
+        goto exit;
+    }
+
+
+    DPRINTF("port: 0x%x port_used: 0x%x", *port, drvdata->port_used);
 
     /* check if port is already bound */
-    if (((1 << port) & drvdata->port_used)) {
-        EPRINTF("Port %d already bound", port);
+    if (((1 << *port) & drvdata->port_used)) {
+        EPRINTF("Port %d already bound", *port);
         ret = -EBUSY;
         goto exit;
     }
 
-    priv->bind_port = port;
-    drvdata->port_used |= (1 << (uint8_t)port);
+    priv->bind_port = *port;
+    drvdata->port_used |= (1 << (uint8_t)*port);
 
-    DPRINTF("port: 0x%x port_used: 0x%x", port, drvdata->port_used);
+    DPRINTF("port: 0x%x port_used: 0x%x", *port, drvdata->port_used);
 
 exit:
     mutex_unlock(&drvdata->lock);
@@ -1040,7 +1056,7 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         ret = copy_from_user(&buf_bind, argp, sizeof(buf_bind));
         if (ret)
             return -EFAULT;
-        ret = axiomnet_bind(priv, buf_bind.port);
+        ret = axiomnet_bind(priv, &(buf_bind.port));
         DPRINTF("bind port: %x flush: %x", priv->bind_port, buf_bind.flush);
         if (ret)
             return ret;
@@ -1048,6 +1064,9 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         if (buf_bind.flush) {
             ret = axiomnet_raw_flush(priv);
         }
+        ret = copy_to_user(argp, &buf_bind, sizeof(buf_bind));
+        if (ret)
+            return -EFAULT;
         break;
     case AXNET_SEND_RAW:
         ret = copy_from_user(&buf_raw, argp, sizeof(buf_raw));

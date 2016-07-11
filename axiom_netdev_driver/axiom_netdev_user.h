@@ -52,7 +52,7 @@ typedef struct axiom_ioctl_bind {
 /*! \brief AXIOM IOCTL to get control register value */
 #define AXNET_GET_CONTROL       _IOR(AXNET_MAGIC, 108, uint32_t)
 /*! \brief AXIOM IOCTL to bind a process on a specified port */
-#define AXNET_BIND              _IOW(AXNET_MAGIC, 109, axiom_ioctl_bind_t)
+#define AXNET_BIND              _IOWR(AXNET_MAGIC, 109, axiom_ioctl_bind_t)
 /*! \brief AXIOM IOCTL to send a raw message */
 #define AXNET_SEND_RAW          _IOW(AXNET_MAGIC, 110, axiom_ioctl_raw_t)
 /*! \brief AXIOM IOCTL to recv a raw message */

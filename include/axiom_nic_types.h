@@ -40,6 +40,11 @@ typedef struct axiom_args   axiom_args_t;
 typedef uint64_t            axiom_flags_t;
 
 
+/*! \brief Invalid node ID */
+#define AXIOM_NULL_NODE                 255
+/*! \brief Ask any port number during the bind */
+#define AXIOM_PORT_ANY                  255
+
 /****************************** Return Values *********************************/
 /*! \brief Return value OK */
 #define AXIOM_RET_OK                    0
@@ -56,10 +61,6 @@ typedef uint64_t            axiom_flags_t;
 #define AXIOM_FLAG_NOBLOCK              0x00000001
 /*! \brief Avoid flush of RX port queue after the axiom_bind() API */
 #define AXIOM_FLAG_NOFLUSH              0x00000002
-
-
-/*! \brief Invalid node ID */
-#define AXIOM_NULL_NODE                 255
 
 
 #endif /* !AXIOM_NIC_TYPES_h */

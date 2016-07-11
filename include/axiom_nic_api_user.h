@@ -70,9 +70,10 @@ axiom_unset_flags(axiom_dev_t *dev, axiom_flags_t flags);
  * \brief This function bind the current process on a specified port
  *
  * \param dev           The axiom device private data pointer
- * \param port          Port number
+ * \param port          Port number (specify AXIOM_PORT_ANY to bind a random
+ *                      port)
  *
- * \return Returns AXIOM_RET_OK on success, an error otherwise.
+ * \return Returns the port bound on success, an error (< 0) otherwise.
  */
 axiom_err_t
 axiom_bind(axiom_dev_t *dev, axiom_port_t port);

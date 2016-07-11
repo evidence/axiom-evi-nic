@@ -38,6 +38,12 @@ int main (int argc, char *argv[])
         return -1;
     }
 
+    err = axiom_bind(dev, AXIOM_PORT_ANY);
+    IPRINTF(verbose, "bind port %d", err);
+
+    err = axiom_bind(dev, AXIOM_PORT_ANY);
+    IPRINTF(verbose, "bind port %d", err);
+
     status = axiom_read_ni_status(dev);
     IPRINTF(verbose, "read status = 0x%x", status);
 
