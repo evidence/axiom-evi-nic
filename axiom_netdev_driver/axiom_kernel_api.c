@@ -101,6 +101,7 @@ axiom_hw_raw_tx_push(axiom_dev_t *dev)
     void __iomem *base_reg = dev->vregs + AXIOMREG_IO_RAW_TX_DESC +
         (AXIOMREG_SIZE_RAW_QUEUE - 1);
 
+    mb();
     /* write last byte to push the slot */
     iowrite8(0, base_reg);
 }
@@ -149,6 +150,7 @@ axiom_hw_raw_rx_pop(axiom_dev_t *dev)
     void __iomem *base_reg = dev->vregs + AXIOMREG_IO_RAW_RX_DESC +
         (AXIOMREG_SIZE_RAW_QUEUE - 1);
 
+    mb();
     /* read last byte to pop the slot */
     ioread8(base_reg);
 }
@@ -163,9 +165,10 @@ axiom_hw_rdma_tx(axiom_dev_t *dev, axiom_rdma_hdr_t *header)
     base_reg = dev->vregs + AXIOMREG_IO_RDMA_TX_DESC;
 
     /* write first 64-bit header */
-    writeq(header->raw32[0], base_reg);
+    writeq(*((uint64_t *)&(header->raw[0])), base_reg);
     /* write next 32-bit header */
-    iowrite32(header->raw32[2], base_reg + 8);
+    iowrite32(*((uint32_t *)&(header->raw[8])), base_reg + 8);
+    mb();
     /* write last byte header */
     iowrite8(header->raw[AXIOM_RDMA_HEADER_SIZE - 1],
             base_reg + AXIOM_RDMA_HEADER_SIZE - 1);
@@ -191,9 +194,10 @@ axiom_hw_rdma_rx(axiom_dev_t *dev, axiom_rdma_hdr_t *header)
     base_reg = dev->vregs + AXIOMREG_IO_RDMA_RX_DESC;
 
     /* read first 64-bit header */
-    header->raw32[0] = readq(base_reg);
+    *((uint64_t *)&(header->raw[0])) = readq(base_reg);
     /* read next 32-bit header */
-    header->raw32[2] = ioread32(base_reg + 8);
+    *((uint32_t *)&(header->raw[8])) = ioread32(base_reg + 8);
+    mb();
     /* read last byte header */
     header->raw[AXIOM_RDMA_HEADER_SIZE - 1] =
         ioread8(base_reg + AXIOM_RDMA_HEADER_SIZE - 1);

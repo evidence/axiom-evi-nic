@@ -30,10 +30,10 @@
 /*! \brief Header size in the rdma message */
 #define AXIOM_RDMA_HEADER_SIZE                  13
 /*! \brief Max payload size in the rdma message */
-#define AXIOM_RDMA_PAYLOAD_MAX_SIZE             524288
+#define AXIOM_RDMA_PAYLOAD_MAX_SIZE             524287
 /*! \brief Payload size field in the RDMA message is referred to 8-bytes
  *         granularity
  */
-#define AXIOM_RDMA_PAYLOAD_ORDER                3
+#define AXIOM_RDMA_PAYLOAD_SIZE_ORDER           3
 
 #endif /* !AXIOM_NIC_LIMITS_h */

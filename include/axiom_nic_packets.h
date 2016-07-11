@@ -138,6 +138,5 @@ typedef union axiom_rdma_hdr {
     axiom_rdma_tx_hdr_t tx;
     axiom_rdma_rx_hdr_t rx;
     uint8_t raw[AXIOM_RDMA_HEADER_SIZE];
-    uint32_t raw32[3];
 } __attribute__((packed)) axiom_rdma_hdr_t;
 #endif /* !AXIOM_NIC_PACKETS_H */
