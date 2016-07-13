@@ -56,6 +56,9 @@ typedef uint64_t            axiom_flags_t;
 #define AXIOM_RET_INTR                  -3
 
 
+/*! \brief Check if return value is OK */
+#define AXIOM_RET_IS_OK(_ret)           ((_ret) >= AXIOM_RET_OK)
+
 /******************************* Axiom flags **********************************/
 /*! \brief Use no blocking I/O for send/read API */
 #define AXIOM_FLAG_NOBLOCK              0x00000001
