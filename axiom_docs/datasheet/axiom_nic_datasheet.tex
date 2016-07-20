@@ -95,11 +95,11 @@
         descriptor register\\
 	\hline \nameref{reg:rdma_tx_status} & 0x00000320 & 32 & ro & RDMA TX
 	queue status register\\
-        \hline \nameref{reg:rdma_tx_desc} & 0x00000600 & 96 & wo & RDMA TX queue
+        \hline \nameref{reg:rdma_tx_desc} & 0x00000600 & 104 & wo & RDMA TX queue
         descriptor register\\
 	\hline \nameref{reg:rdma_rx_status} & 0x00000330 & 32 & ro & RDMA RX
 	queue status register\\
-        \hline \nameref{reg:rdma_rx_desc} & 0x00000610 & 96 & ro & RDMA RX queue
+        \hline \nameref{reg:rdma_rx_desc} & 0x00000610 & 104 & ro & RDMA RX queue
         descriptor register\\
 \end{regglobalsummary}
 
@@ -408,11 +408,11 @@
         queue descriptor register\\
 	\hline \nameref{reg:rdma_tx_status} & 0x00000320 & 32 & ro & 0x0 & RDMA
 	TX queue status register\\
-        \hline \nameref{reg:rdma_tx_desc} & 0x00000600 & 96 & wo & 0x0 & RDMA TX
+        \hline \nameref{reg:rdma_tx_desc} & 0x00000600 & 104 & wo & 0x0 & RDMA TX
         queue descriptor register\\
 	\hline \nameref{reg:rdma_rx_status} & 0x00000330 & 32 & ro & 0x0 & RDMA
 	RX queue status register\\
-        \hline \nameref{reg:rdma_rx_desc} & 0x00000610 & 96 & ro & 0x0 & RDMA RX
+        \hline \nameref{reg:rdma_rx_desc} & 0x00000610 & 104 & ro & 0x0 & RDMA RX
         queue descriptor register\\
 \end{regsummary}
 
@@ -451,7 +451,9 @@
 	\hline PAYLOAD & 1055:32 & ro & 0x0 & Payload of this message\\
 	\hline reserved & 31:23 & wo & 0x0 & Reserved. Writes are ignored, read
 	data is zero.\\
-	\hline PAYLOAD\_SIZE & 22:16 & wo & 0x0 & Payload size of this message\\
+	\hline PAYLOAD\_SIZE & 31:24 & wo & 0x0 & Payload size of this message\\
+	\hline MSG\_ID & 23:16 & wo & 0x0 & Unique ID for this message spcified
+	by the software\\
 	\hline DESTINATION & 15:8 & wo & 0x0 & Receiver node id or local
 	interface to send message to the neighbour \\
 	\hline reserved & 7:6 & wo & 0x0 & Reserved. Writes are ignored, read
@@ -496,9 +498,9 @@
 \end{regdescription}
 \begin{regdetails}
 	\hline PAYLOAD & 1055:32 & ro & 0x0 & Payload of this message\\
-	\hline reserved & 31:23 & ro & 0x0 & Reserved. Writes are ignored, read
-	data is zero.\\
-	\hline PAYLOAD\_SIZE & 22:16 & ro & 0x0 & Payload size of this message\\
+	\hline PAYLOAD\_SIZE & 31:24 & wo & 0x0 & Payload size of this message\\
+	\hline MSG\_ID & 23:16 & wo & 0x0 & Unique ID for this message spcified
+	by the software\\
 	\hline SOURCE & 15:8 & ro & 0x0 & Sender node id or local interface
 	where neighbour message is received\\
 	\hline reserved & 7:6 & ro & 0x0 & Reserved. Writes are ignored, read
@@ -530,7 +532,7 @@
 \begin{regdescription}
 	Name			\> RDMA\_TX\_DESC\\
 	Relative Address	\> 0x00000600\\
-	Width (single row)	\> 96 bits\\
+	Width (single row)	\> 104 bits\\
 	Access Type		\> wo\\
 	Init Value		\> 0x00000000\\
 	Description		\> RDMA TX queue descriptor register\\
@@ -542,11 +544,11 @@
 	                        these registers\\
 \end{regdescription}
 \begin{regdetails}
-        \hline DST\_ADDR & 95:64 & wo & 0x0 & Destination memory address \\
-        \hline SRC\_ADDR & 63:32 & wo & 0x0 & Source memory address\\
-	\hline reserved & 31:24 & wo & 0x0 & Reserved. Writes are ignored, read
-	data is zero.\\
-	\hline PAYLOAD\_SIZE & 23:16 & wo & 0x0 & Payload size of this RDMA\\
+        \hline DST\_ADDR & 103:72 & wo & 0x0 & Destination memory address \\
+        \hline SRC\_ADDR & 71:40 & wo & 0x0 & Source memory address\\
+	\hline PAYLOAD\_SIZE & 39:24 & wo & 0x0 & Payload size of this RDMA\\
+	\hline MSG\_ID & 23:16 & wo & 0x0 & Unique ID for this message spcified
+	by the software\\
 	\hline DESTINATION & 15:8 & wo & 0x0 & Receiver node id\\
 	\hline reserved & 7:6 & wo & 0x0 & Reserved. Writes are ignored, read
 	data is zero.\\
@@ -577,7 +579,7 @@
 \begin{regdescription}
 	Name			\> RDMA\_RX\_DESC\\
 	Relative Address	\> 0x00000610\\
-	Width (single row)	\> 96 bits\\
+	Width (single row)	\> 104 bits\\
 	Access Type		\> ro\\
 	Init Value		\> 0x00000000\\
 	Description		\> RDMA RX queue descriptor register\\
@@ -589,11 +591,11 @@
 	                        these registers\\
 \end{regdescription}
 \begin{regdetails}
-        \hline DST\_ADDR & 95:64 & ro & 0x0 & Destination memory address \\
-        \hline SRC\_ADDR & 63:32 & ro & 0x0 & Source memory address\\
-	\hline reserved & 31:24 & ro & 0x0 & Reserved. Writes are ignored, read
-	data is zero.\\
-	\hline PAYLOAD\_SIZE & 23:16 & ro & 0x0 & Payload size of this RDMA\\
+        \hline DST\_ADDR & 103:72 & wo & 0x0 & Destination memory address \\
+        \hline SRC\_ADDR & 71:40 & wo & 0x0 & Source memory address\\
+	\hline PAYLOAD\_SIZE & 39:24 & wo & 0x0 & Payload size of this RDMA\\
+	\hline MSG\_ID & 23:16 & wo & 0x0 & Unique ID for this message spcified
+	by the software\\
 	\hline SOURCE & 15:8 & ro & 0x0 & Sender node id\\
 	\hline reserved & 7:6 & ro & 0x0 & Reserved. Writes are ignored, read
 	data is zero.\\

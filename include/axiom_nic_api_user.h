@@ -44,7 +44,7 @@ axiom_close(axiom_dev_t *dev);
  *
  * This function can be used to change the behaviour of the API. The available
  * flags are:
- *   - AXIOM_FLAGS_NOBLOCKING
+ *   - AXIOM_FLAGS_NOBLOCK
  *   - AXIOM_FLAGS_NOFLUSH
  *
  * \param dev           The axiom device private data pointer
@@ -71,7 +71,7 @@ axiom_unset_flags(axiom_dev_t *dev, axiom_flags_t flags);
  *
  * \param dev           The axiom device private data pointer
  * \param port          Port number (specify AXIOM_PORT_ANY to bind a random
- *                      port)
+ *                      port available)
  *
  * \return Returns the port bound on success, an error (< 0) otherwise.
  */
