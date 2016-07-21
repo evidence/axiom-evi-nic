@@ -1,7 +1,7 @@
 /*!
  * \file axiom_user_test.c
  *
- * \version     v0.6
+ * \version     v0.7
  * \date        2016-05-03
  *
  * This file contains some tests of Axiom NIC API for the user-space

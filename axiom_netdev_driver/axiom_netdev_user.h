@@ -3,7 +3,7 @@
 /*!
  * \file axiom_netdev_user.h
  *
- * \version     v0.6
+ * \version     v0.7
  * \date        2016-06-22
  *
  * This file contains the Axiom-NIC interface beetween user-space and kernel
