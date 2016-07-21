@@ -415,6 +415,13 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
         return AXIOM_RET_ERROR;
     }
 
+    if (unlikely((local_src_addr +
+            (payload_size << AXIOM_RDMA_PAYLOAD_SIZE_ORDER)) > dev->rdma_size)){
+        EPRINTF("out of RDMA zone - rdma_size: %" PRIu64, dev->rdma_size);
+        return AXIOM_RET_ERROR;
+    }
+
+
     DPRINTF("[packet] payload_size: 0x%x", payload_size);
 
     rdma_hdr.tx.port_type.field.type = AXIOM_TYPE_RDMA_WRITE;
@@ -456,6 +463,12 @@ axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
             (AXIOM_RDMA_PAYLOAD_MAX_SIZE >> AXIOM_RDMA_PAYLOAD_SIZE_ORDER))) {
         EPRINTF("payload size too big - size: %d [%d]", payload_size,
                 AXIOM_RAW_PAYLOAD_MAX_SIZE);
+        return AXIOM_RET_ERROR;
+    }
+
+    if (unlikely((local_dst_addr +
+            (payload_size << AXIOM_RDMA_PAYLOAD_SIZE_ORDER)) > dev->rdma_size)){
+        EPRINTF("out of RDMA zone - rdma_size: %" PRIu64, dev->rdma_size);
         return AXIOM_RET_ERROR;
     }
 

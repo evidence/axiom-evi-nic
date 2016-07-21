@@ -451,6 +451,8 @@ inline static int axiomnet_rdma_tx(struct file *filep,
 
     /* XXX: maybe we can unlock the mutex */
 
+    /* TODO: handle if the user interrupt this function */
+
     /* wait the reply */
     while (rdma_status->ack_received == 0) {
         mutex_unlock(&tx_ring->port.mutex);
@@ -689,7 +691,7 @@ static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
 {
     int ret;
 
-    drvdata->dma_size = (1 << 22);
+    drvdata->dma_size = (1 << 24);
 
     drvdata->dma_vaddr = dma_zalloc_coherent(drvdata->dev, drvdata->dma_size,
             &drvdata->dma_paddr, GFP_KERNEL);

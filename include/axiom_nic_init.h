@@ -16,8 +16,13 @@
 
 
 /********************************* Types **************************************/
-typedef uint8_t		axiom_init_cmd_t;	/*!< \brief init command type*/
+typedef uint8_t		axiom_init_cmd_t;   /*!< \brief init command type*/
 
+typedef enum {
+    AXNP_RDMA = 1,
+    AXNP_LONG,
+    AXNP_RAW
+} axiom_netperf_type_t;                     /*!< \brief axiom netperf type */
 
 
 /********************************* Packets *************************************/
@@ -54,7 +59,10 @@ typedef struct axiom_netperf_payload {
     uint8_t  padding[7];
     uint64_t total_bytes;       /*!< \brief Total bytes of the stream */
     uint64_t elapsed_time;      /*!< \brief Time elapsed to receive data */
-    uint8_t  spare[104];
+    uint8_t  type;              /*!< \brief Type of message used in the test */
+    uint8_t  magic;             /*!< \brief Magic byte write in the payload */
+    uint8_t  error;             /*!< \brief Error report */
+    uint8_t  spare[101];
 } axiom_netperf_payload_t;
 
 

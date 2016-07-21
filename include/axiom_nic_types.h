@@ -39,7 +39,6 @@ typedef struct axiom_args   axiom_args_t;
 /*! \brief AXIOM flags */
 typedef uint64_t            axiom_flags_t;
 
-
 /*! \brief Invalid node ID */
 #define AXIOM_NULL_NODE                 255
 /*! \brief Ask any port number during the bind */
