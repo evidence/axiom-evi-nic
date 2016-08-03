@@ -11,6 +11,7 @@
  *
  */
 #include "dprintf.h"
+#include "axiom_nic_limits.h"
 #include "axiom_nic_types.h"
 #include "axiom_nic_raw_commands.h"
 
@@ -65,49 +66,55 @@ typedef struct axiom_netperf_payload {
     uint8_t  spare[101];
 } axiom_netperf_payload_t;
 
-/* FLAGS for barrier request message */
-/* request application reset */
-#define AXIOM_BARRIER_FLAG_RESET 0x01
+/* flags fod spawn messages */
 
-/*! \brief Message payload for the axiom-barrier (request) application */
-typedef struct axiom_barrier_req_payload {
-    uint8_t  command;      /*!< \brief Command of barier request messages */
-    uint8_t  flags;        /*!< \brief Flags */
-    uint8_t  application;  /*!< \brief Application identification */
-    uint8_t  barrier;      /*!< \brief Barrier number */
-    uint8_t  reply_port;   /*!< \brief Port used to reply message */
-    uint8_t  spare[3];     /*!< \brief Spare */
-} axiom_barrier_req_payload_t;
-
-/*! \brief Message payload for the axiom-barrier (reply) application */
-typedef struct axiom_barrier_reply_payload {
-    uint8_t  command;       /*!< \brief Command of barier reply messages */
-    uint8_t  flags;         /*!< \brief Flags */
-    uint8_t  application;   /*!< \brief Application identification */
-    uint8_t  barrier;       /*!< \brief Barrier number */
-    uint8_t  result;        /*!< \brief Result */
-    uint8_t spare[3];       /*!< \brief Spare */
-    //uint8_t  spare[sizeof(axiom_init_payload_t)-4];
-} axiom_barrier_reply_payload_t;
-
+/*! \brief Reset the given spawn session to default values */
 #define AXIOM_SPAWN_FLAG_RESET 0x01
+/*! \brief Run the application described into the given session */
 #define AXIOM_SPAWN_FLAG_EXEC  0x02
 
+/* type of messagw spawn */
+
+/*! \brief Data contains exec filename */
 #define AXIOM_SPAWN_TYPE_EXE 0
+/*! \brief Data contains one arg */
 #define AXIOM_SPAWN_TYPE_ARG 1
+/*! \brief Data contains one environemtn variable */
 #define AXIOM_SPAWN_TYPE_ENV 2
+/*! \brief Data contains working directory */
 #define AXIOM_SPAWN_TYPE_CWD 3
 
+/*! \brief Size of spwan message header */
 #define AXIOM_SPAWN_HEADER_SIZE 4
+/*! \brief Max size of data into spawn messages */
 #define AXIOM_SPAWN_MAX_DATA_SIZE (AXIOM_RAW_PAYLOAD_MAX_SIZE-AXIOM_SPAWN_HEADER_SIZE)
 
+/*! \brief Message payload for the axiom-netperf application */
 typedef struct axiom_spawn_req_payload {
-    uint8_t command;       /*!< \brief Command of spawn request messages */
-    uint8_t flags;         /*!< \brief Flags */
-    uint8_t application; /*!< \brief Application identification */
-    uint8_t type;
-    uint8_t data[AXIOM_SPAWN_MAX_DATA_SIZE];
+    uint8_t command; /*!< \brief Command of spawn request messages */
+    uint8_t flags; /*!< \brief Flags */
+    uint8_t session_id; /*!< \brief Session identification */
+    uint8_t type; /*!< \brief Type */
+    uint8_t data[AXIOM_SPAWN_MAX_DATA_SIZE]; /*!< \brief Data for type */
 } __attribute__((__packed__)) axiom_spawn_req_payload_t;
+
+/*! \brief Message payload for the axiom request session */
+typedef struct axiom_session_req_payload {
+    uint8_t command; /*!< \brief Command of session request messages */
+    uint8_t reply_port; /*!< \brief Port used to reply message */
+    uint8_t session_id; /*!< \brief Session id */
+    uint8_t spare[1]; /*!< \brief Don't care */
+} __attribute__((__packed__)) axiom_session_req_payload_t;
+
+/*! \brief Indicate an empty (no valid) session */
+#define AXIOM_SESSION_EMPTY 255
+
+/*! \brief Message payload for the axiom reply session */
+typedef struct axiom_session_reply_payload {
+    uint8_t command; /*!< \brief Command of session request messages */
+    uint8_t session_id; /*!< \brief Session id */
+    uint8_t spare[2]; /*!< \brief Don't care */
+} __attribute__((__packed__)) axiom_session_reply_payload_t;
 
 /******************************* Functions ************************************/
 
