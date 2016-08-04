@@ -22,6 +22,8 @@
 #define AXIOMREG_LEN_IFINFO                     8
 /*! \brief length of ROUTING registers array */
 #define AXIOMREG_LEN_ROUTING                    256
+/*! \brief length of LONG_BUF registers array */
+#define AXIOMREG_LEN_LONG_BUF                   32
 /*! \brief length of RAW QUEUE registers array */
 //#define AXIOMREG_LEN_RAW_QUEUE                  1
 /*! \brief length of RDMA QUEUE registers array */
@@ -31,6 +33,8 @@
 #define AXIOMREG_SIZE_IFINFO                    1
 /*! \brief size of ROUTING registers array elements */
 #define AXIOMREG_SIZE_ROUTING                   1
+/*! \brief size of LONG_BUF registers array elements */
+#define AXIOMREG_SIZE_LONG_BUF                  8
 /*! \brief size of RAW QUEUE registers array elements */
 #define AXIOMREG_SIZE_RAW_QUEUE   \
     (AXIOM_RAW_HEADER_SIZE + AXIOM_RAW_PAYLOAD_MAX_SIZE)
@@ -123,8 +127,12 @@
 /*! \brief RDMA_RX_DESC register - 96 bit r/o */
 #define AXIOMREG_IO_RDMA_RX_DESC                0x00000610
 
+/* LONG buffer registers */
+/*! \brief LONG_BUF_BASE register - 64 bit r/w x 32 = 256 bytes */
+#define AXIOMREG_IO_LONG_BUF_BASE               0x00000620
+
 /*! \brief Registers end */
-#define AXIOMREG_IO_SIZE                        0x00000620
+#define AXIOMREG_IO_SIZE                        0x00000720
 
 
 
@@ -173,5 +181,15 @@
 
 /*! \brief Slots available in the queue */
 #define AXIOMREG_QSTATUS_AVAIL                  0x00000001
+
+
+/* Buffer descriptor for LONG messages */
+typedef struct axiomreg_long_buf {
+    struct {
+        uint32_t reserved : 31;
+        uint32_t free : 1;
+    } status;
+    uint32_t address;
+} axiomreg_long_buf_t;
 
 #endif /* AXIOM_NIC_REGS_H */
