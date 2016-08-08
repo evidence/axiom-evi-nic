@@ -211,7 +211,7 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_raw_rx_hwring *rx_ring)
         port = raw_msg->header.rx.port_type.field.port;
 
         /* check valid port */
-        if (unlikely(port < 0 || port >= AXIOM_RAW_PORT_MAX)) {
+        if (unlikely(port < 0 || port >= AXIOM_PORT_MAX)) {
             EPRINTF("message discarded - wrong port %d", port);
             continue;
         }
@@ -577,7 +577,7 @@ static int axiomnet_raw_rx_hwring_init(struct axiomnet_drvdata *drvdata,
 
     rx_ring->drvdata = drvdata;
 
-    for (port = 0; port < AXIOM_RAW_PORT_MAX; port++) {
+    for (port = 0; port < AXIOM_PORT_MAX; port++) {
         mutex_init(&rx_ring->ports[port].mutex);
         init_waitqueue_head(&rx_ring->ports[port].wait_queue);
     }
@@ -908,7 +908,7 @@ static void axiomnet_unbind(struct axiomnet_priv *priv) {
 
     /* check if the process bound some port */
     if (priv->bind_port == AXIOMNET_PORT_INVALID ||
-            priv->bind_port >= AXIOM_RAW_PORT_MAX) {
+            priv->bind_port >= AXIOM_PORT_MAX) {
         return;
     }
 
@@ -931,7 +931,7 @@ static long axiomnet_bind(struct axiomnet_priv *priv, uint8_t *port) {
     if (*port == AXIOM_PORT_ANY) {
         int i;
         /* assign first port available */
-        for (i = 0; i < AXIOM_RAW_PORT_MAX; i++) {
+        for (i = 0; i < AXIOM_PORT_MAX; i++) {
             if (!((1 << i) & drvdata->port_used)) {
                 *port = i;
                 break;
@@ -942,7 +942,7 @@ static long axiomnet_bind(struct axiomnet_priv *priv, uint8_t *port) {
             ret = -EBUSY;
             goto exit;
         }
-    } else if (*port >= AXIOM_RAW_PORT_MAX) {
+    } else if (*port >= AXIOM_PORT_MAX) {
         ret = -EFBIG;
         goto exit;
     }

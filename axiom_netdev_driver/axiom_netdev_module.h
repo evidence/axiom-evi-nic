@@ -26,7 +26,7 @@
 #define AXIOMNET_MAX_OPEN       16
 
 /*! \brief number of AXIOM software RAW queue */
-#define AXIOMNET_RAW_QUEUE_NUM           AXIOM_RAW_PORT_MAX
+#define AXIOMNET_RAW_QUEUE_NUM           AXIOM_PORT_MAX
 /*! \brief number of free elements in the AXIOM free RAW queue */
 #define AXIOMNET_RAW_QUEUE_FREE_LEN      (256 * AXIOMNET_RAW_QUEUE_NUM)
 
@@ -71,7 +71,7 @@ struct axiomnet_raw_rx_hwring {
     struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM driver data */
     struct axiomnet_raw_queue sw_queue; /*!< \brief AXIOM software queue */
     /*!< \brief ports of this ring */
-    struct axiomnet_sw_port ports[AXIOM_RAW_PORT_MAX];
+    struct axiomnet_sw_port ports[AXIOM_PORT_MAX];
 };
 
 /*! \brief Structure to handle an AXIOM hardware RAW TX ring */
@@ -95,7 +95,7 @@ struct axiomnet_rdma_rx_hwring {
     struct axiomnet_rdma_queue *tx_sw_queue;
     //struct axiomnet_rdma_queue sw_queue; /*!< \brief AXIOM software queue */
     /*!< \brief ports of this ring */
-    //struct axiomnet_sw_port ports[AXIOM_RAW_PORT_MAX];
+    //struct axiomnet_sw_port ports[AXIOM_PORT_MAX];
 };
 
 /*! \brief AXIOM device driver data */
