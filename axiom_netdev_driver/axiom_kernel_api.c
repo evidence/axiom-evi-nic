@@ -54,7 +54,7 @@ axiom_hw_dev_free(axiom_dev_t *dev)
 
 axiom_msg_id_t
 axiom_hw_raw_tx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
-        axiom_payload_t *payload)
+        axiom_raw_payload_t *payload)
 {
     axiom_raw_payload_size_t payload_size;
     void __iomem *base_reg;
@@ -108,7 +108,7 @@ axiom_hw_raw_tx_push(axiom_dev_t *dev)
 
 axiom_msg_id_t
 axiom_hw_raw_rx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
-        axiom_payload_t *payload)
+        axiom_raw_payload_t *payload)
 {
     axiom_raw_payload_size_t payload_size;
     void __iomem *base_reg;

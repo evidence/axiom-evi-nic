@@ -24,7 +24,7 @@
  */
 axiom_msg_id_t
 axiom_hw_raw_tx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
-        axiom_payload_t *payload);
+        axiom_raw_payload_t *payload);
 
 /*!
  * \brief This function checks the space available in the raw TX queue.
@@ -47,7 +47,7 @@ axiom_hw_raw_tx_avail(axiom_dev_t *dev);
  */
 axiom_msg_id_t
 axiom_hw_raw_rx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
-        axiom_payload_t *payload);
+        axiom_raw_payload_t *payload);
 
 /*!
  * \brief This function cheks the messages available in the raw RX queue.

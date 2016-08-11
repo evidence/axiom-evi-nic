@@ -132,7 +132,7 @@ inline static int axiomnet_raw_send(struct file *filep,
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_raw_tx_hwring *tx_ring = &drvdata->raw_tx_ring;
-    axiom_payload_t raw_payload;
+    axiom_raw_payload_t raw_payload;
     int ret;
 
     DPRINTF("start");
