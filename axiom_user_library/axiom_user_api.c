@@ -327,6 +327,87 @@ axiom_flush_raw(axiom_dev_t *dev)
     return AXIOM_RET_OK;
 }
 
+axiom_err_t
+axiom_send_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
+        axiom_type_t type, axiom_long_payload_size_t payload_size,
+        void *payload)
+{
+    axiom_long_msg_t long_msg;
+    int ret;
+
+    if (unlikely(!dev || dev->fd <= 0)) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    if (unlikely(payload_size > AXIOM_LONG_PAYLOAD_MAX_SIZE)) {
+        EPRINTF("payload size too big - size: %d [%d]", payload_size,
+                AXIOM_LONG_PAYLOAD_MAX_SIZE);
+        return AXIOM_RET_ERROR;
+    }
+
+    long_msg.header.tx.port_type.field.port = (port & 0x7);
+    long_msg.header.tx.port_type.field.type = (type & 0x7);
+    long_msg.header.tx.dst = dst_id;
+    long_msg.header.tx.payload_size = payload_size;
+    long_msg.payload = payload;
+
+    ret = ioctl(dev->fd, AXNET_SEND_LONG, &long_msg);
+    if (unlikely(ret < 0)) {
+        if (errno == EAGAIN)
+            return AXIOM_RET_NOTAVAIL;
+        if (errno == EINTR)
+            return AXIOM_RET_INTR;
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
+        return AXIOM_RET_ERROR;
+    }
+
+    DPRINTF("dst: 0x%x payload_size: 0x%x", long_msg.header.tx.dst,
+            long_msg.header.tx.payload_size);
+
+    return ret;
+}
+
+axiom_err_t
+axiom_recv_long(axiom_dev_t *dev, axiom_node_id_t *src_id,
+        axiom_port_t *port, axiom_type_t *type,
+        axiom_long_payload_size_t *payload_size, void *payload)
+{
+    axiom_long_msg_t long_msg;
+    int ret;
+
+    if (unlikely(!dev || dev->fd <= 0)) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    if (unlikely(*payload_size > AXIOM_LONG_PAYLOAD_MAX_SIZE)) {
+        EPRINTF("payload size too big - size: %d [%d]", *payload_size,
+                AXIOM_LONG_PAYLOAD_MAX_SIZE);
+        return AXIOM_RET_ERROR;
+    }
+
+    long_msg.header.rx.payload_size = *payload_size;
+    long_msg.payload = payload;
+
+    ret = ioctl(dev->fd, AXNET_RECV_LONG, &long_msg);
+    if (unlikely(ret < 0)) {
+        if (errno == EAGAIN)
+            return AXIOM_RET_NOTAVAIL;
+        if (errno == EINTR)
+            return AXIOM_RET_INTR;
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
+        return AXIOM_RET_ERROR;
+    }
+
+    *src_id = long_msg.header.rx.src;
+    *port = (long_msg.header.rx.port_type.field.port & 0x7);
+    *type = (long_msg.header.rx.port_type.field.type & 0x7);
+    *payload_size = long_msg.header.rx.payload_size;
+
+    return long_msg.header.rx.msg_id;
+}
+
 #define AXIOM_RDMA_FIXED_ADDR           ((void *)(0x30000000))
 void *
 axiom_rdma_mmap(axiom_dev_t *dev, uint64_t *size)

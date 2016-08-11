@@ -29,7 +29,7 @@ typedef uint32_t            axiom_addr_t;
 /*! \brief AXIOM payload size type for RAW messages */
 typedef uint8_t             axiom_raw_payload_size_t;
 /*! \brief AXIOM payload size type for LONG messages */
-typedef uint8_t             axiom_long_payload_size_t;
+typedef uint16_t            axiom_long_payload_size_t;
 /*! \brief AXIOM payload size type for RDMA messages */
 typedef uint16_t            axiom_rdma_payload_size_t;
 /*! \brief AXIOM error type */

@@ -249,6 +249,14 @@ axiom_hw_set_rdma_zone(axiom_dev_t *dev, uint64_t start, uint64_t end)
 }
 
 void
+axiom_hw_set_long_buf(axiom_dev_t *dev, int buf_id,
+        axiomreg_long_buf_t *long_buf)
+{
+    writeq(*((uint64_t *)long_buf), dev->vregs + AXIOMREG_IO_LONG_BUF_BASE
+            + (buf_id * AXIOMREG_SIZE_LONG_BUF));
+}
+
+void
 axiom_hw_set_node_id(axiom_dev_t *dev, axiom_node_id_t node_id)
 {
     iowrite32(node_id, dev->vregs + AXIOMREG_IO_NODEID);

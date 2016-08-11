@@ -35,6 +35,16 @@
 /*! \brief number of free elements in the AXIOM free RDMA queue */
 #define AXIOMNET_RDMA_QUEUE_FREE_LEN     AXIOM_MSG_ID_MAX
 
+/*! \brief number of AXIOM software LONG TX queue */
+#define AXIOMNET_LONG_TXQUEUE_NUM        0
+/*! \brief number of free elements in the AXIOM free LONG TX queue */
+#define AXIOMNET_LONG_TXQUEUE_FREE_LEN   AXIOMREG_LEN_LONG_BUF
+
+/*! \brief number of AXIOM software LONG RX queue */
+#define AXIOMNET_LONG_RXQUEUE_NUM        AXIOM_PORT_MAX
+/*! \brief number of free elements in the AXIOM free LONG RX queue */
+#define AXIOMNET_LONG_RXQUEUE_FREE_LEN   AXIOMREG_LEN_LONG_BUF
+
 /*! \brief Invalid number of AXIOM port */
 #define AXIOMNET_PORT_INVALID           -1
 
@@ -51,6 +61,13 @@ struct axiomnet_raw_queue {
     spinlock_t queue_lock;              /*!< \brief queue lock */
     evi_queue_t evi_queue;              /*!< \brief queue manager */
     axiom_raw_msg_t *queue_desc;        /*!< \brief queue elements */
+};
+
+/*! \brief Structure to handle an AXIOM software LONG queue */
+struct axiomnet_long_queue {
+    spinlock_t queue_lock;              /*!< \brief queue lock */
+    evi_queue_t evi_queue;              /*!< \brief queue manager */
+    axiom_long_msg_t *queue_desc;        /*!< \brief queue elements */
 };
 
 /*! \brief Structure to handle an AXIOM software RDMA queue */
@@ -84,18 +101,31 @@ struct axiomnet_raw_tx_hwring {
 /*! \brief Structure to handle an AXIOM hardware RDMA TX ring */
 struct axiomnet_rdma_tx_hwring {
     struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM driver data */
-    struct axiomnet_rdma_queue sw_queue;/*!< \brief AXIOM software queue */
-    /*!< \brief port of this ring, the TX ring has only 1 port */
-    struct axiomnet_sw_port port;
+    struct axiomnet_rdma_queue rdma_queue;/*!< \brief AXIOM software RDMA queue */
+    struct axiomnet_long_queue long_queue; /*!< \brief AXIOM software LONG queue */
+    /*!< \brief port of this ring to handle RDMA TX messages */
+    struct axiomnet_sw_port rdma_port;
+    /*!< \brief port of this ring to handle LONG TX messages */
+    struct axiomnet_sw_port long_port;
 };
 
 /*! \brief Structure to handle an AXIOM hardware RDMA RX ring */
 struct axiomnet_rdma_rx_hwring {
     struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM driver data */
-    struct axiomnet_rdma_queue *tx_sw_queue;
+    struct axiomnet_rdma_queue *tx_rdma_queue;
+    struct axiomnet_long_queue long_queue; /*!< \brief AXIOM software queue */
+    /*!< \brief ports of this ring for LONG messages*/
+    struct axiomnet_sw_port long_ports[AXIOM_PORT_MAX];
     //struct axiomnet_rdma_queue sw_queue; /*!< \brief AXIOM software queue */
     /*!< \brief ports of this ring */
     //struct axiomnet_sw_port ports[AXIOM_PORT_MAX];
+};
+
+/*! \brief Structure to handle lookup table for LONG buffers */
+struct axiomnet_long_buf_lut {
+    int buf_id;                         /*!< \brief buffer id*/
+    axiomreg_long_buf_t long_buf_hw;    /*!< \brief buffer HW arguments */
+    void *long_buf_sw;                  /*!< \brief pointer in the virtual mem*/
 };
 
 /*! \brief AXIOM device driver data */
@@ -119,6 +149,16 @@ struct axiomnet_drvdata {
     void *dma_vaddr;
     dma_addr_t dma_paddr;
     uint64_t dma_size;
+
+    /* RDMA */
+    dma_addr_t rdma_paddr;
+    uint64_t rdma_size;
+
+    /* LONG */
+    void *long_rx_vaddr;
+    void *long_tx_vaddr;
+    uint64_t long_size;
+    struct axiomnet_long_buf_lut long_rxbuf_lut[AXIOMREG_LEN_LONG_BUF];
 
     /* hardware ring */
     struct axiomnet_raw_tx_hwring raw_tx_ring;  /*!\brief RAW TX ring */

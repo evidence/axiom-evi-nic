@@ -137,4 +137,18 @@ typedef union axiom_rdma_hdr {
     axiom_rdma_rx_hdr_t rx;
     uint8_t raw[AXIOM_RDMA_HEADER_SIZE];
 } __attribute__((packed)) axiom_rdma_hdr_t;
+
+/*!
+ * \brief LONG messages with payload pointer
+ */
+typedef struct axiom_long_msg {
+    axiom_rdma_hdr_t header;            /*!< \brief message header */
+    void *payload;                      /*!< \brief message payload */
+} __attribute__((packed)) axiom_long_msg_t;
+
+/*! \brief AXIOM LONG payload type */
+typedef struct axiom_long_payload {
+    uint8_t raw[AXIOM_LONG_PAYLOAD_MAX_SIZE];
+} __attribute__((packed)) axiom_long_payload_t;
+
 #endif /* !AXIOM_NIC_PACKETS_H */

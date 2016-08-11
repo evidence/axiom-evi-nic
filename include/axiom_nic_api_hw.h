@@ -152,6 +152,17 @@ void
 axiom_hw_set_rdma_zone(axiom_dev_t *dev, uint64_t start, uint64_t end);
 
 /*!
+ * \brief This function sets the buffers to receive LONG messages.
+ *
+ * \param dev           The axiom device private data pointer
+ * \param buf_id        Id of the buffer to set
+ * \param long_buf      Buffer info to set (address, size, used)
+ */
+void
+axiom_hw_set_long_buf(axiom_dev_t *dev, int buf_id,
+        axiomreg_long_buf_t *long_buf);
+
+/*!
  * \brief This function sets the id of a local node.
  *
  * \param dev           The axiom device private data pointer

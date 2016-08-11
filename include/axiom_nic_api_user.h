@@ -160,6 +160,42 @@ int
 axiom_recv_raw_avail(axiom_dev_t *dev);
 
 /*!
+ * \brief  This function sends long data to a remote node.
+ *
+ * \param dev           The axiom device private data pointer
+ * \param dst_id        The remote node id that will receive the long data or
+ *                      local interface that will send the long data
+ * \param port          port of the long message
+ * \param type          type of the long message
+ * \param payload_size  size of data to be sent
+ * \param payload       data to be sent
+ *
+ * \return Returns a unique positive message id on success, an error otherwise.
+ */
+axiom_err_t
+axiom_send_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
+        axiom_type_t type, axiom_long_payload_size_t payload_size,
+        void *payload);
+
+/*!
+ * \brief This function receives long data to a remote node.
+ *
+ * \param dev           The axiom device private data pointer
+ * \param src_id        The source node id that sent the long data or local
+ *                      interface that received the long data
+ * \param port          port of the long message
+ * \param type          type of the long message
+ * \param payload_size  size of data received
+ * \param payload       data received
+ *
+ * \return Returns a unique positive message id on success, an error otherwise.
+ */
+axiom_err_t
+axiom_recv_long(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
+        axiom_type_t *type, axiom_long_payload_size_t *payload_size,
+        void *payload);
+
+/*!
  * \brief This function writes data to a remote node memory.
  *
  * \param dev             The axiom device private data pointer

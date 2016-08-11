@@ -69,5 +69,9 @@ typedef struct axiom_ioctl_bind {
 #define AXNET_RDMA_WRITE        _IOW(AXNET_MAGIC, 116, axiom_rdma_hdr_t)
 /*! \brief AXIOM IOCTL to start a RDMA read */
 #define AXNET_RDMA_READ         _IOW(AXNET_MAGIC, 117, axiom_rdma_hdr_t)
+/*! \brief AXIOM IOCTL to start a RDMA write */
+#define AXNET_SEND_LONG         _IOW(AXNET_MAGIC, 118, axiom_long_msg_t)
+/*! \brief AXIOM IOCTL to start a RDMA read */
+#define AXNET_RECV_LONG         _IOWR(AXNET_MAGIC, 119, axiom_long_msg_t)
 
 #endif /* !AXIOM_NETDEV_USER_h */

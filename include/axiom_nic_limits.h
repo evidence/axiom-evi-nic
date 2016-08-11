@@ -36,4 +36,7 @@
  */
 #define AXIOM_RDMA_PAYLOAD_SIZE_ORDER           3
 
+/*! \brief Max payload size in the long message */
+#define AXIOM_LONG_PAYLOAD_MAX_SIZE             4096
+
 #endif /* !AXIOM_NIC_LIMITS_h */
