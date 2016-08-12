@@ -50,7 +50,7 @@ typedef union axiom_port_type {
     uint8_t raw;
     struct {
         uint8_t s : 1;
-        uint8_t reserved : 1;
+        uint8_t error : 1;
         uint8_t port : 3;
         uint8_t type : 3;
     } field;
