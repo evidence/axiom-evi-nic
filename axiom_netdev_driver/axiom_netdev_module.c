@@ -411,7 +411,7 @@ inline static int axiomnet_rdma_tx_avail(struct axiomnet_rdma_tx_hwring *tx_ring
 }
 
 inline static int axiomnet_rdma_tx(struct file *filep,
-        axiom_rdma_hdr_t *header)
+        axiom_rdma_hdr_t *header, axiom_callback_t *callback)
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
@@ -457,9 +457,18 @@ inline static int axiomnet_rdma_tx(struct file *filep,
     }
 
     rdma_status = &(rdma_queue->queue_desc[queue_slot]);
-    rdma_status->ack_received = 0;
+    rdma_status->ack_received = false;
     rdma_status->remote_id = header->tx.dst;
     header->tx.msg_id = rdma_status->msg_id;
+
+    if (callback) {
+        rdma_status->ack_waiting = false;
+        rdma_status->queue_slot = queue_slot;
+        rdma_status->callback = *callback;
+    } else {
+        rdma_status->ack_waiting = true;
+        rdma_status->callback.func = NULL;
+    }
 
     /* copy packet into the ring */
     ret = axiom_hw_rdma_tx(drvdata->dev_api, header);
@@ -468,12 +477,17 @@ inline static int axiomnet_rdma_tx(struct file *filep,
         goto err;
     }
 
+    if (callback) {
+        mutex_unlock(&tx_ring->rdma_port.mutex);
+        return ret;
+    }
+
     /* XXX: maybe we can unlock the mutex */
 
     /* TODO: handle if the user interrupt this function */
 
     /* wait the reply */
-    while (rdma_status->ack_received == 0) {
+    while (rdma_status->ack_received == false) {
         mutex_unlock(&tx_ring->rdma_port.mutex);
 
         /* no blocking write */
@@ -484,7 +498,7 @@ inline static int axiomnet_rdma_tx(struct file *filep,
 
         /* put the process in the wait_queue to wait the ack */
         if (wait_event_interruptible(rdma_status->wait_queue,
-                    rdma_status->ack_received != 0)) {
+                    rdma_status->ack_received != false)) {
             ret = -ERESTARTSYS;
             goto err_nolock;
         }
@@ -495,7 +509,7 @@ inline static int axiomnet_rdma_tx(struct file *filep,
         }
     }
 
-    rdma_status->ack_received = 0;
+    rdma_status->ack_received = false;
     rdma_status->remote_id = AXIOM_NULL_NODE;
 
 err:
@@ -545,17 +559,49 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
         if (unlikely(rdma_hdr.rx.port_type.field.s == 1)) {
             axiom_rdma_status_t *rdma_status =
                 &(rx_ring->tx_rdma_queue->queue_desc[msg_id]);
+            struct axiomnet_rdma_queue *rdma_queue = rx_ring->tx_rdma_queue;
 
-            if (unlikely((rdma_status->ack_received == 1) ||
+            if (unlikely((rdma_status->ack_received == true) ||
                         (rdma_status->remote_id != rdma_hdr.rx.src))) {
                 EPRINTF("unexpected RDMA descriptor received - discarded");
                 continue;
             }
 
-            rdma_status->ack_received = 1;
+            /* if there is some process to wait, wakeup it, otherwise free the
+             * status
+             */
+            if (rdma_status->ack_waiting) {
+                rdma_status->ack_received = true;
+                /* wake up waitinig process */
+                wake_up(&(rdma_status->wait_queue));
+            } else {
+                struct axiomnet_rdma_tx_hwring *tx_ring =
+                    &rx_ring->drvdata->rdma_tx_ring;
+                unsigned long flags;
+                int wakeup_thread = 0;
 
-            /* wake up waitinig process */
-            wake_up(&(rdma_status->wait_queue));
+                rdma_status->ack_received = false;
+                rdma_status->remote_id = AXIOM_NULL_NODE;
+
+                if (rdma_status->callback.func) {
+                    rdma_status->callback.func(rx_ring->drvdata,
+                            rdma_status->callback.data);
+                }
+
+                spin_lock_irqsave(&rdma_queue->queue_lock, flags);
+                /* send a notification to other thread if the free queue was empty */
+                if (eviq_free_avail(&rdma_queue->evi_queue) == 0) {
+                    wakeup_thread = 1;
+                }
+                eviq_free_push(&rdma_queue->evi_queue, rdma_status->queue_slot);
+                spin_unlock_irqrestore(&rdma_queue->queue_lock, flags);
+
+
+                if (wakeup_thread) {
+                    wake_up(&(tx_ring->rdma_port.wait_queue));
+                }
+
+            }
         } else { /* LONG message */
             axiom_long_msg_t *long_msg;
             eviq_pnt_t queue_slot = EVIQ_NONE;
@@ -621,6 +667,33 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
 
 /***************************** LONG functions *********************************/
 
+static void axiomnet_long_callback(struct axiomnet_drvdata *drvdata, void *data)
+{
+    struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
+    struct axiomnet_long_queue *long_queue = &tx_ring->long_queue;
+    eviq_pnt_t queue_slot = (eviq_pnt_t)data;
+    unsigned long flags;
+    bool wakeup_thread = false;
+
+    if (mutex_lock_interruptible(&tx_ring->long_port.mutex))
+        return;
+
+    spin_lock_irqsave(&long_queue->queue_lock, flags);
+    /* send a notification to other thread if the free queue was empty */
+    if (eviq_free_avail(&long_queue->evi_queue) == 0) {
+        wakeup_thread = true;
+    }
+    eviq_free_push(&long_queue->evi_queue, queue_slot);
+    spin_unlock_irqrestore(&long_queue->queue_lock, flags);
+
+    mutex_unlock(&tx_ring->long_port.mutex);
+
+    if (wakeup_thread) {
+        wake_up(&(tx_ring->long_port.wait_queue));
+    }
+}
+
+
 inline static int axiomnet_long_tx_avail(struct axiomnet_rdma_tx_hwring *tx_ring)
 {
     return eviq_free_avail(&tx_ring->long_queue.evi_queue);
@@ -633,6 +706,7 @@ inline static int axiomnet_long_send(struct file *filep,
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
     struct axiomnet_long_queue *long_queue = &tx_ring->long_queue;
+    axiom_callback_t cb;
     axiom_long_msg_t *long_msg;
     eviq_pnt_t queue_slot = EVIQ_NONE;
     unsigned long flags;
@@ -666,6 +740,7 @@ inline static int axiomnet_long_send(struct file *filep,
     /* impossible */
     if (unlikely(queue_slot == EVIQ_NONE)) {
         ret = -EFAULT;
+        mutex_unlock(&tx_ring->long_port.mutex);
         goto err_nopush;
     }
 
@@ -691,10 +766,13 @@ inline static int axiomnet_long_send(struct file *filep,
 
     mutex_unlock(&tx_ring->long_port.mutex);
 
-    ret = axiomnet_rdma_tx(filep, &(long_msg->header));
+    cb.func = axiomnet_long_callback;
+    cb.data = (void *) queue_slot;
 
-    if (mutex_lock_interruptible(&tx_ring->long_port.mutex))
-        return -ERESTARTSYS;
+    ret = axiomnet_rdma_tx(filep, &(long_msg->header), &cb);
+
+err_nopush:
+    return ret;
 
 err:
     spin_lock_irqsave(&long_queue->queue_lock, flags);
@@ -705,12 +783,7 @@ err:
     eviq_free_push(&long_queue->evi_queue, queue_slot);
     spin_unlock_irqrestore(&long_queue->queue_lock, flags);
 
-err_nopush:
     mutex_unlock(&tx_ring->long_port.mutex);
-
-    if (wakeup_thread) {
-        wake_up(&(tx_ring->long_port.wait_queue));
-    }
 
     return ret;
 }
@@ -1545,7 +1618,7 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         ret = copy_from_user(&buf_rdma, argp, sizeof(buf_rdma));
         if (ret)
             return -EFAULT;
-        ret = axiomnet_rdma_tx(filep, &(buf_rdma));
+        ret = axiomnet_rdma_tx(filep, &(buf_rdma), NULL);
         break;
     case AXNET_SEND_LONG:
         ret = copy_from_user(&buf_long, argp, sizeof(buf_long));

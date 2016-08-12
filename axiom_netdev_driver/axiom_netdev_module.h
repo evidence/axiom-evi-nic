@@ -48,12 +48,25 @@
 /*! \brief Invalid number of AXIOM port */
 #define AXIOMNET_PORT_INVALID           -1
 
+struct axiomnet_drvdata;
+
+/*! \brief AXIOM RDMA callback */
+typedef void (*axiom_callback_fn_t)(struct axiomnet_drvdata *drvdata, void *data);
+
+typedef struct axiom_callback {
+    axiom_callback_fn_t func;
+    void *data;
+} axiom_callback_t;
+
 /*! \brief Structure to handle msg id assignment */
 typedef struct axiom_rdma_status {
     wait_queue_head_t wait_queue;       /*!< \brief wait queue */
     bool ack_received;                  /*!< \brief Is ack received? */
+    bool ack_waiting;
     axiom_msg_id_t msg_id;
+    eviq_pnt_t queue_slot;
     axiom_node_id_t remote_id;
+    axiom_callback_t callback;
 } axiom_rdma_status_t;
 
 /*! \brief Structure to handle an AXIOM software RAW queue */
