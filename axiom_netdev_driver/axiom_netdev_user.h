@@ -73,5 +73,7 @@ typedef struct axiom_ioctl_bind {
 #define AXNET_SEND_LONG         _IOW(AXNET_MAGIC, 118, axiom_long_msg_t)
 /*! \brief AXIOM IOCTL to start a RDMA read */
 #define AXNET_RECV_LONG         _IOWR(AXNET_MAGIC, 119, axiom_long_msg_t)
+/*! \brief AXIOM IOCTL to flush long messages */
+#define AXNET_FLUSH_LONG         _IO(AXNET_MAGIC, 120)
 
 #endif /* !AXIOM_NETDEV_USER_h */

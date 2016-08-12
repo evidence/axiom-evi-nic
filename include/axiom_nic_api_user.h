@@ -139,7 +139,8 @@ int
 axiom_send_raw_avail(axiom_dev_t *dev);
 
 /*!
- * \brief This function flushes all messages enqueued on port previously bound.
+ * \brief This function flushes all raw messages enqueued on port previously
+ *        bound.
  *
  * \param dev           The axiom device private data pointer
  *
@@ -194,6 +195,17 @@ axiom_err_t
 axiom_recv_long(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
         axiom_type_t *type, axiom_long_payload_size_t *payload_size,
         void *payload);
+
+/*!
+ * \brief This function flushes all long messages enqueued on port previously
+ *        bound.
+ *
+ * \param dev           The axiom device private data pointer
+ *
+ * \return Returns AXIOM_RET_OK on success, an error otherwise.
+ */
+axiom_err_t
+axiom_flush_long(axiom_dev_t *dev);
 
 /*!
  * \brief This function writes data to a remote node memory.

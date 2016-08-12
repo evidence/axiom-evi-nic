@@ -408,6 +408,26 @@ axiom_recv_long(axiom_dev_t *dev, axiom_node_id_t *src_id,
     return long_msg.header.rx.msg_id;
 }
 
+axiom_err_t
+axiom_flush_long(axiom_dev_t *dev)
+{
+    int ret;
+
+    if (unlikely(!dev || dev->fd <= 0)) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    ret = ioctl(dev->fd, AXNET_FLUSH_LONG);
+
+    if (unlikely(ret < 0)) {
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
+        return AXIOM_RET_ERROR;
+    }
+
+    return AXIOM_RET_OK;
+}
+
 #define AXIOM_RDMA_FIXED_ADDR           ((void *)(0x30000000))
 void *
 axiom_rdma_mmap(axiom_dev_t *dev, uint64_t *size)

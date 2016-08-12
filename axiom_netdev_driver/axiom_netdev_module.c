@@ -349,7 +349,7 @@ static long axiomnet_raw_flush(struct axiomnet_priv *priv) {
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_raw_rx_hwring *rx_ring = &drvdata->raw_rx_ring;
     struct axiomnet_raw_queue *sw_queue = &rx_ring->sw_queue;
-    int port = priv->bind_port;
+    int port = priv->bind_port, wakeup_kthread = 0;
     unsigned long flags;
     long ret = 0;
 
@@ -364,6 +364,11 @@ static long axiomnet_raw_flush(struct axiomnet_priv *priv) {
 
     /* take the lock to avoid enqueue during the flush */
     spin_lock_irqsave(&sw_queue->queue_lock, flags);
+
+    /* send a notification to kthread if the free queue was empty */
+    if (eviq_free_avail(&sw_queue->evi_queue) == 0) {
+        wakeup_kthread = 1;
+    }
 
     while (axiomnet_raw_rx_avail(rx_ring, port) != 0) {
         eviq_pnt_t queue_slot;
@@ -385,6 +390,11 @@ err:
     spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
 
     mutex_unlock(&rx_ring->ports[port].mutex);
+
+    if (wakeup_kthread) {
+        axiom_kthread_wakeup(&drvdata->kthread_raw);
+    }
+
     return ret;
 }
 
@@ -671,7 +681,7 @@ static void axiomnet_long_callback(struct axiomnet_drvdata *drvdata, void *data)
 {
     struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
     struct axiomnet_long_queue *long_queue = &tx_ring->long_queue;
-    eviq_pnt_t queue_slot = (eviq_pnt_t)data;
+    eviq_pnt_t queue_slot = (eviq_pnt_t)(uintptr_t)data;
     unsigned long flags;
     bool wakeup_thread = false;
 
@@ -767,7 +777,7 @@ inline static int axiomnet_long_send(struct file *filep,
     mutex_unlock(&tx_ring->long_port.mutex);
 
     cb.func = axiomnet_long_callback;
-    cb.data = (void *) queue_slot;
+    cb.data = (void *)(uintptr_t)queue_slot;
 
     ret = axiomnet_rdma_tx(filep, &(long_msg->header), &cb);
 
@@ -891,6 +901,74 @@ free_enqueue:
 err:
     DPRINTF("end len:%zu", len);
     return len;
+}
+
+static long axiomnet_long_flush(struct axiomnet_priv *priv) {
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    struct axiomnet_rdma_rx_hwring *rx_ring = &drvdata->rdma_rx_ring;
+    struct axiomnet_long_queue *long_queue = &rx_ring->long_queue;
+    int port = priv->bind_port, wakeup_kthread = 0;
+    unsigned long flags;
+    long ret = 0;
+
+    /* check bind */
+    if (port == AXIOMNET_PORT_INVALID) {
+        EPRINTF("port not assigned");
+        return -EFAULT;
+    }
+
+    if (mutex_lock_interruptible(&rx_ring->long_ports[port].mutex))
+        return -ERESTARTSYS;
+
+    /* take the lock to avoid enqueue during the flush */
+    spin_lock_irqsave(&long_queue->queue_lock, flags);
+
+    /* send a notification to kthread if the free queue was empty */
+    if (eviq_free_avail(&long_queue->evi_queue) == 0) {
+        wakeup_kthread = 1;
+    }
+
+    while (axiomnet_long_rx_avail(rx_ring, port) != 0) {
+        eviq_pnt_t queue_slot;
+        axiom_long_msg_t *long_msg;
+        struct axiomnet_long_buf_lut *long_buf_lut;
+
+        queue_slot = eviq_dequeue(&long_queue->evi_queue, port);
+        /* XXX: impossible! */
+        if (queue_slot == EVIQ_NONE) {
+            ret = -EFAULT;
+            goto err;
+        }
+
+        long_msg = &long_queue->queue_desc[queue_slot];
+
+        /* find the long buffer where the payload is stored */
+        long_buf_lut = axiomnet_long_rdma2buf(drvdata, long_msg->header.rx.dst_addr);
+        if (unlikely(!long_buf_lut)) {
+            EPRINTF("invalid dst_addr: 0x%x", long_msg->header.rx.dst_addr);
+            ret = -EFAULT;
+            goto err;
+        }
+
+        /* free the buffer for the HW */
+        axiom_hw_set_long_buf(drvdata->dev_api, long_buf_lut->buf_id,
+                &long_buf_lut->long_buf_hw);
+
+        eviq_free_push(&long_queue->evi_queue, queue_slot);
+
+        DPRINTF("queue remove - queue_slot: %d port: %d", queue_slot, port);
+    }
+
+err:
+    spin_unlock_irqrestore(&long_queue->queue_lock, flags);
+
+    mutex_unlock(&rx_ring->long_ports[port].mutex);
+
+    if (wakeup_kthread) {
+        axiom_kthread_wakeup(&drvdata->kthread_rdma);
+    }
+
+    return ret;
 }
 
 /**************************** Worker functions ********************************/
@@ -1569,6 +1647,11 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         /* flush all previous received packets */
         if (buf_bind.flush) {
             ret = axiomnet_raw_flush(priv);
+            if (ret)
+                return ret;
+            ret = axiomnet_long_flush(priv);
+            if (ret)
+                return ret;
         }
         ret = copy_to_user(argp, &buf_bind, sizeof(buf_bind));
         if (ret)
@@ -1638,6 +1721,9 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         ret = copy_to_user(argp, &buf_long, sizeof(buf_long));
         if (ret)
             return -EFAULT;
+        break;
+    case AXNET_FLUSH_LONG:
+        ret = axiomnet_long_flush(priv);
         break;
     default:
         ret = -EINVAL;
