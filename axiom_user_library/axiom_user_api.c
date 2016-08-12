@@ -329,8 +329,7 @@ axiom_flush_raw(axiom_dev_t *dev)
 
 axiom_err_t
 axiom_send_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
-        axiom_type_t type, axiom_long_payload_size_t payload_size,
-        void *payload)
+        axiom_long_payload_size_t payload_size, void *payload)
 {
     axiom_long_msg_t long_msg;
     int ret;
@@ -347,7 +346,7 @@ axiom_send_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
     }
 
     long_msg.header.tx.port_type.field.port = (port & 0x7);
-    long_msg.header.tx.port_type.field.type = (type & 0x7);
+    long_msg.header.tx.port_type.field.type = (AXIOM_TYPE_LONG_DATA & 0x7);
     long_msg.header.tx.dst = dst_id;
     long_msg.header.tx.payload_size = payload_size;
     long_msg.payload = payload;
@@ -369,8 +368,7 @@ axiom_send_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
 }
 
 axiom_err_t
-axiom_recv_long(axiom_dev_t *dev, axiom_node_id_t *src_id,
-        axiom_port_t *port, axiom_type_t *type,
+axiom_recv_long(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
         axiom_long_payload_size_t *payload_size, void *payload)
 {
     axiom_long_msg_t long_msg;
@@ -402,7 +400,6 @@ axiom_recv_long(axiom_dev_t *dev, axiom_node_id_t *src_id,
 
     *src_id = long_msg.header.rx.src;
     *port = (long_msg.header.rx.port_type.field.port & 0x7);
-    *type = (long_msg.header.rx.port_type.field.type & 0x7);
     *payload_size = long_msg.header.rx.payload_size;
 
     return long_msg.header.rx.msg_id;
