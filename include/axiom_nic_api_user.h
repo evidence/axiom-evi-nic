@@ -134,6 +134,7 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
  * \param dev           The axiom device private data pointer
  *
  * \return Returns the number of slot available to send raw messages.
+ * XXX: for now return 0 when there are not slot available, 1 otherwise. (TBC)
  */
 int
 axiom_send_raw_avail(axiom_dev_t *dev);
@@ -197,6 +198,18 @@ axiom_recv_long(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
         void *payload);
 
 /*!
+ * \brief This function returns the number of slot available to send long
+ *        messages.
+ *
+ * \param dev           The axiom device private data pointer
+ *
+ * \return Returns the number of slot available to send long messages.
+ * XXX: for now return 0 when there are not slot available, 1 otherwise. (TBC)
+ */
+int
+axiom_send_long_avail(axiom_dev_t *dev);
+
+/*!
  * \brief This function flushes all long messages enqueued on port previously
  *        bound.
  *
@@ -206,6 +219,17 @@ axiom_recv_long(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
  */
 axiom_err_t
 axiom_flush_long(axiom_dev_t *dev);
+
+/*!
+ * \brief This function returns the number of long messages to receive available.
+ *
+ * \param dev           The axiom device private data pointer
+ *
+ * \return Returns the number of long messages to receive available.
+ * XXX: for now return 0 when there are not slot available, 1 otherwise. (TBC)
+ */
+int
+axiom_recv_long_avail(axiom_dev_t *dev);
 
 /*!
  * \brief This function writes data to a remote node memory.

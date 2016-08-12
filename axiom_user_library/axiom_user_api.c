@@ -408,6 +408,48 @@ axiom_recv_long(axiom_dev_t *dev, axiom_node_id_t *src_id,
     return long_msg.header.rx.msg_id;
 }
 
+int
+axiom_send_long_avail(axiom_dev_t *dev)
+{
+    int ret;
+    int avail;
+
+    if (unlikely(!dev || dev->fd <= 0)) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    ret = ioctl(dev->fd, AXNET_SEND_LONG_AVAIL, &avail);
+
+    if (unlikely(ret < 0)) {
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
+        return AXIOM_RET_ERROR;
+    }
+
+    return avail;
+}
+
+int
+axiom_recv_long_avail(axiom_dev_t *dev)
+{
+    int ret;
+    int avail;
+
+    if (unlikely(!dev || dev->fd <= 0)) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    ret = ioctl(dev->fd, AXNET_RECV_LONG_AVAIL, &avail);
+
+    if (unlikely(ret < 0)) {
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
+        return AXIOM_RET_ERROR;
+    }
+
+    return avail;
+}
+
 axiom_err_t
 axiom_flush_long(axiom_dev_t *dev)
 {

@@ -763,6 +763,7 @@ inline static int axiomnet_long_send(struct file *filep,
 
     if (unlikely(user_header->tx.payload_size > AXIOM_LONG_PAYLOAD_MAX_SIZE)) {
         ret = -EFBIG;
+        mutex_unlock(&tx_ring->long_port.mutex);
         goto err;
     }
 
@@ -771,15 +772,20 @@ inline static int axiomnet_long_send(struct file *filep,
             user_header->tx.payload_size);
     if (unlikely(ret)) {
         ret = -EFAULT;
+        mutex_unlock(&tx_ring->long_port.mutex);
         goto err;
     }
 
     mutex_unlock(&tx_ring->long_port.mutex);
 
+    /* callback to free the buffer when the ack is received */
     cb.func = axiomnet_long_callback;
     cb.data = (void *)(uintptr_t)queue_slot;
 
     ret = axiomnet_rdma_tx(filep, &(long_msg->header), &cb);
+    if (unlikely(ret)) {
+        goto err;
+    }
 
 err_nopush:
     return ret;
@@ -793,7 +799,9 @@ err:
     eviq_free_push(&long_queue->evi_queue, queue_slot);
     spin_unlock_irqrestore(&long_queue->queue_lock, flags);
 
-    mutex_unlock(&tx_ring->long_port.mutex);
+    if (wakeup_thread) {
+        wake_up(&(tx_ring->long_port.wait_queue));
+    }
 
     return ret;
 }
@@ -1569,8 +1577,6 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
-    struct axiomnet_raw_rx_hwring *rx_ring;
-    struct axiomnet_raw_tx_hwring *tx_ring;
     void __user* argp = (void __user*)arg;
     long ret = 0;
     uint32_t buf_uint32;
@@ -1677,16 +1683,14 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
             return -EFAULT;
         break;
     case AXNET_SEND_RAW_AVAIL:
-        tx_ring = &drvdata->raw_tx_ring;
-        buf_int = axiomnet_raw_tx_avail(tx_ring);
+        buf_int = axiomnet_raw_tx_avail(&drvdata->raw_tx_ring);
         put_user(buf_int, (int __user*)arg);
         break;
     case AXNET_RECV_RAW_AVAIL:
-        rx_ring = &drvdata->raw_rx_ring;
         port = axiomnet_check_port(priv);
         if (port < 0)
             return port;
-        buf_int = axiomnet_raw_rx_avail(rx_ring, port);
+        buf_int = axiomnet_raw_rx_avail(&drvdata->raw_rx_ring, port);
         put_user(buf_int, (int __user*)arg);
         break;
     case AXNET_FLUSH_RAW:
@@ -1721,6 +1725,18 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         ret = copy_to_user(argp, &buf_long, sizeof(buf_long));
         if (ret)
             return -EFAULT;
+        break;
+    case AXNET_SEND_LONG_AVAIL:
+        buf_int = axiomnet_long_tx_avail(&drvdata->rdma_tx_ring) &&
+            axiomnet_rdma_tx_avail(&drvdata->rdma_tx_ring);
+        put_user(buf_int, (int __user*)arg);
+        break;
+    case AXNET_RECV_LONG_AVAIL:
+        port = axiomnet_check_port(priv);
+        if (port < 0)
+            return port;
+        buf_int = axiomnet_long_rx_avail(&drvdata->rdma_rx_ring, port);
+        put_user(buf_int, (int __user*)arg);
         break;
     case AXNET_FLUSH_LONG:
         ret = axiomnet_long_flush(priv);
