@@ -16,7 +16,7 @@
 /*! \brief Maximum number of interfaces supported by the AXIOM NIC */
 #define AXIOM_INTERFACES_MAX                    4
 /*! \brief Max number of port available in RAW messages */
-#define AXIOM_RAW_PORT_MAX                      8
+#define AXIOM_PORT_MAX                          8
 /*! \brief Max number of type available */
 #define AXIOM_TYPE_MAX                          8
 /*! \brief Max number of message id available */
@@ -35,6 +35,9 @@
  *         granularity
  */
 #define AXIOM_RDMA_PAYLOAD_SIZE_ORDER           3
+
+/*! \brief Max payload size in the long message */
+#define AXIOM_LONG_PAYLOAD_MAX_SIZE             4096
 
 /*! \brief  Max memory segment size */
 #define AXIOM_MAX_SEGMENT_SIZE                  (2L*1024*1024*1204)

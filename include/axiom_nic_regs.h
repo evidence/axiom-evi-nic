@@ -22,6 +22,8 @@
 #define AXIOMREG_LEN_IFINFO                     8
 /*! \brief length of ROUTING registers array */
 #define AXIOMREG_LEN_ROUTING                    256
+/*! \brief length of LONG_BUF registers array */
+#define AXIOMREG_LEN_LONG_BUF                   32
 /*! \brief length of RAW QUEUE registers array */
 //#define AXIOMREG_LEN_RAW_QUEUE                  1
 /*! \brief length of RDMA QUEUE registers array */
@@ -31,6 +33,8 @@
 #define AXIOMREG_SIZE_IFINFO                    1
 /*! \brief size of ROUTING registers array elements */
 #define AXIOMREG_SIZE_ROUTING                   1
+/*! \brief size of LONG_BUF registers array elements */
+#define AXIOMREG_SIZE_LONG_BUF                  8
 /*! \brief size of RAW QUEUE registers array elements */
 #define AXIOMREG_SIZE_RAW_QUEUE   \
     (AXIOM_RAW_HEADER_SIZE + AXIOM_RAW_PAYLOAD_MAX_SIZE)
@@ -123,24 +127,40 @@
 /*! \brief RDMA_RX_DESC register - 96 bit r/o */
 #define AXIOMREG_IO_RDMA_RX_DESC                0x00000610
 
+/* LONG buffer registers */
+/*! \brief LONG_BUF_BASE register - 64 bit r/w x 32 = 256 bytes */
+#define AXIOMREG_IO_LONG_BUF_BASE               0x00000620
+
 /*! \brief Registers end */
-#define AXIOMREG_IO_SIZE                        0x00000620
+#define AXIOMREG_IO_SIZE                        0x00000720
 
 
 
 /********************* Registers bit description ******************************/
 
-
-/* Version bit-mask */
-
+/*!
+ * \brief AXIOM register: VERSION bit field
+ */
+typedef struct axiomreg_version {
+    uint32_t reserved : 16;     /*!< \brief Reserved field */
+    uint32_t bitstream : 8;     /*!< \brief Bitstream version */
+    uint32_t board : 8;         /*!< \brief Board version */
+} axiomreg_version_t;
 #define AXIOMREG_VERSION_BRD_MASK               0x000000FF
 #define AXIOMREG_VERSION_BRD_OFF                0
 #define AXIOMREG_VERSION_BSR_MASK               0x0000FF00
 #define AXIOMREG_VERSION_BSR_OFF                8
 
 
-/* Interface info status bit */
-
+/*!
+ * \brief AXIOM register: IFINFO bit field
+ */
+typedef struct axiomreg_ifinfo {
+    uint32_t reserved : 29;     /*!< \brief Reserved field */
+    uint32_t connected : 1;     /*!< \brief Interface is connected */
+    uint32_t rx : 1;            /*!< \brief Interface enabled in RX mode */
+    uint32_t tx : 1;            /*!< \brief Interface enabled in TX mode */
+} axiomreg_ifinfo_t;
 /*! \brief Interface enabled in TX mode */
 #define AXIOMREG_IFINFO_TX                      0x01
 /*! \brief Interface enabled in RX mode */
@@ -149,17 +169,30 @@
 #define AXIOMREG_IFINFO_CONNECTED               0x04
 
 
-/* Control bit */
-
+/*!
+ * \brief AXIOM register: CONTROL bit field
+ */
+typedef struct axiomreg_control {
+    uint32_t reserved : 31;     /*!< \brief Reserved field */
+    uint32_t loopback : 1;      /*!< \brief Interface in loopback mode */
+} axiomreg_control_t;
 /*! \brief Interface in loopback mode */
 #define AXIOMREG_CONTROL_LOOPBACK               0x00000001
 
 
-/* Interrupt bit */
-
-/*! \brief RAW RX Queue interrupt */
-#define AXIOMREG_IRQ_RAW_TX                     0x00000001
+/*!
+ * \brief AXIOM register: INTERRUPT bit field
+ */
+typedef struct axiomreg_interrupt {
+    uint32_t reserved : 28;     /*!< \brief Reserved field */
+    uint32_t rdma_rx : 1;       /*!< \brief RDMA RX Queue interrupt */
+    uint32_t rdma_tx : 1;       /*!< \brief RDMA TX Queue interrupt */
+    uint32_t raw_rx : 1;        /*!< \brief RAW RX Queue interrupt */
+    uint32_t raw_tx : 1;        /*!< \brief RAW TX Queue interrupt */
+} axiomreg_interrupt_t;
 /*! \brief RAW TX Queue interrupt */
+#define AXIOMREG_IRQ_RAW_TX                     0x00000001
+/*! \brief RAW RX Queue interrupt */
 #define AXIOMREG_IRQ_RAW_RX                     0x00000002
 /*! \brief RDMA TX Queue interrupt */
 #define AXIOMREG_IRQ_RDMA_TX                    0x00000004
@@ -169,9 +202,26 @@
 #define AXIOMREG_IRQ_ALL                        0xFFFFFFFF
 
 
-/* Queue status bit */
-
+/*!
+    * \brief AXIOM register: QSTATUS bit field
+ */
+typedef struct axiomreg_qstatus {
+    uint32_t reserved : 31;     /*!< \brief Reserved field */
+    uint32_t avail : 1;         /*!< \brief Slots available in the queue */
+} axiomreg_qstatus_t;
 /*! \brief Slots available in the queue */
 #define AXIOMREG_QSTATUS_AVAIL                  0x00000001
+
+
+/*!
+ * \brief AXIOM register: LONG_BUF bit field
+ */
+typedef struct axiomreg_long_buf {
+    uint32_t address;           /*!< \brief Address of buffer */
+    uint16_t size;              /*!< \brief Size of buffer */
+    uint16_t used_msg_id;       /*!< \brief OxFFFF if it is not used, otherwise
+                                            it contains the message id */
+    #define AXIOMREG_LONG_BUF_FREE              0xFFFF
+} axiomreg_long_buf_t;
 
 #endif /* AXIOM_NIC_REGS_H */

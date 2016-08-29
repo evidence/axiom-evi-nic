@@ -54,7 +54,7 @@ axiom_hw_dev_free(axiom_dev_t *dev)
 
 axiom_msg_id_t
 axiom_hw_raw_tx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
-        axiom_payload_t *payload)
+        axiom_raw_payload_t *payload)
 {
     axiom_raw_payload_size_t payload_size;
     void __iomem *base_reg;
@@ -108,7 +108,7 @@ axiom_hw_raw_tx_push(axiom_dev_t *dev)
 
 axiom_msg_id_t
 axiom_hw_raw_rx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
-        axiom_payload_t *payload)
+        axiom_raw_payload_t *payload)
 {
     axiom_raw_payload_size_t payload_size;
     void __iomem *base_reg;
@@ -246,6 +246,14 @@ axiom_hw_set_rdma_zone(axiom_dev_t *dev, uint64_t start, uint64_t end)
 {
     writeq(start, dev->vregs + AXIOMREG_IO_DMA_START);
     writeq(end, dev->vregs + AXIOMREG_IO_DMA_END);
+}
+
+void
+axiom_hw_set_long_buf(axiom_dev_t *dev, int buf_id,
+        axiomreg_long_buf_t *long_buf)
+{
+    writeq(*((uint64_t *)long_buf), dev->vregs + AXIOMREG_IO_LONG_BUF_BASE
+            + (buf_id * AXIOMREG_SIZE_LONG_BUF));
 }
 
 void

@@ -24,7 +24,7 @@
  */
 axiom_msg_id_t
 axiom_hw_raw_tx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
-        axiom_payload_t *payload);
+        axiom_raw_payload_t *payload);
 
 /*!
  * \brief This function checks the space available in the raw TX queue.
@@ -47,7 +47,7 @@ axiom_hw_raw_tx_avail(axiom_dev_t *dev);
  */
 axiom_msg_id_t
 axiom_hw_raw_rx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
-        axiom_payload_t *payload);
+        axiom_raw_payload_t *payload);
 
 /*!
  * \brief This function cheks the messages available in the raw RX queue.
@@ -150,6 +150,17 @@ axiom_hw_read_ni_control(axiom_dev_t *dev);
  */
 void
 axiom_hw_set_rdma_zone(axiom_dev_t *dev, uint64_t start, uint64_t end);
+
+/*!
+ * \brief This function sets the buffers to receive LONG messages.
+ *
+ * \param dev           The axiom device private data pointer
+ * \param buf_id        Id of the buffer to set
+ * \param long_buf      Buffer info to set (address, size, used)
+ */
+void
+axiom_hw_set_long_buf(axiom_dev_t *dev, int buf_id,
+        axiomreg_long_buf_t *long_buf);
 
 /*!
  * \brief This function sets the id of a local node.

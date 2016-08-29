@@ -50,7 +50,7 @@ typedef union axiom_port_type {
     uint8_t raw;
     struct {
         uint8_t s : 1;
-        uint8_t reserved : 1;
+        uint8_t error : 1;
         uint8_t port : 3;
         uint8_t type : 3;
     } field;
@@ -89,18 +89,17 @@ typedef union axiom_raw_hdr {
     uint32_t raw32;
 } __attribute__((packed)) axiom_raw_hdr_t;
 
-
-/*! \brief AXIOM payload type */
-typedef struct axiom_payload {
+/*! \brief AXIOM RAW payload type */
+typedef struct axiom_raw_payload {
     uint8_t raw[AXIOM_RAW_PAYLOAD_MAX_SIZE];
-} __attribute__((packed)) axiom_payload_t;
+} __attribute__((packed)) axiom_raw_payload_t;
 
 /*!
  * \brief RAW messages with payload embedded
  */
 typedef struct axiom_raw_msg {
-    axiom_raw_hdr_t header;     /*!< \brief message header */
-    axiom_payload_t payload;    /*!< \brief message payload */
+    axiom_raw_hdr_t header;             /*!< \brief message header */
+    axiom_raw_payload_t payload;        /*!< \brief message payload */
 } __attribute__((packed)) axiom_raw_msg_t;
 
 
@@ -130,7 +129,6 @@ typedef struct axiom_rdma_rx_hdr {
     uint32_t dst_addr;          /*!< \brief destination address of payload */
 } __attribute__((packed)) axiom_rdma_rx_hdr_t;
 
-
 /*!
  * \brief Header packet union for RDMA messages
  */
@@ -139,4 +137,18 @@ typedef union axiom_rdma_hdr {
     axiom_rdma_rx_hdr_t rx;
     uint8_t raw[AXIOM_RDMA_HEADER_SIZE];
 } __attribute__((packed)) axiom_rdma_hdr_t;
+
+/*!
+ * \brief LONG messages with payload pointer
+ */
+typedef struct axiom_long_msg {
+    axiom_rdma_hdr_t header;            /*!< \brief message header */
+    void *payload;                      /*!< \brief message payload */
+} __attribute__((packed)) axiom_long_msg_t;
+
+/*! \brief AXIOM LONG payload type */
+typedef struct axiom_long_payload {
+    uint8_t raw[AXIOM_LONG_PAYLOAD_MAX_SIZE];
+} __attribute__((packed)) axiom_long_payload_t;
+
 #endif /* !AXIOM_NIC_PACKETS_H */
