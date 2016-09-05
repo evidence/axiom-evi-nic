@@ -241,6 +241,8 @@
 	Description		\> Node ID register\\
 \end{regdescription}
 \begin{regdetails}
+	\hline reserved & 31:8 & rw & 0x0 & Reserved. Writes are ignored, read
+	data is zero.\\
 	\hline NODEID & 7:0 & rw & 0x0 & Defines the ID of a local node.\\
 \end{regdetails}
 
@@ -362,7 +364,7 @@
 
 \subsubsection{ROUTING\_BASE[n]} \label{reg:routing_base}
 \begin{regdescription}
-	Name			\> RAW\_RX\_BASE[n]\\
+	Name			\> ROUTING\_BASE[n]\\
 	Relative Address	\> 0x00000100+n, n=0...255\\
 	Width (single row)	\> 8 bits\\
 	Access Type		\> rw\\
@@ -436,7 +438,7 @@
 \begin{regdescription}
 	Name			\> RAW\_TX\_DESC\\
 	Relative Address	\> 0x00000400\\
-	Width (single row)	\> 1056 bits\\
+	Width 	                \> 1056 bits\\
 	Access Type		\> wo\\
 	Init Value		\> 0x00000000\\
 	Description		\> RAW TX queue descriptor register\\
@@ -458,6 +460,8 @@
 	interface to send message to the neighbour \\
 	\hline reserved & 7:6 & wo & 0x0 & Reserved. Writes are ignored, read
 	data is zero.\\
+	\hline S & 7 & wo & 0x0 & S bit. Ignored in RAW message\\
+	\hline ERROR & 6 & wo & 0x0 & Error bit. Ignored in TX message\\
 	\hline PORT & 5:3 & wo & 0x0 & Message port.\\
         \hline TYPE & 2:0 & wo & 0x0 & Message types.\\
                     & & & & (RAW\_DATA = 0, RAW\_NEIGHBOUR = 1, LONG\_DATA =
@@ -503,8 +507,9 @@
 	by the software\\
 	\hline SOURCE & 15:8 & ro & 0x0 & Sender node id or local interface
 	where neighbour message is received\\
-	\hline reserved & 7:6 & ro & 0x0 & Reserved. Writes are ignored, read
-	data is zero.\\
+	\hline S & 7 & ro & 0x0 & S bit. Ignored in RAW message\\
+	\hline ERROR & 6 & ro & 0x0 & Error bit. When set to 1b, there is an
+	error. The first byte of payload contains the error cause\\
 	\hline PORT & 5:3 & ro & 0x0 & Message port.\\
         \hline TYPE & 2:0 & ro & 0x0 & Message types. \\
                     & & & & (RAW\_DATA = 0, RAW\_NEIGHBOUR = 1, LONG\_DATA =
@@ -532,7 +537,7 @@
 \begin{regdescription}
 	Name			\> RDMA\_TX\_DESC\\
 	Relative Address	\> 0x00000600\\
-	Width (single row)	\> 104 bits\\
+	Width 	                \> 104 bits\\
 	Access Type		\> wo\\
 	Init Value		\> 0x00000000\\
 	Description		\> RDMA TX queue descriptor register\\
@@ -550,8 +555,8 @@
 	\hline MSG\_ID & 23:16 & wo & 0x0 & Unique ID for this message spcified
 	by the software\\
 	\hline DESTINATION & 15:8 & wo & 0x0 & Receiver node id\\
-	\hline reserved & 7:6 & wo & 0x0 & Reserved. Writes are ignored, read
-	data is zero.\\
+	\hline S & 7 & wo & 0x0 & S bit. Ignored in TX message\\
+	\hline ERROR & 6 & wo & 0x0 & Error bit. Ignored in TX message\\
 	\hline PORT & 5:3 & wo & 0x0 & RDMA port.\\
         \hline TYPE & 2:0 & wo & 0x0 & RDMA types.\\
                     & & & & (RAW\_DATA = 0, RAW\_NEIGHBOUR = 1, LONG\_DATA =
@@ -579,7 +584,7 @@
 \begin{regdescription}
 	Name			\> RDMA\_RX\_DESC\\
 	Relative Address	\> 0x00000610\\
-	Width (single row)	\> 104 bits\\
+	Width                   \> 104 bits\\
 	Access Type		\> ro\\
 	Init Value		\> 0x00000000\\
 	Description		\> RDMA RX queue descriptor register\\
@@ -597,8 +602,10 @@
 	\hline MSG\_ID & 23:16 & wo & 0x0 & Unique ID for this message spcified
 	by the software\\
 	\hline SOURCE & 15:8 & ro & 0x0 & Sender node id\\
-	\hline reserved & 7:6 & ro & 0x0 & Reserved. Writes are ignored, read
-	data is zero.\\
+	\hline S & 7 & ro & 0x0 & S bit. When set to 1b, this message is an ACK
+	of message previously sent by this node\\
+	\hline ERROR & 6 & ro & 0x0 & Error bit. When set to 1b, there is an
+	error. The first byte of payload contains the error cause\\
 	\hline PORT & 5:3 & ro & 0x0 & RDMA port.\\
         \hline TYPE & 2:0 & ro & 0x0 & RDMA types.\\
                     & & & & (RAW\_DATA = 0, RAW\_NEIGHBOUR = 1, LONG\_DATA =
