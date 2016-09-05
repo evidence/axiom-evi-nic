@@ -71,6 +71,10 @@
                                               & & & & \\
 	\hline \nameref{reg:control} & 0x00000040 & 32 & rw & Control register\\
 	\hline \nameref{reg:nodeid} & 0x00000044 & 32 & rw & Node ID register \\
+	\hline \nameref{reg:dma_start} & 0x00000048 & 64 & wo & DMA start
+	register\\
+	\hline \nameref{reg:dma_end} & 0x00000050 & 64 & wo & DMA end
+	register \\
         \hline \textbf{\nameref{mod:interrupt}} & & & & \\
                                                 & & & & \\
 	\hline \nameref{reg:ackirq} & 0x00000060 & 32 & wo & ACK Interrupt
@@ -209,6 +213,10 @@
 	register \\
 	\hline \nameref{reg:nodeid} & 0x00000044 & 32 & rw & 0x0 & Node ID
 	register \\
+	\hline \nameref{reg:dma_start} & 0x00000048 & 64 & wo & 0x0 & DMA start
+	register \\
+	\hline \nameref{reg:dma_end} & 0x00000050 & 64 & wo & 0x0 & DMA end
+	register \\
 \end{regsummary}
 
 
@@ -244,6 +252,38 @@
 	\hline reserved & 31:8 & rw & 0x0 & Reserved. Writes are ignored, read
 	data is zero.\\
 	\hline NODEID & 7:0 & rw & 0x0 & Defines the ID of a local node.\\
+\end{regdetails}
+
+
+\subsubsection{DMA\_START} \label{reg:dma_start}
+\begin{regdescription}
+	Name			\> DMA\_START\\
+	Relative Address	\> 0x00000048\\
+	Width			\> 64 bits\\
+	Access Type		\> wo\\
+	Init Value		\> 0x00000000\\
+	Description		\> DMA start register\\
+\end{regdescription}
+\begin{regdetails}
+	\hline DMA\_START & 63:0 & wo & 0x0 & Physical memory address of the
+	first byte of DMA zone that can be accessed from the NIC. This zone
+	must contains the LONG TX and RX buffers and RDMA zone\\
+\end{regdetails}
+
+
+\subsubsection{DMA\_END} \label{reg:dma_end}
+\begin{regdescription}
+	Name			\> DMA\_END\\
+	Relative Address	\> 0x00000050\\
+	Width			\> 64 bits\\
+	Access Type		\> wo\\
+	Init Value		\> 0x00000000\\
+	Description		\> DMA end register\\
+\end{regdescription}
+\begin{regdetails}
+	\hline DMA\_END & 63:0 & wo & 0x0 & Physical memory address of the
+	last byte of DMA zone that can be accessed from the NIC. This zone
+	must contains the LONG TX and RX buffers and RDMA zone\\
 \end{regdetails}
 
 
