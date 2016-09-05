@@ -54,7 +54,7 @@
 %\chapter{Axiom NIC}
 \section{AXIOM NIC Registers}
 \begin{regdescription}
-	Total size      \> 1568 bytes\\
+	Total size      \> 1824 bytes\\
 \end{regdescription}
 
 \subsection{Register summary}
@@ -105,6 +105,8 @@
 	queue status register\\
         \hline \nameref{reg:rdma_rx_desc} & 0x00000610 & 104 & ro & RDMA RX queue
         descriptor register\\
+        \hline \nameref{reg:long_buf_base} & 0x00000620+8*n & 64 & rw & LONG
+        buffers base register\\ & n=0...31 & & & \\
 \end{regglobalsummary}
 
 
@@ -456,6 +458,9 @@
 	RX queue status register\\
         \hline \nameref{reg:rdma_rx_desc} & 0x00000610 & 104 & ro & 0x0 & RDMA RX
         queue descriptor register\\
+        \hline \nameref{reg:long_buf_base} & 0x00000620+8*n & 64 & rw & 0x0 & LONG
+        buffers base register\\
+            & n=0...31 & & & & \\
 \end{regsummary}
 
 \subsubsection{RAW\_TX\_STATUS} \label{reg:raw_tx_status}
@@ -651,5 +656,25 @@
                     & & & & (RAW\_DATA = 0, RAW\_NEIGHBOUR = 1, LONG\_DATA =
                     2, RDMA\_WRITE = 3, RDMA\_REQ = 4, RDMA\_RESPONSE = 5,
                     INIT = 6, ACK = 7)\\
+\end{regdetails}
+
+\subsubsection{LONG\_BUF\_BASE[n]} \label{reg:long_buf_base}
+\begin{regdescription}
+	Name			\> LONG\_BUF\_BASE[n]\\
+	Relative Address	\> 0x00000620+8*n, n=0...31\\
+	Width (single row)	\> 64 bits\\
+	Access Type		\> rw\\
+	Init Value		\> 0x00000000\\
+	Description		\> LONG buffers base register\\
+	                        \> This array of registers represents the
+	                        address of buffers available\\
+	                        \> for receiving the LONG messages.\\
+\end{regdescription}
+\begin{regdetails}
+	\hline USED\_MSG\_ID & 63:48 & rw & 0x0 & The HW put the MSG\_ID of
+	message that uses this buffer. When the software read it, must write
+	0xFFFF to signal to the HW that this buffer is now free\\
+	\hline SIZE & 47:32 & rw & 0x0 & Size of buffer \\
+	\hline ADRESS & 31:0 & rw & 0x0 & Address of buffer \\
 \end{regdetails}
 \end{document}
