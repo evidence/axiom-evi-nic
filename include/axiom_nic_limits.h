@@ -4,7 +4,7 @@
 /*!
  * \file axiom_nic_limits.h
  *
- * \version     v0.7
+ * \version     v0.8
  * \date        2016-04-08
  *
  * This file contains the AXIOM limits
