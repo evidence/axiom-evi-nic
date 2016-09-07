@@ -798,9 +798,6 @@ inline static int axiomnet_long_send(struct file *filep,
     cb.data = (void *)(uintptr_t)queue_slot;
 
     ret = axiomnet_rdma_tx(filep, &(long_msg->header), &cb);
-    if (unlikely(ret)) {
-        goto err;
-    }
 
 err_nopush:
     return ret;
