@@ -181,6 +181,13 @@ err:
     return ret;
 }
 
+inline static bool axiomnet_raw_rx_work_todo(void *data)
+{
+    struct axiomnet_raw_rx_hwring *rx_ring = data;
+    return (axiom_hw_raw_rx_avail(rx_ring->drvdata->dev_api) != 0)
+        && (eviq_free_avail(&rx_ring->sw_queue.evi_queue) != 0);
+}
+
 inline static void axiom_raw_rx_dequeue(struct axiomnet_raw_rx_hwring *rx_ring)
 {
     struct axiomnet_raw_queue *sw_queue = &rx_ring->sw_queue;
@@ -192,7 +199,7 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_raw_rx_hwring *rx_ring)
 
 
     /* something to read */
-    while (axiom_hw_raw_rx_avail(rx_ring->drvdata->dev_api) != 0) {
+    while (axiomnet_raw_rx_work_todo(rx_ring)) {
         int process_wakeup = 0;
         axiom_raw_msg_t *raw_msg;
 
@@ -201,6 +208,7 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_raw_rx_hwring *rx_ring)
         spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
 
         if (unlikely(queue_slot == EVIQ_NONE)) {
+            EPRINTF("RAW SW queue empty")
             break;
         }
 
@@ -555,14 +563,20 @@ inline static int axiomnet_long_rx_avail(struct axiomnet_rdma_rx_hwring *rx_ring
     return avail;
 }
 
+inline static bool axiomnet_rdma_rx_work_todo(void *data)
+{
+    struct axiomnet_rdma_rx_hwring *rx_ring = data;
+    return (axiom_hw_rdma_rx_avail(rx_ring->drvdata->dev_api) != 0)
+        && (eviq_free_avail(&rx_ring->long_queue.evi_queue) != 0);
+}
+
 inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring)
 {
     axiom_rdma_hdr_t rdma_hdr;
     axiom_msg_id_t msg_id;
 
     /* something to read */
-    while (axiom_hw_rdma_rx_avail(rx_ring->drvdata->dev_api) != 0) {
-
+    while (axiomnet_rdma_rx_work_todo(rx_ring)) {
         msg_id = axiom_hw_rdma_rx(rx_ring->drvdata->dev_api, &rdma_hdr);
 
         /* if the s_bit is set, we received an ack, otherwise it is a LONG msg*/
@@ -630,6 +644,7 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
             spin_unlock_irqrestore(&long_queue->queue_lock, flags);
 
             if (unlikely(queue_slot == EVIQ_NONE)) {
+                EPRINTF("LONG SW queue empty")
                 break;
             }
 
@@ -980,25 +995,12 @@ err:
 }
 
 /**************************** Worker functions ********************************/
-static bool axiomnet_raw_rx_work_todo(void *data)
-{
-    struct axiomnet_raw_rx_hwring *rx_ring = data;
-    return (axiom_hw_raw_rx_avail(rx_ring->drvdata->dev_api) != 0)
-        && (eviq_free_avail(&rx_ring->sw_queue.evi_queue) != 0);
-}
-
 static void axiomnet_raw_rx_worker(void *data)
 {
     struct axiomnet_raw_rx_hwring *rx_ring = data;
 
     /* fetch raw rx queue elements */
     axiom_raw_rx_dequeue(rx_ring);
-}
-
-static bool axiomnet_rdma_rx_work_todo(void *data)
-{
-    struct axiomnet_rdma_rx_hwring *rx_ring = data;
-    return (axiom_hw_rdma_rx_avail(rx_ring->drvdata->dev_api) != 0);
 }
 
 static void axiomnet_rdma_rx_worker(void *data)
