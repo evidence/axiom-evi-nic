@@ -51,7 +51,8 @@
 struct axiomnet_drvdata;
 
 /*! \brief AXIOM RDMA callback */
-typedef void (*axiom_callback_fn_t)(struct axiomnet_drvdata *drvdata, void *data);
+typedef void (*axiom_callback_fn_t)(struct axiomnet_drvdata *drvdata,
+        void *data, axiom_rdma_hdr_t *rdma_hdr);
 
 typedef struct axiom_callback {
     axiom_callback_fn_t func;

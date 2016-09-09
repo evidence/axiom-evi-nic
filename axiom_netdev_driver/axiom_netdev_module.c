@@ -25,6 +25,7 @@
 #include <linux/device.h>
 #include <linux/types.h>
 #include <linux/sched.h>
+#include <linux/delay.h>
 
 #include "evi_queue.h"
 
@@ -591,6 +592,42 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                 continue;
             }
 
+            /* TODO: retry if there is an error
+             * TODO: add a limit to retry
+             */
+            if (rdma_hdr.rx.port_type.field.error == 1) {
+                struct axiomnet_drvdata *drvdata = rx_ring->drvdata;
+                struct axiomnet_rdma_tx_hwring *tx_ring =
+                    &drvdata->rdma_tx_ring;
+                int ret;
+
+                DPRINTF("");
+
+                mutex_lock(&tx_ring->rdma_port.mutex);
+
+                while (!axiom_hw_rdma_tx_avail(drvdata->dev_api)) {
+                    msleep(1);
+                    /* XXX or wait_event_interruptible? */
+                }
+
+                rdma_hdr.tx.port_type.field.s = 0;
+                rdma_hdr.tx.port_type.field.error = 0;
+
+                /* copy packet into the ring */
+                ret = axiom_hw_rdma_tx(drvdata->dev_api, &rdma_hdr);
+                /*
+                 * if all is ok, continue to next packet, otherwise free all
+                 * resources
+                 */
+                if (likely(ret == rdma_hdr.tx.msg_id)) {
+                    continue;
+                } else {
+                    EPRINTF("Retry to send message failed");
+                }
+            }
+
+
+
             /* if there is some process to wait, wakeup it, otherwise free the
              * status
              */
@@ -604,13 +641,13 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                 unsigned long flags;
                 int wakeup_thread = 0;
 
-                rdma_status->ack_received = false;
-                rdma_status->remote_id = AXIOM_NULL_NODE;
-
                 if (rdma_status->callback.func) {
                     rdma_status->callback.func(rx_ring->drvdata,
-                            rdma_status->callback.data);
+                            rdma_status->callback.data, &rdma_hdr);
                 }
+
+                rdma_status->ack_received = false;
+                rdma_status->remote_id = AXIOM_NULL_NODE;
 
                 spin_lock_irqsave(&rdma_queue->queue_lock, flags);
                 /* send a notification to other thread if the free queue was empty */
@@ -691,7 +728,8 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
 
 /***************************** LONG functions *********************************/
 
-static void axiomnet_long_callback(struct axiomnet_drvdata *drvdata, void *data)
+static void axiomnet_long_callback(struct axiomnet_drvdata *drvdata, void *data,
+        axiom_rdma_hdr_t *rdma_hdr)
 {
     struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
     struct axiomnet_long_queue *long_queue = &tx_ring->long_queue;
@@ -699,8 +737,7 @@ static void axiomnet_long_callback(struct axiomnet_drvdata *drvdata, void *data)
     unsigned long flags;
     bool wakeup_thread = false;
 
-    if (mutex_lock_interruptible(&tx_ring->long_port.mutex))
-        return;
+    mutex_lock(&tx_ring->long_port.mutex);
 
     spin_lock_irqsave(&long_queue->queue_lock, flags);
     /* send a notification to other thread if the free queue was empty */
@@ -798,6 +835,10 @@ inline static int axiomnet_long_send(struct file *filep,
     cb.data = (void *)(uintptr_t)queue_slot;
 
     ret = axiomnet_rdma_tx(filep, &(long_msg->header), &cb);
+    if (ret < 0) {
+        EPRINTF("axiomnet_rdma_tx error");
+        goto err;
+    }
 
 err_nopush:
     return ret;
