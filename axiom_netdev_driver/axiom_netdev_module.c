@@ -624,7 +624,6 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                 if (wakeup_thread) {
                     wake_up(&(tx_ring->rdma_port.wait_queue));
                 }
-
             }
         } else { /* LONG message */
             axiom_long_msg_t *long_msg;
@@ -716,6 +715,7 @@ static void axiomnet_long_callback(struct axiomnet_drvdata *drvdata, void *data)
     if (wakeup_thread) {
         wake_up(&(tx_ring->long_port.wait_queue));
     }
+
 }
 
 
@@ -1569,6 +1569,57 @@ inline static int axiomnet_check_port(struct axiomnet_priv *priv)
     return port;
 }
 
+/************************* AxiomNet Debug info  *******************************/
+
+void axiomnet_debug_long(struct axiomnet_drvdata *drvdata)
+{
+    struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
+    struct axiomnet_rdma_rx_hwring *rx_ring = &drvdata->rdma_rx_ring;
+    int i;
+
+    printk("---- AXIOM DEBUG LONG ----\n");
+    printk("  tx-avail: %d\n", axiomnet_long_tx_avail(tx_ring));
+
+    for (i = 0; i < AXIOM_PORT_MAX; i++) {
+        printk("  rx-avail[%d]: %d\n", i, axiomnet_long_rx_avail(rx_ring, i));
+    }
+
+}
+
+void axiomnet_debug_rdma(struct axiomnet_drvdata *drvdata)
+{
+    struct axiomnet_rdma_rx_hwring *rx_ring = &drvdata->rdma_rx_ring;
+    int i;
+
+    printk("---- AXIOM DEBUG RDMA ----\n");
+    for (i = 0; i < AXIOMNET_RDMA_QUEUE_FREE_LEN; i++) {
+        axiom_rdma_status_t *rdma_status =
+            &(rx_ring->tx_rdma_queue->queue_desc[i]);
+        printk("  rdma_status[%d] - ack_wait: 0x%x ack_recv: 0x%x "
+                "rid: 0x%x\n", i, rdma_status->ack_waiting,
+                rdma_status->ack_received, rdma_status->remote_id);
+    }
+
+
+}
+
+
+int axiomnet_debug_info(struct axiomnet_drvdata *drvdata)
+{
+    if (!drvdata)
+        return -EINVAL;
+
+    printk("\n---- AXIOM NIC DEBUG ----\n\n");
+    axiom_print_status_reg(drvdata->dev_api);
+    axiom_print_control_reg(drvdata->dev_api);
+
+    printk("\n---- AXIOM DRIVER DEBUG ----\n\n");
+    axiomnet_debug_long(drvdata);
+    axiomnet_debug_rdma(drvdata);
+
+    return 0;
+}
+
 /************************ AxiomNet Char Device  ******************************/
 
 static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
@@ -1739,6 +1790,9 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         break;
     case AXNET_FLUSH_LONG:
         ret = axiomnet_long_flush(priv);
+        break;
+    case AXNET_DEBUG_INFO:
+        ret = axiomnet_debug_info(drvdata);
         break;
     default:
         ret = -EINVAL;

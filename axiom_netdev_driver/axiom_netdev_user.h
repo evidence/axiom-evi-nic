@@ -80,4 +80,7 @@ typedef struct axiom_ioctl_bind {
 /*! \brief AXIOM IOCTL to flush long messages */
 #define AXNET_FLUSH_LONG         _IO(AXNET_MAGIC, 122)
 
+
+#define AXNET_DEBUG_INFO         _IO(AXNET_MAGIC, 200)
+
 #endif /* !AXIOM_NETDEV_USER_h */

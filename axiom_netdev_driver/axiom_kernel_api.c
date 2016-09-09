@@ -389,10 +389,16 @@ axiom_print_queue_reg(axiom_dev_t *dev)
     printk("axiom --- QUEUE REGISTERS start ---\n");
 
     buf32 = ioread32(dev->vregs + AXIOMREG_IO_RAW_TX_STATUS);
-    printk("axiom - tx_status: 0x%08x\n", buf32);
+    printk("axiom - raw_tx_status: 0x%08x\n", buf32);
 
     buf32 = ioread32(dev->vregs + AXIOMREG_IO_RAW_RX_STATUS);
-    printk("axiom - rx_status: 0x%08x\n", buf32);
+    printk("axiom - raw_rx_status: 0x%08x\n", buf32);
+
+    buf32 = ioread32(dev->vregs + AXIOMREG_IO_RDMA_TX_STATUS);
+    printk("axiom - rdma_tx_status: 0x%08x\n", buf32);
+
+    buf32 = ioread32(dev->vregs + AXIOMREG_IO_RDMA_RX_STATUS);
+    printk("axiom - rdma_rx_status: 0x%08x\n", buf32);
 
     printk("axiom --- QUEUE REGISTERS end ---\n");
 }
