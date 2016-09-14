@@ -615,6 +615,10 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
 
                 /* copy packet into the ring */
                 ret = axiom_hw_rdma_tx(drvdata->dev_api, &rdma_hdr);
+
+                mutex_unlock(&tx_ring->rdma_port.mutex);
+
+
                 /*
                  * if all is ok, continue to next packet, otherwise free all
                  * resources
