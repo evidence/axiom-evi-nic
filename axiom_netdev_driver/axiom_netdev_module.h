@@ -48,12 +48,16 @@
 /*! \brief Invalid number of AXIOM port */
 #define AXIOMNET_PORT_INVALID           -1
 
+/*! \brief max number of retry to send RDMA request */
+#define AXIOMNET_MAX_RDMA_RETRY         10
+
 struct axiomnet_drvdata;
 
-/*! \brief AXIOM RDMA callback */
+/*! \brief AXIOM RDMA callback function */
 typedef void (*axiom_callback_fn_t)(struct axiomnet_drvdata *drvdata,
         void *data, axiom_rdma_hdr_t *rdma_hdr);
 
+/*! \brief AXIOM RDMA callback structure */
 typedef struct axiom_callback {
     axiom_callback_fn_t func;
     void *data;
@@ -61,13 +65,15 @@ typedef struct axiom_callback {
 
 /*! \brief Structure to handle msg id assignment */
 typedef struct axiom_rdma_status {
-    wait_queue_head_t wait_queue;       /*!< \brief wait queue */
+    axiom_msg_id_t msg_id;              /*!< \brief Message id value */
+    uint8_t retries;                    /*!< \brief number of retries */
     bool ack_received;                  /*!< \brief Is ack received? */
-    bool ack_waiting;
-    axiom_msg_id_t msg_id;
-    eviq_pnt_t queue_slot;
-    axiom_node_id_t remote_id;
-    axiom_callback_t callback;
+    bool ack_waiting;                   /*!< \brief We need to wait the ack */
+    wait_queue_head_t wait_queue;       /*!< \brief wait queue */
+    eviq_pnt_t queue_slot;              /*!< \brief queue slot to free */
+    axiom_callback_t callback;          /*!< \brief callback to call when
+                                                    packet is received */
+    axiom_rdma_hdr_t header;            /*!< \brief header of packet to check */
 } axiom_rdma_status_t;
 
 /*! \brief Structure to handle an AXIOM software RAW queue */

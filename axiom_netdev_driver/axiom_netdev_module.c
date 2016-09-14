@@ -476,9 +476,11 @@ inline static int axiomnet_rdma_tx(struct file *filep,
     }
 
     rdma_status = &(rdma_queue->queue_desc[queue_slot]);
-    rdma_status->ack_received = false;
-    rdma_status->remote_id = header->tx.dst;
     header->tx.msg_id = rdma_status->msg_id;
+
+    rdma_status->ack_received = false;
+    rdma_status->retries = 0;
+    memcpy(&rdma_status->header, header, sizeof(*header));
 
     if (callback) {
         rdma_status->ack_waiting = false;
@@ -529,7 +531,7 @@ inline static int axiomnet_rdma_tx(struct file *filep,
     }
 
     rdma_status->ack_received = false;
-    rdma_status->remote_id = AXIOM_NULL_NODE;
+    rdma_status->header.tx.dst = AXIOM_NULL_NODE;
 
 err:
     mutex_unlock(&tx_ring->rdma_port.mutex);
@@ -587,21 +589,19 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
             struct axiomnet_rdma_queue *rdma_queue = rx_ring->tx_rdma_queue;
 
             if (unlikely((rdma_status->ack_received == true) ||
-                        (rdma_status->remote_id != rdma_hdr.rx.src))) {
+                        (rdma_status->header.tx.dst != rdma_hdr.rx.src))) {
                 EPRINTF("unexpected RDMA descriptor received - discarded");
                 continue;
             }
 
-            /* TODO: retry if there is an error
-             * TODO: add a limit to retry
-             */
-            if (rdma_hdr.rx.port_type.field.error == 1) {
+            /* retry to send packet if there is an error on remote node */
+            if (rdma_hdr.rx.port_type.field.error == 1 &&
+                    rdma_status->retries < AXIOMNET_MAX_RDMA_RETRY) {
+
                 struct axiomnet_drvdata *drvdata = rx_ring->drvdata;
                 struct axiomnet_rdma_tx_hwring *tx_ring =
                     &drvdata->rdma_tx_ring;
                 int ret;
-
-                DPRINTF("");
 
                 mutex_lock(&tx_ring->rdma_port.mutex);
 
@@ -610,27 +610,24 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                     /* XXX or wait_event_interruptible? */
                 }
 
-                rdma_hdr.tx.port_type.field.s = 0;
-                rdma_hdr.tx.port_type.field.error = 0;
+                /* resend the previously packet */
+                ret = axiom_hw_rdma_tx(drvdata->dev_api, &rdma_status->header);
 
-                /* copy packet into the ring */
-                ret = axiom_hw_rdma_tx(drvdata->dev_api, &rdma_hdr);
-
+                rdma_status->retries++;
                 mutex_unlock(&tx_ring->rdma_port.mutex);
-
-
                 /*
                  * if all is ok, continue to next packet, otherwise free all
                  * resources
                  */
                 if (likely(ret == rdma_hdr.tx.msg_id)) {
                     continue;
-                } else {
-                    EPRINTF("Retry to send message failed");
                 }
             }
 
-
+            if (rdma_hdr.rx.port_type.field.error == 1) {
+                EPRINTF("Message discarded after %d retries",
+                        rdma_status->retries);
+            }
 
             /* if there is some process to wait, wakeup it, otherwise free the
              * status
@@ -651,7 +648,7 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                 }
 
                 rdma_status->ack_received = false;
-                rdma_status->remote_id = AXIOM_NULL_NODE;
+                rdma_status->header.tx.dst = AXIOM_NULL_NODE;
 
                 spin_lock_irqsave(&rdma_queue->queue_lock, flags);
                 /* send a notification to other thread if the free queue was empty */
@@ -1223,7 +1220,7 @@ static int axiomnet_rdma_tx_hwring_init(struct axiomnet_drvdata *drvdata,
 
     for (i = 0; i < AXIOMNET_RDMA_QUEUE_FREE_LEN; i++) {
         tx_ring->rdma_queue.queue_desc[i].msg_id = i;
-        tx_ring->rdma_queue.queue_desc[i].remote_id = AXIOM_NULL_NODE;
+        tx_ring->rdma_queue.queue_desc[i].header.tx.dst = AXIOM_NULL_NODE;
         init_waitqueue_head(&(tx_ring->rdma_queue.queue_desc[i].wait_queue));
     }
 
@@ -1642,7 +1639,7 @@ void axiomnet_debug_rdma(struct axiomnet_drvdata *drvdata)
             &(rx_ring->tx_rdma_queue->queue_desc[i]);
         printk("  rdma_status[%d] - ack_wait: 0x%x ack_recv: 0x%x "
                 "rid: 0x%x\n", i, rdma_status->ack_waiting,
-                rdma_status->ack_received, rdma_status->remote_id);
+                rdma_status->ack_received, rdma_status->header.tx.dst);
     }
 
 
