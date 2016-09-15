@@ -16,10 +16,19 @@
 
 /*! \brief AXIOM char device minor */
 #define AXIOMNET_DEV_MINOR      0
+#define AXIOMNET_DEV_RAW_MINOR  1
+#define AXIOMNET_DEV_LONG_MINOR 2
+#define AXIOMNET_DEV_RDMA_MINOR 3
 /*! \brief AXIOM maximum char devices */
 #define AXIOMNET_DEV_MAX        8
 /*! \brief AXIOM char device base name */
 #define AXIOMNET_DEV_NAME       "axiom"
+/*! \brief AXIOM char device base name */
+#define AXIOMNET_DEV_RAW_NAME   "axiom-raw"
+/*! \brief AXIOM char device base name */
+#define AXIOMNET_DEV_LONG_NAME  "axiom-long"
+/*! \brief AXIOM char device base name */
+#define AXIOMNET_DEV_RDMA_NAME  "axiom-rdma"
 /*! \brief AXIOM char device class */
 #define AXIOMNET_DEV_CLASS      "axiomchar"
 /*! \brief max concurrent open allowed on an AXIOM char device */
@@ -152,7 +161,6 @@ struct axiomnet_long_buf_lut {
 struct axiomnet_drvdata {
     struct device *dev;                 /*!< \brief parent device */
     axiom_dev_t *dev_api;               /*!< \brief AXIOM dev HW API*/
-    int devnum;                         /*!< \brief CharDev minor number */
     struct mutex lock;                  /*!< \brief Axiom driver mutex */
     int used;                           /*!< \brief Current number of open() */
     uint8_t port_used;                  /*!< \brief Current port bound */
@@ -195,10 +203,12 @@ struct axiomnet_drvdata {
 struct axiomnet_chrdev {
     dev_t dev;                          /*!< \brief Parent device */
     struct class *dclass;               /*!< \brief Device Class */
-    struct cdev cdev;                   /*!< \biref Linux char dev */
+    struct cdev cdev;                   /*!< \biref Axiom char dev */
+    struct cdev cdev_raw;               /*!< \biref Axiom raw char dev */
+    struct cdev cdev_long;               /*!< \biref Axiom long char dev */
+    struct cdev cdev_rdma;               /*!< \biref Axiom rdma char dev */
     /*! \brief AXIOM device driver data */
-    /* TODO: maybe we have only 1 device */
-    struct axiomnet_drvdata *drvdata_a[AXIOMNET_DEV_MAX];
+    struct axiomnet_drvdata *drvdata;
 };
 
 /*! \brief AXIOM private data for each open */

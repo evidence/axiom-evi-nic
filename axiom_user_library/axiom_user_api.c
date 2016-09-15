@@ -26,7 +26,7 @@
 #include "axiom_utility.h"
 
 /*! \brief Axiom char dev default name */
-#define AXIOM_DEV_FILENAME      "/dev/axiom0"
+#define AXIOM_DEV_FILENAME      "/dev/axiom"
 
 /*!
  * \brief axiom arguments for the axiom_open() function

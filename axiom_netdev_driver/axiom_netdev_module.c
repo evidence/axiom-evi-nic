@@ -43,11 +43,6 @@ int verbose = 0;
 module_param(verbose, int, 0);
 MODULE_PARM_DESC(debug, "versbose level (0=none,...,16=all)");
 
-/*! \brief bitmap to handle chardev minor (devnum) */
-static DECLARE_BITMAP(dev_map, AXIOMNET_DEV_MAX);
-/*! \brief bitmap spinloc */
-static DEFINE_SPINLOCK(map_lock);
-
 struct axiomnet_chrdev chrdev;
 
 static int axiomnet_alloc_chrdev(struct axiomnet_drvdata *drvdata,
@@ -1883,7 +1878,7 @@ static int axiomnet_open(struct inode *inode, struct file *filep)
 {
     int err = 0;
     unsigned int minor = iminor(inode);
-    struct axiomnet_drvdata *drvdata = chrdev.drvdata_a[minor];
+    struct axiomnet_drvdata *drvdata = chrdev.drvdata;
     struct axiomnet_priv *priv;
 
     DPRINTF("start minor: %u drvdata: %p", minor, drvdata);
@@ -1922,7 +1917,7 @@ err:
 static int axiomnet_release(struct inode *inode, struct file *filep)
 {
     unsigned int minor = iminor(inode);
-    struct axiomnet_drvdata *drvdata = chrdev.drvdata_a[minor];
+    struct axiomnet_drvdata *drvdata = chrdev.drvdata;
     struct axiomnet_priv *priv = filep->private_data;
 
     DPRINTF("start");
@@ -1951,43 +1946,88 @@ static struct file_operations axiomnet_fops =
     .mmap = axiomnet_mmap,
 };
 
+static struct file_operations axiomnet_raw_fops =
+{
+    .owner = THIS_MODULE,
+    .open = axiomnet_open,
+    .release = axiomnet_release,
+    .unlocked_ioctl = axiomnet_ioctl,
+};
+
+static struct file_operations axiomnet_long_fops =
+{
+    .owner = THIS_MODULE,
+    .open = axiomnet_open,
+    .release = axiomnet_release,
+    .unlocked_ioctl = axiomnet_ioctl,
+};
+
+static struct file_operations axiomnet_rdma_fops =
+{
+    .owner = THIS_MODULE,
+    .open = axiomnet_open,
+    .release = axiomnet_release,
+    .unlocked_ioctl = axiomnet_ioctl,
+};
+
 static int axiomnet_alloc_chrdev(struct axiomnet_drvdata *drvdata,
         struct axiomnet_chrdev *chrdev)
 {
-    int err = 0, devnum;
+    int err = 0;
     struct device *dev_ret;
     DPRINTF("start");
 
-    spin_lock(&map_lock);
-    devnum = find_first_zero_bit(dev_map, AXIOMNET_DEV_MAX);
-    if (devnum >= AXIOMNET_DEV_MAX) {
-        spin_unlock(&map_lock);
-        err = -ENOMEM;
-        goto err;
-    }
-    set_bit(devnum, dev_map);
-    spin_unlock(&map_lock);
-
+    /* create axiom device */
     dev_ret  = device_create(chrdev->dclass, NULL,
-            MKDEV(MAJOR(chrdev->dev), devnum), drvdata,
-            "%s%d",AXIOMNET_DEV_NAME, devnum);
+            MKDEV(MAJOR(chrdev->dev), AXIOMNET_DEV_MINOR), drvdata,
+            "%s",AXIOMNET_DEV_NAME);
     if (IS_ERR(dev_ret)) {
         err = PTR_ERR(dev_ret);
-        goto free_devnum;
+        goto err;
     }
-    drvdata->devnum = devnum;
+
+    /* create axiom device for raw messages */
+    dev_ret  = device_create(chrdev->dclass, NULL,
+            MKDEV(MAJOR(chrdev->dev), AXIOMNET_DEV_RAW_MINOR), drvdata,
+            "%s",AXIOMNET_DEV_RAW_NAME);
+    if (IS_ERR(dev_ret)) {
+        err = PTR_ERR(dev_ret);
+        goto free_dev;
+    }
+
+    /* create axiom device for long messages */
+    dev_ret  = device_create(chrdev->dclass, NULL,
+            MKDEV(MAJOR(chrdev->dev), AXIOMNET_DEV_LONG_MINOR), drvdata,
+            "%s",AXIOMNET_DEV_LONG_NAME);
+    if (IS_ERR(dev_ret)) {
+        err = PTR_ERR(dev_ret);
+        goto free_raw_dev;
+    }
+
+    /* create axiom device for rdma */
+    dev_ret  = device_create(chrdev->dclass, NULL,
+            MKDEV(MAJOR(chrdev->dev), AXIOMNET_DEV_RDMA_MINOR), drvdata,
+            "%s",AXIOMNET_DEV_RDMA_NAME);
+    if (IS_ERR(dev_ret)) {
+        err = PTR_ERR(dev_ret);
+        goto free_long_dev;
+    }
+
     drvdata->used = 0;
+    chrdev->drvdata = drvdata;
 
-    chrdev->drvdata_a[devnum] = drvdata;
-
-    DPRINTF("end major:%d minor:%d", MAJOR(chrdev->dev), devnum);
+    DPRINTF("end major:%d", MAJOR(chrdev->dev));
     return 0;
 
-free_devnum:
-    spin_lock(&map_lock);
-    clear_bit(devnum, dev_map);
-    spin_unlock(&map_lock);
-
+free_long_dev:
+    device_destroy(chrdev->dclass, MKDEV(MAJOR(chrdev->dev),
+                AXIOMNET_DEV_LONG_MINOR));
+free_raw_dev:
+    device_destroy(chrdev->dclass, MKDEV(MAJOR(chrdev->dev),
+                AXIOMNET_DEV_RAW_MINOR));
+free_dev:
+    device_destroy(chrdev->dclass, MKDEV(MAJOR(chrdev->dev),
+                AXIOMNET_DEV_MINOR));
 err:
     pr_err("unable to allocate char dev [error %d]\n", err);
     DPRINTF("error: %d", err);
@@ -1999,13 +2039,15 @@ static void axiomnet_destroy_chrdev(struct axiomnet_drvdata *drvdata,
 {
     DPRINTF("start");
 
-    device_destroy(chrdev->dclass, MKDEV(MAJOR(chrdev->dev), drvdata->devnum));
-    spin_lock(&map_lock);
-    clear_bit(drvdata->devnum, dev_map);
-    spin_unlock(&map_lock);
-
-    chrdev->drvdata_a[drvdata->devnum] = NULL;
-    drvdata->devnum = -1;
+    device_destroy(chrdev->dclass, MKDEV(MAJOR(chrdev->dev),
+                AXIOMNET_DEV_RDMA_MINOR));
+    device_destroy(chrdev->dclass, MKDEV(MAJOR(chrdev->dev),
+                AXIOMNET_DEV_LONG_MINOR));
+    device_destroy(chrdev->dclass, MKDEV(MAJOR(chrdev->dev),
+                AXIOMNET_DEV_RAW_MINOR));
+    device_destroy(chrdev->dclass, MKDEV(MAJOR(chrdev->dev),
+                AXIOMNET_DEV_MINOR));
+    chrdev->drvdata = NULL;
 
     DPRINTF("end");
 }
@@ -2021,22 +2063,53 @@ static int axiomnet_init_chrdev(struct axiomnet_chrdev *chrdev)
         goto err;
     }
 
+    /* axiom device init */
     cdev_init(&chrdev->cdev, &axiomnet_fops);
-
-    err = cdev_add(&chrdev->cdev, chrdev->dev, AXIOMNET_DEV_MAX);
-    if (err < 0)
-    {
+    err = cdev_add(&chrdev->cdev,
+            MKDEV(MAJOR(chrdev->dev), AXIOMNET_DEV_MINOR), 1);
+    if (err < 0) {
         goto free_dev;
     }
+
+    /* axiom raw device init */
+    cdev_init(&chrdev->cdev_raw, &axiomnet_raw_fops);
+    err = cdev_add(&chrdev->cdev_raw,
+            MKDEV(MAJOR(chrdev->dev), AXIOMNET_DEV_RAW_MINOR), 1);
+    if (err < 0) {
+        goto free_cdev;
+    }
+
+    /* axiom long device init */
+    cdev_init(&chrdev->cdev_long, &axiomnet_long_fops);
+    err = cdev_add(&chrdev->cdev_long,
+            MKDEV(MAJOR(chrdev->dev), AXIOMNET_DEV_LONG_MINOR), 1);
+    if (err < 0) {
+        goto free_cdev_raw;
+    }
+
+    /* axiom rdma device init */
+    cdev_init(&chrdev->cdev_rdma, &axiomnet_rdma_fops);
+    err = cdev_add(&chrdev->cdev_rdma,
+            MKDEV(MAJOR(chrdev->dev), AXIOMNET_DEV_RDMA_MINOR), 1);
+    if (err < 0) {
+        goto free_cdev_long;
+    }
+
 
     chrdev->dclass = class_create(THIS_MODULE, AXIOMNET_DEV_CLASS);
     if (IS_ERR(chrdev->dclass)) {
         err = PTR_ERR(chrdev->dclass);
-        goto free_cdev;
+        goto free_cdev_rdma;
     }
 
     return 0;
 
+free_cdev_rdma:
+    cdev_del(&chrdev->cdev_rdma);
+free_cdev_long:
+    cdev_del(&chrdev->cdev_long);
+free_cdev_raw:
+    cdev_del(&chrdev->cdev_raw);
 free_cdev:
     cdev_del(&chrdev->cdev);
 free_dev:
@@ -2053,6 +2126,9 @@ static void axiomnet_cleanup_chrdev(struct axiomnet_chrdev *chrdev)
 
     class_unregister(chrdev->dclass);
     class_destroy(chrdev->dclass);
+    cdev_del(&chrdev->cdev_rdma);
+    cdev_del(&chrdev->cdev_long);
+    cdev_del(&chrdev->cdev_raw);
     cdev_del(&chrdev->cdev);
     unregister_chrdev_region(chrdev->dev, AXIOMNET_DEV_MINOR);
 
