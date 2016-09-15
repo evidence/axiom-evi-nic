@@ -82,7 +82,7 @@ axiom_hw_raw_tx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
 
     DPRINTF("header: %x", header->raw32);
 
-    return 0;
+    return header->tx.msg_id;
 }
 
 axiom_queue_len_t
