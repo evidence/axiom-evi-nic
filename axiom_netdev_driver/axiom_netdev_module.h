@@ -32,7 +32,7 @@
 /*! \brief AXIOM char device class */
 #define AXIOMNET_DEV_CLASS      "axiomchar"
 /*! \brief max concurrent open allowed on an AXIOM char device */
-#define AXIOMNET_MAX_OPEN       16
+#define AXIOMNET_MAX_OPEN       64
 
 /*! \brief number of AXIOM software RAW queue */
 #define AXIOMNET_RAW_QUEUE_NUM           AXIOM_PORT_MAX
@@ -118,6 +118,7 @@ struct axiomnet_raw_rx_hwring {
     struct axiomnet_raw_queue sw_queue; /*!< \brief AXIOM software queue */
     /*!< \brief ports of this ring */
     struct axiomnet_sw_port ports[AXIOM_PORT_MAX];
+    uint8_t port_used;                  /*!< \brief Current port bound */
 };
 
 /*! \brief Structure to handle an AXIOM hardware RAW TX ring */
@@ -145,6 +146,7 @@ struct axiomnet_rdma_rx_hwring {
     struct axiomnet_long_queue long_queue; /*!< \brief AXIOM software queue */
     /*!< \brief ports of this ring for LONG messages*/
     struct axiomnet_sw_port long_ports[AXIOM_PORT_MAX];
+    uint8_t port_used;                  /*!< \brief Current port bound */
     //struct axiomnet_rdma_queue sw_queue; /*!< \brief AXIOM software queue */
     /*!< \brief ports of this ring */
     //struct axiomnet_sw_port ports[AXIOM_PORT_MAX];
@@ -163,7 +165,6 @@ struct axiomnet_drvdata {
     axiom_dev_t *dev_api;               /*!< \brief AXIOM dev HW API*/
     struct mutex lock;                  /*!< \brief Axiom driver mutex */
     int used;                           /*!< \brief Current number of open() */
-    uint8_t port_used;                  /*!< \brief Current port bound */
 
     /* I/O registers */
     void __iomem *vregs;                /*!< \brief Memory mapped IO registers:
@@ -211,10 +212,18 @@ struct axiomnet_chrdev {
     struct axiomnet_drvdata *drvdata;
 };
 
+typedef enum {
+    AXNET_FDTYPE_GENERIC = 0,
+    AXNET_FDTYPE_RAW,
+    AXNET_FDTYPE_LONG,
+    AXNET_FDTYPE_RDMA
+} axiomnet_fdtype_t;
+
 /*! \brief AXIOM private data for each open */
 struct axiomnet_priv {
     struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM device driver data */
     int bind_port;                      /*!< \biref Port bound to the process */
+    axiomnet_fdtype_t type;             /*!< \brief Type of file descriptor */
 };
 
 #endif /* AXIOM_NETDEV_MODULE_H */

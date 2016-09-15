@@ -26,6 +26,7 @@
 #include <linux/types.h>
 #include <linux/sched.h>
 #include <linux/delay.h>
+#include <linux/poll.h>
 
 #include "evi_queue.h"
 
@@ -1538,7 +1539,10 @@ static void axiomnet_unbind(struct axiomnet_priv *priv) {
     }
 
     mutex_lock(&drvdata->lock);
-    drvdata->port_used &= ~(1 << (uint8_t)(priv->bind_port));
+    if (priv->type == AXNET_FDTYPE_RAW)
+        drvdata->raw_rx_ring.port_used &= ~(1 << (uint8_t)(priv->bind_port));
+    if (priv->type == AXNET_FDTYPE_LONG)
+        drvdata->rdma_rx_ring.port_used &= ~(1 << (uint8_t)(priv->bind_port));
     mutex_unlock(&drvdata->lock);
 
     priv->bind_port = AXIOMNET_PORT_INVALID;
@@ -1547,17 +1551,28 @@ static void axiomnet_unbind(struct axiomnet_priv *priv) {
 static long axiomnet_bind(struct axiomnet_priv *priv, uint8_t *port) {
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     long ret = 0;
+    uint8_t port_used, port_set;
 
     /* unbind previous bind */
     axiomnet_unbind(priv);
 
     mutex_lock(&drvdata->lock);
 
+    if (priv->type == AXNET_FDTYPE_RAW) {
+        port_used = drvdata->raw_rx_ring.port_used;
+    } else if (priv->type == AXNET_FDTYPE_LONG) {
+        port_used = drvdata->rdma_rx_ring.port_used;
+    } else {
+        EPRINTF("bind not allowed on this file descriptor");
+        ret = -EFAULT;
+        goto exit;
+    }
+
     if (*port == AXIOM_PORT_ANY) {
         int i;
         /* assign first port available */
         for (i = 0; i < AXIOM_PORT_MAX; i++) {
-            if (!((1 << i) & drvdata->port_used)) {
+            if (!((1 << i) & port_used)) {
                 *port = i;
                 break;
             }
@@ -1573,19 +1588,25 @@ static long axiomnet_bind(struct axiomnet_priv *priv, uint8_t *port) {
     }
 
 
-    DPRINTF("port: 0x%x port_used: 0x%x", *port, drvdata->port_used);
+    DPRINTF("port: 0x%x port_used: 0x%x", *port, port_used);
 
     /* check if port is already bound */
-    if (((1 << *port) & drvdata->port_used)) {
+    if (((1 << *port) & port_used)) {
         EPRINTF("Port %d already bound", *port);
         ret = -EBUSY;
         goto exit;
     }
 
     priv->bind_port = *port;
-    drvdata->port_used |= (1 << (uint8_t)*port);
+    port_set = (1 << (uint8_t)*port);
 
-    DPRINTF("port: 0x%x port_used: 0x%x", *port, drvdata->port_used);
+    if (priv->type == AXNET_FDTYPE_RAW) {
+        drvdata->raw_rx_ring.port_used |= port_set;
+    } else if (priv->type == AXNET_FDTYPE_LONG) {
+        drvdata->rdma_rx_ring.port_used |= port_set;
+    }
+
+    DPRINTF("port: 0x%x", *port);
 
 exit:
     mutex_unlock(&drvdata->lock);
@@ -1659,23 +1680,275 @@ int axiomnet_debug_info(struct axiomnet_drvdata *drvdata)
 
 /************************ AxiomNet Char Device  ******************************/
 
-static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
+static unsigned int axiomnet_poll_raw(struct file *filep, poll_table *wait)
+{
+    struct axiomnet_priv *priv = filep->private_data;
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    struct axiomnet_raw_tx_hwring *tx_ring = &drvdata->raw_tx_ring;
+    struct axiomnet_raw_rx_hwring *rx_ring = &drvdata->raw_rx_ring;
+    int port = priv->bind_port;
+    unsigned int ret = 0;
+
+    poll_wait(filep, &tx_ring->port.wait_queue, wait);
+
+    if (axiomnet_raw_tx_avail(tx_ring) != 0) { /* space to write */
+        ret |= POLLOUT | POLLWRNORM;
+    }
+
+    if (port != AXIOMNET_PORT_INVALID) {
+        poll_wait(filep, &rx_ring->ports[port].wait_queue, wait);
+
+        if (axiomnet_raw_rx_avail(rx_ring, port) != 0) { /* something to read */
+            ret |= POLLIN | POLLRDNORM;
+        }
+    }
+
+    return ret;
+}
+
+static unsigned int axiomnet_poll_rdma(struct file *filep, poll_table *wait)
+{
+    struct axiomnet_priv *priv = filep->private_data;
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
+    unsigned int ret = 0;
+
+    poll_wait(filep, &tx_ring->rdma_port.wait_queue, wait);
+
+    if (axiomnet_rdma_tx_avail(tx_ring) != 0) { /* space to write */
+        ret |= POLLOUT | POLLWRNORM;
+    }
+
+    return ret;
+}
+
+static unsigned int axiomnet_poll_long(struct file *filep, poll_table *wait)
+{
+    struct axiomnet_priv *priv = filep->private_data;
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
+    struct axiomnet_rdma_rx_hwring *rx_ring = &drvdata->rdma_rx_ring;
+    int port = priv->bind_port;
+    unsigned int ret = 0;
+
+    poll_wait(filep, &tx_ring->long_port.wait_queue, wait);
+    poll_wait(filep, &tx_ring->rdma_port.wait_queue, wait);
+
+    if ((axiomnet_long_tx_avail(tx_ring) != 0) &&
+            (axiomnet_rdma_tx_avail(tx_ring) != 0)) { /* space to write */
+        ret |= POLLOUT | POLLWRNORM;
+    }
+
+    if (port != AXIOMNET_PORT_INVALID) {
+        poll_wait(filep, &rx_ring->long_ports[port].wait_queue, wait);
+
+        if (axiomnet_long_rx_avail(rx_ring, port) != 0) { /* something to read */
+            ret |= POLLIN | POLLRDNORM;
+        }
+    }
+
+    return ret;
+}
+
+static long axiomnet_ioctl_raw(struct file *filep, unsigned int cmd,
         unsigned long arg)
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     void __user* argp = (void __user*)arg;
-    long ret = 0;
-    uint32_t buf_uint32;
-    uint64_t buf_uint64;
+    axiom_ioctl_raw_t buf_raw;
+    axiom_ioctl_bind_t buf_bind;
     int buf_int, port;
+    long ret = 0;
+
+    DPRINTF("start");
+
+    if (!drvdata)
+        return -EINVAL;
+
+    switch (cmd) {
+    case AXNET_BIND:
+        ret = copy_from_user(&buf_bind, argp, sizeof(buf_bind));
+        if (ret)
+            return -EFAULT;
+        ret = axiomnet_bind(priv, &(buf_bind.port));
+        DPRINTF("bind port: %x flush: %x", priv->bind_port, buf_bind.flush);
+        if (ret)
+            return ret;
+        /* flush all previous received packets */
+        if (buf_bind.flush) {
+            ret = axiomnet_raw_flush(priv);
+            if (ret)
+                return ret;
+        }
+        ret = copy_to_user(argp, &buf_bind, sizeof(buf_bind));
+        if (ret)
+            return -EFAULT;
+        break;
+    case AXNET_SEND_RAW:
+        ret = copy_from_user(&buf_raw, argp, sizeof(buf_raw));
+        if (ret)
+            return -EFAULT;
+        ret = axiomnet_raw_send(filep, &(buf_raw.header),
+                buf_raw.payload);
+        break;
+    case AXNET_RECV_RAW:
+        ret = copy_from_user(&buf_raw, argp, sizeof(buf_raw));
+        if (ret)
+            return -EFAULT;
+        ret = axiomnet_raw_recv(filep, &(buf_raw.header),
+                buf_raw.payload);
+        if (ret < 0)
+            return ret;
+        ret = copy_to_user(argp, &buf_raw, sizeof(buf_raw));
+        if (ret)
+            return -EFAULT;
+        break;
+    case AXNET_SEND_RAW_AVAIL:
+        buf_int = axiomnet_raw_tx_avail(&drvdata->raw_tx_ring);
+        put_user(buf_int, (int __user*)arg);
+        break;
+    case AXNET_RECV_RAW_AVAIL:
+        port = axiomnet_check_port(priv);
+        if (port < 0)
+            return port;
+        buf_int = axiomnet_raw_rx_avail(&drvdata->raw_rx_ring, port);
+        put_user(buf_int, (int __user*)arg);
+        break;
+    case AXNET_FLUSH_RAW:
+        ret = axiomnet_raw_flush(priv);
+        break;
+    default:
+        ret = -EINVAL;
+    }
+
+    DPRINTF("end");
+    return ret;
+}
+
+static long axiomnet_ioctl_long(struct file *filep, unsigned int cmd,
+        unsigned long arg)
+{
+    struct axiomnet_priv *priv = filep->private_data;
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    void __user* argp = (void __user*)arg;
+    axiom_ioctl_bind_t buf_bind;
+    axiom_long_msg_t buf_long;
+    int buf_int, port;
+    long ret = 0;
+
+    DPRINTF("start");
+
+    if (!drvdata)
+        return -EINVAL;
+
+    switch (cmd) {
+    case AXNET_BIND:
+        ret = copy_from_user(&buf_bind, argp, sizeof(buf_bind));
+        if (ret)
+            return -EFAULT;
+        ret = axiomnet_bind(priv, &(buf_bind.port));
+        DPRINTF("bind port: %x flush: %x", priv->bind_port, buf_bind.flush);
+        if (ret)
+            return ret;
+        /* flush all previous received packets */
+        if (buf_bind.flush) {
+            ret = axiomnet_long_flush(priv);
+            if (ret)
+                return ret;
+        }
+        ret = copy_to_user(argp, &buf_bind, sizeof(buf_bind));
+        if (ret)
+            return -EFAULT;
+        break;
+    case AXNET_SEND_LONG:
+        ret = copy_from_user(&buf_long, argp, sizeof(buf_long));
+        if (ret)
+            return -EFAULT;
+        ret = axiomnet_long_send(filep, &(buf_long.header),
+                buf_long.payload);
+        break;
+    case AXNET_RECV_LONG:
+        ret = copy_from_user(&buf_long, argp, sizeof(buf_long));
+        if (ret)
+            return -EFAULT;
+        ret = axiomnet_long_recv(filep, &(buf_long.header),
+                buf_long.payload);
+        if (ret < 0)
+            return ret;
+        ret = copy_to_user(argp, &buf_long, sizeof(buf_long));
+        if (ret)
+            return -EFAULT;
+        break;
+    case AXNET_SEND_LONG_AVAIL:
+        buf_int = axiomnet_long_tx_avail(&drvdata->rdma_tx_ring) &&
+            axiomnet_rdma_tx_avail(&drvdata->rdma_tx_ring);
+        put_user(buf_int, (int __user*)arg);
+        break;
+    case AXNET_RECV_LONG_AVAIL:
+        port = axiomnet_check_port(priv);
+        if (port < 0)
+            return port;
+        buf_int = axiomnet_long_rx_avail(&drvdata->rdma_rx_ring, port);
+        put_user(buf_int, (int __user*)arg);
+        break;
+    case AXNET_FLUSH_LONG:
+        ret = axiomnet_long_flush(priv);
+        break;
+    default:
+        ret = -EINVAL;
+    }
+
+    DPRINTF("end");
+    return ret;
+}
+
+static long axiomnet_ioctl_rdma(struct file *filep, unsigned int cmd,
+        unsigned long arg)
+{
+    struct axiomnet_priv *priv = filep->private_data;
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    void __user* argp = (void __user*)arg;
+    axiom_rdma_hdr_t buf_rdma;
+    uint64_t buf_uint64;
+    long ret = 0;
+
+    DPRINTF("start");
+
+    if (!drvdata)
+        return -EINVAL;
+
+    switch (cmd) {
+    case AXNET_RDMA_SIZE:
+        buf_uint64 = drvdata->rdma_size;
+        put_user(buf_uint64, (uint64_t __user*)arg);
+        break;
+    case AXNET_RDMA_WRITE:
+    case AXNET_RDMA_READ:
+        ret = copy_from_user(&buf_rdma, argp, sizeof(buf_rdma));
+        if (ret)
+            return -EFAULT;
+        ret = axiomnet_rdma_tx(filep, &(buf_rdma), NULL);
+        break;
+    default:
+        ret = -EINVAL;
+    }
+
+    DPRINTF("end");
+    return ret;
+}
+
+static long axiomnet_ioctl_generic(struct file *filep, unsigned int cmd,
+        unsigned long arg)
+{
+    struct axiomnet_priv *priv = filep->private_data;
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    void __user* argp = (void __user*)arg;
+    uint32_t buf_uint32;
     uint8_t buf_uint8;
     uint8_t buf_uint8_2;
     axiom_ioctl_routing_t buf_routing;
-    axiom_ioctl_raw_t buf_raw;
-    axiom_long_msg_t buf_long;
-    axiom_ioctl_bind_t buf_bind;
-    axiom_rdma_hdr_t buf_rdma;
+    long ret = 0;
 
     DPRINTF("start");
 
@@ -1729,105 +2002,6 @@ static long axiomnet_ioctl(struct file *filep, unsigned int cmd,
         get_user(buf_uint32, (uint32_t __user*)arg);
         axiom_hw_set_ni_control(drvdata->dev_api, buf_uint32);
         break;
-    case AXNET_BIND:
-        ret = copy_from_user(&buf_bind, argp, sizeof(buf_bind));
-        if (ret)
-            return -EFAULT;
-        ret = axiomnet_bind(priv, &(buf_bind.port));
-        DPRINTF("bind port: %x flush: %x", priv->bind_port, buf_bind.flush);
-        if (ret)
-            return ret;
-        /* flush all previous received packets */
-        if (buf_bind.flush) {
-            ret = axiomnet_raw_flush(priv);
-            if (ret)
-                return ret;
-            ret = axiomnet_long_flush(priv);
-            if (ret)
-                return ret;
-        }
-        ret = copy_to_user(argp, &buf_bind, sizeof(buf_bind));
-        if (ret)
-            return -EFAULT;
-        break;
-    case AXNET_SEND_RAW:
-        ret = copy_from_user(&buf_raw, argp, sizeof(buf_raw));
-        if (ret)
-            return -EFAULT;
-        ret = axiomnet_raw_send(filep, &(buf_raw.header),
-                buf_raw.payload);
-        break;
-    case AXNET_RECV_RAW:
-        ret = copy_from_user(&buf_raw, argp, sizeof(buf_raw));
-        if (ret)
-            return -EFAULT;
-        ret = axiomnet_raw_recv(filep, &(buf_raw.header),
-                buf_raw.payload);
-        if (ret < 0)
-            return ret;
-        ret = copy_to_user(argp, &buf_raw, sizeof(buf_raw));
-        if (ret)
-            return -EFAULT;
-        break;
-    case AXNET_SEND_RAW_AVAIL:
-        buf_int = axiomnet_raw_tx_avail(&drvdata->raw_tx_ring);
-        put_user(buf_int, (int __user*)arg);
-        break;
-    case AXNET_RECV_RAW_AVAIL:
-        port = axiomnet_check_port(priv);
-        if (port < 0)
-            return port;
-        buf_int = axiomnet_raw_rx_avail(&drvdata->raw_rx_ring, port);
-        put_user(buf_int, (int __user*)arg);
-        break;
-    case AXNET_FLUSH_RAW:
-        ret = axiomnet_raw_flush(priv);
-        break;
-    case AXNET_RDMA_SIZE:
-        buf_uint64 = drvdata->rdma_size;
-        put_user(buf_uint64, (uint64_t __user*)arg);
-        break;
-    case AXNET_RDMA_WRITE:
-    case AXNET_RDMA_READ:
-        ret = copy_from_user(&buf_rdma, argp, sizeof(buf_rdma));
-        if (ret)
-            return -EFAULT;
-        ret = axiomnet_rdma_tx(filep, &(buf_rdma), NULL);
-        break;
-    case AXNET_SEND_LONG:
-        ret = copy_from_user(&buf_long, argp, sizeof(buf_long));
-        if (ret)
-            return -EFAULT;
-        ret = axiomnet_long_send(filep, &(buf_long.header),
-                buf_long.payload);
-        break;
-    case AXNET_RECV_LONG:
-        ret = copy_from_user(&buf_long, argp, sizeof(buf_long));
-        if (ret)
-            return -EFAULT;
-        ret = axiomnet_long_recv(filep, &(buf_long.header),
-                buf_long.payload);
-        if (ret < 0)
-            return ret;
-        ret = copy_to_user(argp, &buf_long, sizeof(buf_long));
-        if (ret)
-            return -EFAULT;
-        break;
-    case AXNET_SEND_LONG_AVAIL:
-        buf_int = axiomnet_long_tx_avail(&drvdata->rdma_tx_ring) &&
-            axiomnet_rdma_tx_avail(&drvdata->rdma_tx_ring);
-        put_user(buf_int, (int __user*)arg);
-        break;
-    case AXNET_RECV_LONG_AVAIL:
-        port = axiomnet_check_port(priv);
-        if (port < 0)
-            return port;
-        buf_int = axiomnet_long_rx_avail(&drvdata->rdma_rx_ring, port);
-        put_user(buf_int, (int __user*)arg);
-        break;
-    case AXNET_FLUSH_LONG:
-        ret = axiomnet_long_flush(priv);
-        break;
     case AXNET_DEBUG_INFO:
         ret = axiomnet_debug_info(drvdata);
         break;
@@ -1874,14 +2048,13 @@ err:
     return err;
 }
 
-static int axiomnet_open(struct inode *inode, struct file *filep)
+static int axiomnet_open_generic(struct inode *inode, struct file *filep)
 {
-    int err = 0;
-    unsigned int minor = iminor(inode);
     struct axiomnet_drvdata *drvdata = chrdev.drvdata;
     struct axiomnet_priv *priv;
+    int err = 0;
 
-    DPRINTF("start minor: %u drvdata: %p", minor, drvdata);
+    DPRINTF("start minor: %u drvdata: %p", iminor(inode), drvdata);
 
     /* allocate per-open structure and fill it out */
     priv = kzalloc(sizeof(*priv), GFP_KERNEL);
@@ -1900,6 +2073,7 @@ static int axiomnet_open(struct inode *inode, struct file *filep)
     mutex_unlock(&drvdata->lock);
 
     priv->drvdata = drvdata;
+    priv->type = AXNET_FDTYPE_GENERIC;
 
     filep->private_data = priv;
 
@@ -1914,9 +2088,53 @@ err:
     return err;
 }
 
+static int axiomnet_open_raw(struct inode *inode, struct file *filep)
+{
+    struct axiomnet_priv *priv;
+    int err;
+
+    err = axiomnet_open_generic(inode, filep);
+    if (err)
+        return err;
+
+    priv = filep->private_data;
+    priv->type = AXNET_FDTYPE_RAW;
+
+    return 0;
+}
+
+static int axiomnet_open_long(struct inode *inode, struct file *filep)
+{
+    struct axiomnet_priv *priv;
+    int err;
+
+    err = axiomnet_open_generic(inode, filep);
+    if (err)
+        return err;
+
+    priv = filep->private_data;
+    priv->type = AXNET_FDTYPE_LONG;
+
+    return 0;
+}
+
+static int axiomnet_open_rdma(struct inode *inode, struct file *filep)
+{
+    struct axiomnet_priv *priv;
+    int err;
+
+    err = axiomnet_open_generic(inode, filep);
+    if (err)
+        return err;
+
+    priv = filep->private_data;
+    priv->type = AXNET_FDTYPE_RDMA;
+
+    return 0;
+}
+
 static int axiomnet_release(struct inode *inode, struct file *filep)
 {
-    unsigned int minor = iminor(inode);
     struct axiomnet_drvdata *drvdata = chrdev.drvdata;
     struct axiomnet_priv *priv = filep->private_data;
 
@@ -1940,34 +2158,37 @@ static int axiomnet_release(struct inode *inode, struct file *filep)
 static struct file_operations axiomnet_fops =
 {
     .owner = THIS_MODULE,
-    .open = axiomnet_open,
+    .open = axiomnet_open_generic,
     .release = axiomnet_release,
-    .unlocked_ioctl = axiomnet_ioctl,
-    .mmap = axiomnet_mmap,
+    .unlocked_ioctl = axiomnet_ioctl_generic,
 };
 
 static struct file_operations axiomnet_raw_fops =
 {
     .owner = THIS_MODULE,
-    .open = axiomnet_open,
+    .open = axiomnet_open_raw,
     .release = axiomnet_release,
-    .unlocked_ioctl = axiomnet_ioctl,
+    .unlocked_ioctl = axiomnet_ioctl_raw,
+    .poll = axiomnet_poll_raw,
 };
 
 static struct file_operations axiomnet_long_fops =
 {
     .owner = THIS_MODULE,
-    .open = axiomnet_open,
+    .open = axiomnet_open_long,
     .release = axiomnet_release,
-    .unlocked_ioctl = axiomnet_ioctl,
+    .unlocked_ioctl = axiomnet_ioctl_long,
+    .poll = axiomnet_poll_long,
 };
 
 static struct file_operations axiomnet_rdma_fops =
 {
     .owner = THIS_MODULE,
-    .open = axiomnet_open,
+    .open = axiomnet_open_rdma,
     .release = axiomnet_release,
-    .unlocked_ioctl = axiomnet_ioctl,
+    .unlocked_ioctl = axiomnet_ioctl_rdma,
+    .poll = axiomnet_poll_rdma,
+    .mmap = axiomnet_mmap,
 };
 
 static int axiomnet_alloc_chrdev(struct axiomnet_drvdata *drvdata,
