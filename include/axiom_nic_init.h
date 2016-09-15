@@ -20,9 +20,9 @@
 typedef uint8_t		axiom_init_cmd_t;   /*!< \brief init command type*/
 
 typedef enum {
-    AXNP_RDMA = 1,
-    AXNP_LONG,
-    AXNP_RAW
+    AXNP_RDMA = 0x001,
+    AXNP_LONG = 0x002,
+    AXNP_RAW = 0x004
 } axiom_netperf_type_t;                     /*!< \brief axiom netperf type */
 
 

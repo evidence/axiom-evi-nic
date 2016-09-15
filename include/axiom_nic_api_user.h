@@ -67,6 +67,20 @@ axiom_err_t
 axiom_unset_flags(axiom_dev_t *dev, axiom_flags_t flags);
 
 /*!
+ * \brief This function returns the file descriptors of the axiom device, that
+ *        can be used with select/poll/epoll.
+ *
+ * \param dev           The axiom device private data pointer
+ * \param raw_fd        The fd to handle RAW messages
+ * \param lonf_fd       The fd to handle LONG messages
+ * \param rdma_fd        The fd to handle RDMA messages
+ *
+ * \return Returns AXIOM_RET_OK on success, an error otherwise.
+ */
+axiom_err_t
+axiom_get_fds(axiom_dev_t *dev, int *raw_fd, int *long_fd, int *rdma_fd);
+
+/*!
  * \brief This function bind the current process on a specified port
  *
  * \param dev           The axiom device private data pointer

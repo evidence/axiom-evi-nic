@@ -191,6 +191,27 @@ axiom_unset_flags(axiom_dev_t *dev, axiom_flags_t flags)
 }
 
 axiom_err_t
+axiom_get_fds(axiom_dev_t *dev, int *raw_fd, int *long_fd, int *rdma_fd)
+{
+    if (!dev || dev->fd_generic <= 0) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    if (raw_fd) {
+        *raw_fd = dev->fd_raw;
+    }
+    if (long_fd) {
+        *long_fd = dev->fd_long;
+    }
+    if (rdma_fd) {
+        *rdma_fd = dev->fd_rdma;
+    }
+
+    return AXIOM_RET_OK;
+}
+
+axiom_err_t
 axiom_bind(axiom_dev_t *dev, axiom_port_t port)
 {
     axiom_ioctl_bind_t ioctl_bind;
