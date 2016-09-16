@@ -1283,7 +1283,7 @@ static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
      *
      */
 
-    drvdata->rdma_size = (1 << 24);
+    drvdata->rdma_size = (1 << 26);
     drvdata->long_size = 2 * (AXIOMREG_LEN_LONG_BUF * AXIOM_LONG_PAYLOAD_MAX_SIZE);
 
     drvdata->dma_size = drvdata->rdma_size + drvdata->long_size;
