@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <poll.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -31,17 +32,20 @@
 #define AXIOM_DEV_LONG_NAME     "/dev/axiom-long"
 #define AXIOM_DEV_RDMA_NAME     "/dev/axiom-rdma"
 
+#define AXIOM_NUM_RECV_FDS      2
+
 /*!
  * \brief axiom arguments for the axiom_open() function
  */
 typedef struct axiom_dev {
-    int fd_generic;     /*!< \brief fd of the AXIOM generic char dev */
-    int fd_raw;         /*!< \brief fd of the AXIOM raw char dev */
-    int fd_long;        /*!< \brief fd of the AXIOM long char dev */
-    int fd_rdma;        /*!< \brief fd of the AXIOM rdma char dev */
-    axiom_flags_t flags;/*!< \brief axiom flags */
-    void *rdma_addr;    /*!< \brief rdma zone pointer */
-    uint64_t rdma_size; /*!< \brief rdma zone size */
+    int fd_generic;      /*!< \brief fd of the AXIOM generic char dev */
+    int fd_raw;          /*!< \brief fd of the AXIOM raw char dev */
+    int fd_long;         /*!< \brief fd of the AXIOM long char dev */
+    int fd_rdma;         /*!< \brief fd of the AXIOM rdma char dev */
+    struct pollfd recv_fds[AXIOM_NUM_RECV_FDS];
+    axiom_flags_t flags; /*!< \brief axiom flags */
+    void *rdma_addr;     /*!< \brief rdma zone pointer */
+    uint64_t rdma_size;  /*!< \brief rdma zone size */
 } axiom_dev_t;
 
 
@@ -67,12 +71,16 @@ axiom_open(axiom_args_t *args) {
         EPRINTF("impossible to open %s", AXIOM_DEV_RAW_NAME);
         goto close_fd_gen;
     }
+    dev->recv_fds[0].fd = dev->fd_raw;
+    dev->recv_fds[0].events = POLLIN;
 
     dev->fd_long = open(AXIOM_DEV_LONG_NAME, O_RDWR);
     if (dev->fd_long < 0) {
         EPRINTF("impossible to open %s", AXIOM_DEV_LONG_NAME);
         goto close_fd_raw;
     }
+    dev->recv_fds[1].fd = dev->fd_long;
+    dev->recv_fds[1].events = POLLIN;
 
     dev->fd_rdma = open(AXIOM_DEV_RDMA_NAME, O_RDWR);
     if (dev->fd_rdma < 0) {
@@ -264,6 +272,71 @@ axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
         if (enabled_mask & (uint8_t)(1 << i)) {
             *if_number = i;
             return AXIOM_RET_OK;
+        }
+    }
+    return AXIOM_RET_ERROR;
+}
+
+axiom_err_t
+axiom_send(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
+        size_t payload_size, void *payload)
+{
+    axiom_err_t ret;
+    if (payload_size <= AXIOM_RAW_PAYLOAD_MAX_SIZE) {
+        ret = axiom_send_raw(dev, dst_id, port, AXIOM_TYPE_RAW_DATA,
+                (axiom_raw_payload_size_t)(payload_size), payload);
+    } else {
+        ret = axiom_send_long(dev, dst_id, port,
+                (axiom_long_payload_size_t)(payload_size), payload);
+    }
+    return ret;
+}
+
+axiom_err_t
+axiom_recv(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
+        axiom_type_t *type, size_t *payload_size, void *payload)
+{
+    axiom_err_t ret;
+    int timeout = -1, fds_ready, i;
+
+    if (unlikely(!dev)) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    if (dev->flags & AXIOM_FLAG_NOBLOCK)
+        timeout = 0;
+
+    fds_ready = poll(dev->recv_fds, AXIOM_NUM_RECV_FDS, timeout);
+
+    if (fds_ready < 0)
+        return AXIOM_RET_ERROR;
+
+    if (fds_ready == 0)
+        return AXIOM_RET_NOTAVAIL;
+
+    for (i = 0; i < AXIOM_NUM_RECV_FDS; i++) {
+        if (dev->recv_fds[i].revents & POLLIN) {
+            if (dev->recv_fds[i].fd == dev->fd_raw) {
+                axiom_raw_payload_size_t raw_psize = AXIOM_RAW_PAYLOAD_MAX_SIZE;
+                if (*payload_size < AXIOM_RAW_PAYLOAD_MAX_SIZE) {
+                    raw_psize = (axiom_raw_payload_size_t)(*payload_size);
+                }
+                ret = axiom_recv_raw(dev, src_id, port, type, &raw_psize,
+                        payload);
+                *payload_size = raw_psize;
+                return ret;
+            } else if (dev->recv_fds[i].fd == dev->fd_long) {
+                axiom_long_payload_size_t long_psize =
+                    AXIOM_LONG_PAYLOAD_MAX_SIZE;
+                if (*payload_size < AXIOM_LONG_PAYLOAD_MAX_SIZE) {
+                    long_psize = (axiom_long_payload_size_t)(*payload_size);
+                }
+                ret = axiom_recv_long(dev, src_id, port, &long_psize, payload);
+                *type = AXIOM_TYPE_LONG_DATA;
+                *payload_size = long_psize;
+                return ret;
+            }
         }
     }
     return AXIOM_RET_ERROR;

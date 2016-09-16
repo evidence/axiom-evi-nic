@@ -106,6 +106,40 @@ axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
         axiom_if_id_t *if_number);
 
 /*!
+ * \brief  This function sends data to a remote node. If the payload_size fits
+ *         the RAW payload, it is used, otherwise a LONG message is used.
+ *
+ * \param dev           The axiom device private data pointer
+ * \param dst_id        The remote node id that will receive the raw data or
+ *                      local interface that will send the raw data
+ * \param port          port of the raw message
+ * \param payload_size  size of data to be sent
+ * \param payload       data to be sent
+ *
+ * \return Returns a unique positive message id on success, an error otherwise.
+ */
+axiom_err_t
+axiom_send(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
+        size_t payload_size, void *payload);
+
+/*!
+ * \brief This function receives RAW or LONG data from a remote node.
+ *
+ * \param dev           The axiom device private data pointer
+ * \param src_id        The source node id that sent the long data or local
+ *                      interface that received the long data
+ * \param port          port of the long message
+ * \param type          type of the raw message
+ * \param payload_size  size of data received
+ * \param payload       data received
+ *
+ * \return Returns a unique positive message id on success, an error otherwise.
+ */
+axiom_err_t
+axiom_recv(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
+        axiom_type_t *type, size_t *payload_size, void *payload);
+
+/*!
  * \brief  This function sends raw data to a remote node.
  *
  * \param dev           The axiom device private data pointer
@@ -124,7 +158,7 @@ axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
         void *payload);
 
 /*!
- * \brief This function receives raw data to a remote node.
+ * \brief This function receives raw data from a remote node.
  *
  * \param dev           The axiom device private data pointer
  * \param src_id        The source node id that sent the raw data or local
@@ -192,7 +226,7 @@ axiom_send_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
         axiom_long_payload_size_t payload_size, void *payload);
 
 /*!
- * \brief This function receives long data to a remote node.
+ * \brief This function receives long data from a remote node.
  *
  * \param dev           The axiom device private data pointer
  * \param src_id        The source node id that sent the long data or local
