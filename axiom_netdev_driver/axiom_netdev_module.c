@@ -164,6 +164,10 @@ inline static int axiomnet_raw_send(struct file *filep,
         goto err;
     }
 
+    /* reset error and s bit */
+    header->tx.port_type.field.error = 0;
+    header->tx.port_type.field.s = 0;
+
     /* copy packet into the ring */
     ret = axiom_hw_raw_tx(tx_ring->drvdata->dev_api, header, &(raw_payload));
     if (unlikely(ret < 0)) {
@@ -473,6 +477,10 @@ inline static int axiomnet_rdma_tx(struct file *filep,
 
     rdma_status = &(rdma_queue->queue_desc[queue_slot]);
     header->tx.msg_id = rdma_status->msg_id;
+
+    /* reset error and s bit */
+    header->tx.port_type.field.error = 0;
+    header->tx.port_type.field.s = 0;
 
     rdma_status->ack_received = false;
     rdma_status->retries = 0;
