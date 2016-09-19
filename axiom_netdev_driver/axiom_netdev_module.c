@@ -27,6 +27,7 @@
 #include <linux/sched.h>
 #include <linux/delay.h>
 #include <linux/poll.h>
+#include <linux/uio.h>
 
 #include "evi_queue.h"
 
@@ -124,13 +125,13 @@ inline static int axiomnet_raw_rx_avail(struct axiomnet_raw_rx_hwring *rx_ring,
 }
 
 inline static int axiomnet_raw_send(struct file *filep,
-        axiom_raw_hdr_t *header, const char __user *payload)
+        axiom_raw_hdr_t *header, const struct iovec *iov, int iovcnt)
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_raw_tx_hwring *tx_ring = &drvdata->raw_tx_ring;
     axiom_raw_payload_t raw_payload;
-    int ret;
+    int ret, i, offset;
 
     DPRINTF("start");
 
@@ -158,10 +159,25 @@ inline static int axiomnet_raw_send(struct file *filep,
         goto err;
     }
 
-    ret = copy_from_user(&(raw_payload), payload, header->tx.payload_size);
-    if (unlikely(ret)) {
-        ret = -EFAULT;
-        goto err;
+    offset = 0;
+    for (i = 0; i < iovcnt; i++) {
+        int copied = iov[i].iov_len;
+
+        if ((copied + offset) > header->tx.payload_size) {
+            ret = -EFBIG;
+            EPRINTF("iov[%d] - iovcnt: %d psize: %d offset: %d copied: %d",
+                    i, iovcnt, header->tx.payload_size, offset, copied);
+            goto err;
+        }
+
+        ret = copy_from_user((uint8_t *)(&(raw_payload)) + offset,
+                iov[i].iov_base, copied);
+        if (unlikely(ret)) {
+            ret = -EFAULT;
+            goto err;
+        }
+
+        offset += copied;
     }
 
     /* reset error and s bit */
@@ -259,12 +275,13 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_raw_rx_hwring *rx_ring)
 }
 
 inline static ssize_t axiomnet_raw_recv(struct file *filep,
-        axiom_raw_hdr_t *header, char __user *payload)
+        axiom_raw_hdr_t *header, const struct iovec *iov, int iovcnt)
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_raw_rx_hwring *rx_ring = &drvdata->raw_rx_ring;
     int port = priv->bind_port, wakeup_kthread = 0, ret;
+    int i, offset;
     ssize_t len;
 
     struct axiomnet_raw_queue *sw_queue = &rx_ring->sw_queue;
@@ -325,11 +342,20 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
 
     memcpy(header, &(raw_msg->header), sizeof(*header));
 
-    ret = copy_to_user(payload, &(raw_msg->payload),
-            raw_msg->header.rx.payload_size);
-    if (unlikely(ret)) {
-        len = -EFAULT;
-        goto free_enqueue;
+    offset = 0;
+    for (i = 0; (i < iovcnt) &&
+            (offset < raw_msg->header.rx.payload_size); i++) {
+        int copied = min((int)(iov[i].iov_len),
+                (int)(raw_msg->header.rx.payload_size - offset));
+
+        ret = copy_to_user(iov[i].iov_base,
+                (uint8_t *)(&(raw_msg->payload)) + offset, copied);
+        if (unlikely(ret)) {
+            len = -EFAULT;
+            goto free_enqueue;
+        }
+
+        offset += copied;
     }
 
     len = sizeof(*header) + raw_msg->header.rx.payload_size;
@@ -767,7 +793,7 @@ inline static int axiomnet_long_tx_avail(struct axiomnet_rdma_tx_hwring *tx_ring
 }
 
 inline static int axiomnet_long_send(struct file *filep,
-        axiom_rdma_hdr_t *user_header, const char __user *payload)
+        axiom_rdma_hdr_t *user_header, const struct iovec *iov, int iovcnt)
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
@@ -778,7 +804,7 @@ inline static int axiomnet_long_send(struct file *filep,
     eviq_pnt_t queue_slot = EVIQ_NONE;
     unsigned long flags;
     bool wakeup_thread = false;
-    int ret;
+    int ret, i, offset;
 
     if (mutex_lock_interruptible(&tx_ring->long_port.mutex))
         return -ERESTARTSYS;
@@ -825,12 +851,27 @@ inline static int axiomnet_long_send(struct file *filep,
     }
 
     /* copy the payload in the TX buffer */
-    ret = copy_from_user(long_msg->payload, payload,
-            user_header->tx.payload_size);
-    if (unlikely(ret)) {
-        ret = -EFAULT;
-        mutex_unlock(&tx_ring->long_port.mutex);
-        goto err;
+    offset = 0;
+    for (i = 0; i < iovcnt; i++) {
+        int copied = iov[i].iov_len;
+
+        if ((copied + offset) > user_header->tx.payload_size) {
+            ret = -EFBIG;
+            mutex_unlock(&tx_ring->long_port.mutex);
+            EPRINTF("iov[%d] - iovcnt: %d psize: %d offset: %d copied: %d",
+                    i, iovcnt, user_header->tx.payload_size, offset, copied);
+            goto err;
+        }
+
+        ret = copy_from_user((uint8_t *)(long_msg->payload) + offset,
+                iov[i].iov_base, copied);
+        if (unlikely(ret)) {
+            ret = -EFAULT;
+            mutex_unlock(&tx_ring->long_port.mutex);
+            goto err;
+        }
+
+        offset += copied;
     }
 
     mutex_unlock(&tx_ring->long_port.mutex);
@@ -865,13 +906,14 @@ err:
 }
 
 inline static ssize_t axiomnet_long_recv(struct file *filep,
-        axiom_rdma_hdr_t *header, char __user *payload)
+        axiom_rdma_hdr_t *header, const struct iovec *iov, int iovcnt)
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_rdma_rx_hwring *rx_ring = &drvdata->rdma_rx_ring;
     struct axiomnet_long_buf_lut *long_buf_lut;
     int port = priv->bind_port, wakeup_kthread = 0, ret;
+    int i, offset;
     ssize_t len;
 
     struct axiomnet_long_queue *long_queue = &rx_ring->long_queue;
@@ -938,11 +980,20 @@ inline static ssize_t axiomnet_long_recv(struct file *filep,
 
     memcpy(header, &(long_msg->header), sizeof(*header));
 
-    ret = copy_to_user(payload, long_buf_lut->long_buf_sw,
-            long_msg->header.rx.payload_size);
-    if (unlikely(ret)) {
-        len = -EFAULT;
-        goto free_hwbuf;
+    offset = 0;
+    for (i = 0; (i < iovcnt) &&
+            (offset < long_msg->header.rx.payload_size); i++) {
+        int copied = min((int)(iov[i].iov_len),
+                (int)(long_msg->header.rx.payload_size - offset));
+
+        ret = copy_to_user(iov[i].iov_base,
+                (uint8_t *)(long_buf_lut->long_buf_sw) + offset, copied);
+        if (unlikely(ret)) {
+            len = -EFAULT;
+            goto free_enqueue;
+        }
+
+        offset += copied;
     }
 
     len = sizeof(*header) + long_msg->header.rx.payload_size;
@@ -1765,7 +1816,9 @@ static long axiomnet_ioctl_raw(struct file *filep, unsigned int cmd,
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     void __user* argp = (void __user*)arg;
     axiom_ioctl_raw_t buf_raw;
+    axiom_ioctl_raw_iov_t buf_raw_iov;
     axiom_ioctl_bind_t buf_bind;
+    struct iovec iov[AXIOMNET_MAX_IOVEC];
     int buf_int, port;
     long ret = 0;
 
@@ -1797,18 +1850,51 @@ static long axiomnet_ioctl_raw(struct file *filep, unsigned int cmd,
         ret = copy_from_user(&buf_raw, argp, sizeof(buf_raw));
         if (ret)
             return -EFAULT;
-        ret = axiomnet_raw_send(filep, &(buf_raw.header),
-                buf_raw.payload);
+        iov[0].iov_base = buf_raw.payload;
+        iov[0].iov_len = buf_raw.header.tx.payload_size;
+        ret = axiomnet_raw_send(filep, &(buf_raw.header), iov, 1);
+        break;
+    case AXNET_SEND_RAW_IOV:
+        ret = copy_from_user(&buf_raw_iov, argp, sizeof(buf_raw_iov));
+        if (ret)
+            return -EFAULT;
+        if (buf_raw_iov.iovcnt > AXIOMNET_MAX_IOVEC)
+            return -EFBIG;
+        ret = copy_from_user(&iov, buf_raw_iov.iov, buf_raw_iov.iovcnt *
+                sizeof(buf_raw_iov.iov[0]));
+        if (ret)
+            return -EFAULT;
+        ret = axiomnet_raw_send(filep, &(buf_raw_iov.header), iov,
+                buf_raw_iov.iovcnt);
         break;
     case AXNET_RECV_RAW:
         ret = copy_from_user(&buf_raw, argp, sizeof(buf_raw));
         if (ret)
             return -EFAULT;
-        ret = axiomnet_raw_recv(filep, &(buf_raw.header),
-                buf_raw.payload);
+        iov[0].iov_base = buf_raw.payload;
+        iov[0].iov_len = buf_raw.header.rx.payload_size;
+        ret = axiomnet_raw_recv(filep, &(buf_raw.header), iov, 1);
         if (ret < 0)
             return ret;
         ret = copy_to_user(argp, &buf_raw, sizeof(buf_raw));
+        if (ret)
+            return -EFAULT;
+        break;
+    case AXNET_RECV_RAW_IOV:
+        ret = copy_from_user(&buf_raw_iov, argp, sizeof(buf_raw_iov));
+        if (ret)
+            return -EFAULT;
+        if (buf_raw_iov.iovcnt > AXIOMNET_MAX_IOVEC)
+            return -EFBIG;
+        ret = copy_from_user(&iov, buf_raw_iov.iov, buf_raw_iov.iovcnt *
+                sizeof(buf_raw_iov.iov[0]));
+        if (ret)
+            return -EFAULT;
+        ret = axiomnet_raw_recv(filep, &(buf_raw_iov.header), iov,
+                buf_raw_iov.iovcnt);
+        if (ret < 0)
+            return ret;
+        ret = copy_to_user(argp, &buf_raw_iov, sizeof(buf_raw_iov));
         if (ret)
             return -EFAULT;
         break;
@@ -1842,6 +1928,8 @@ static long axiomnet_ioctl_long(struct file *filep, unsigned int cmd,
     void __user* argp = (void __user*)arg;
     axiom_ioctl_bind_t buf_bind;
     axiom_long_msg_t buf_long;
+    axiom_ioctl_long_iov_t buf_long_iov;
+    struct iovec iov[AXIOMNET_MAX_IOVEC];
     int buf_int, port;
     long ret = 0;
 
@@ -1873,18 +1961,51 @@ static long axiomnet_ioctl_long(struct file *filep, unsigned int cmd,
         ret = copy_from_user(&buf_long, argp, sizeof(buf_long));
         if (ret)
             return -EFAULT;
-        ret = axiomnet_long_send(filep, &(buf_long.header),
-                buf_long.payload);
+        iov[0].iov_base = buf_long.payload;
+        iov[0].iov_len = buf_long.header.tx.payload_size;
+        ret = axiomnet_long_send(filep, &(buf_long.header), iov, 1);
+        break;
+    case AXNET_SEND_LONG_IOV:
+        ret = copy_from_user(&buf_long_iov, argp, sizeof(buf_long_iov));
+        if (ret)
+            return -EFAULT;
+        if (buf_long_iov.iovcnt > AXIOMNET_MAX_IOVEC)
+            return -EFBIG;
+        ret = copy_from_user(&iov, buf_long_iov.iov, buf_long_iov.iovcnt *
+                sizeof(buf_long_iov.iov[0]));
+        if (ret)
+            return -EFAULT;
+        ret = axiomnet_long_send(filep, &(buf_long_iov.header), iov,
+                buf_long_iov.iovcnt);
         break;
     case AXNET_RECV_LONG:
         ret = copy_from_user(&buf_long, argp, sizeof(buf_long));
         if (ret)
             return -EFAULT;
-        ret = axiomnet_long_recv(filep, &(buf_long.header),
-                buf_long.payload);
+        iov[0].iov_base = buf_long.payload;
+        iov[0].iov_len = buf_long.header.rx.payload_size;
+        ret = axiomnet_long_recv(filep, &(buf_long.header), iov, 1);
         if (ret < 0)
             return ret;
         ret = copy_to_user(argp, &buf_long, sizeof(buf_long));
+        if (ret)
+            return -EFAULT;
+        break;
+    case AXNET_RECV_LONG_IOV:
+        ret = copy_from_user(&buf_long_iov, argp, sizeof(buf_long_iov));
+        if (ret)
+            return -EFAULT;
+        if (buf_long_iov.iovcnt > AXIOMNET_MAX_IOVEC)
+            return -EFBIG;
+        ret = copy_from_user(&iov, buf_long_iov.iov, buf_long_iov.iovcnt *
+                sizeof(buf_long_iov.iov[0]));
+        if (ret)
+            return -EFAULT;
+        ret = axiomnet_long_recv(filep, &(buf_long_iov.header), iov,
+                buf_long_iov.iovcnt);
+        if (ret < 0)
+            return ret;
+        ret = copy_to_user(argp, &buf_long_iov, sizeof(buf_long_iov));
         if (ret)
             return -EFAULT;
         break;

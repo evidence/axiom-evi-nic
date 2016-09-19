@@ -16,11 +16,25 @@ typedef struct axiom_ioctl_routing {
     uint8_t enabled_mask;       /*!< \brief mask of interface enabled */
 } axiom_ioctl_routing_t;
 
-/*! \brief AXIOM ioctl RAW messages descriptor with a pointer to the payload*/
+/*! \brief AXIOM ioctl RAW messages descriptor with a pointer to the payload */
 typedef struct axiom_ioctl_raw {
     axiom_raw_hdr_t header;     /*!< \brief message header */
     void *payload;              /*!< \brief pointer to the message payload */
 } axiom_ioctl_raw_t;
+
+/*! \brief AXIOM ioctl RAW messages descriptor with iovec for the payload */
+typedef struct axiom_ioctl_raw_iov {
+    axiom_raw_hdr_t header;     /*!< \brief message header */
+    struct iovec *iov;          /*!< \brief iovec array */
+    int iovcnt;                 /*!< \brief iovec counter */
+} axiom_ioctl_raw_iov_t;
+
+/*! \brief AXIOM ioctl LONG messages descriptor with iovec for the payload */
+typedef struct axiom_ioctl_long_iov {
+    axiom_rdma_hdr_t header;    /*!< \brief message header */
+    struct iovec *iov;          /*!< \brief iovec array */
+    int iovcnt;                 /*!< \brief iovec counter */
+} axiom_ioctl_long_iov_t;
 
 /*! \brief AXIOM ioctl bind parameters */
 typedef struct axiom_ioctl_bind {
@@ -79,6 +93,14 @@ typedef struct axiom_ioctl_bind {
 #define AXNET_RECV_LONG_AVAIL   _IOWR(AXNET_MAGIC, 121, int)
 /*! \brief AXIOM IOCTL to flush long messages */
 #define AXNET_FLUSH_LONG        _IO(AXNET_MAGIC, 122)
+/*! \brief AXIOM IOCTL to send a raw message with iovec */
+#define AXNET_SEND_RAW_IOV      _IOW(AXNET_MAGIC, 123, axiom_ioctl_raw_iov_t)
+/*! \brief AXIOM IOCTL to recv a raw message with iovec */
+#define AXNET_RECV_RAW_IOV      _IOWR(AXNET_MAGIC, 124, axiom_ioctl_raw_iov_t)
+/*! \brief AXIOM IOCTL to send a long message with iovec */
+#define AXNET_SEND_LONG_IOV      _IOW(AXNET_MAGIC, 125, axiom_ioctl_long_iov_t)
+/*! \brief AXIOM IOCTL to recv a long message with iovec */
+#define AXNET_RECV_LONG_IOV      _IOWR(AXNET_MAGIC, 126, axiom_ioctl_long_iov_t)
 
 #define AXNET_DEBUG_INFO        _IO(AXNET_MAGIC, 200)
 

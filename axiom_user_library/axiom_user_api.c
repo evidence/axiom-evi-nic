@@ -293,6 +293,21 @@ axiom_send(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
 }
 
 axiom_err_t
+axiom_send_iov(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
+        size_t payload_size, struct iovec *iov, int iovcnt)
+{
+    axiom_err_t ret;
+    if (payload_size <= AXIOM_RAW_PAYLOAD_MAX_SIZE) {
+        ret = axiom_send_iov_raw(dev, dst_id, port, AXIOM_TYPE_RAW_DATA,
+                (axiom_raw_payload_size_t)(payload_size), iov, iovcnt);
+    } else {
+        ret = axiom_send_iov_long(dev, dst_id, port,
+                (axiom_long_payload_size_t)(payload_size), iov, iovcnt);
+    }
+    return ret;
+}
+
+axiom_err_t
 axiom_recv(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
         axiom_type_t *type, size_t *payload_size, void *payload)
 {
@@ -343,6 +358,76 @@ axiom_recv(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
 }
 
 axiom_err_t
+axiom_recv_iov(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
+        axiom_type_t *type, size_t *payload_size, struct iovec *iov, int iovcnt)
+{
+    axiom_err_t ret;
+    int timeout = -1, fds_ready, i;
+
+    if (unlikely(!dev)) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    if (dev->flags & AXIOM_FLAG_NOBLOCK)
+        timeout = 0;
+
+    fds_ready = poll(dev->recv_fds, AXIOM_NUM_RECV_FDS, timeout);
+
+    if (fds_ready < 0)
+        return AXIOM_RET_ERROR;
+
+    if (fds_ready == 0)
+        return AXIOM_RET_NOTAVAIL;
+
+    for (i = 0; i < AXIOM_NUM_RECV_FDS; i++) {
+        if (dev->recv_fds[i].revents & POLLIN) {
+            if (dev->recv_fds[i].fd == dev->fd_raw) {
+                axiom_raw_payload_size_t raw_psize = AXIOM_RAW_PAYLOAD_MAX_SIZE;
+                if (*payload_size < AXIOM_RAW_PAYLOAD_MAX_SIZE) {
+                    raw_psize = (axiom_raw_payload_size_t)(*payload_size);
+                }
+                ret = axiom_recv_iov_raw(dev, src_id, port, type, &raw_psize,
+                        iov, iovcnt);
+                *payload_size = raw_psize;
+                return ret;
+            } else if (dev->recv_fds[i].fd == dev->fd_long) {
+                axiom_long_payload_size_t long_psize =
+                    AXIOM_LONG_PAYLOAD_MAX_SIZE;
+                if (*payload_size < AXIOM_LONG_PAYLOAD_MAX_SIZE) {
+                    long_psize = (axiom_long_payload_size_t)(*payload_size);
+                }
+                ret = axiom_recv_iov_long(dev, src_id, port, &long_psize,
+                        iov, iovcnt);
+                *type = AXIOM_TYPE_LONG_DATA;
+                *payload_size = long_psize;
+                return ret;
+            }
+        }
+    }
+    return AXIOM_RET_ERROR;
+}
+
+inline static axiom_err_t
+axiom_send_raw_prepare(axiom_raw_hdr_t *header, axiom_node_id_t dst_id,
+        axiom_port_t port, axiom_type_t type,
+        axiom_raw_payload_size_t payload_size)
+{
+    if (unlikely(payload_size > AXIOM_RAW_PAYLOAD_MAX_SIZE)) {
+        EPRINTF("payload size too big - size: %d [%d]", payload_size,
+                AXIOM_RAW_PAYLOAD_MAX_SIZE);
+        return AXIOM_RET_ERROR;
+    }
+
+    header->tx.port_type.field.port = (port & 0x7);
+    header->tx.port_type.field.type = (type & 0x7);
+    header->tx.dst = dst_id;
+    header->tx.payload_size = payload_size;
+
+    return AXIOM_RET_OK;
+}
+
+axiom_err_t
 axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
         axiom_type_t type, axiom_raw_payload_size_t payload_size,
         void *payload)
@@ -355,16 +440,11 @@ axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
         return AXIOM_RET_ERROR;
     }
 
-    if (unlikely(payload_size > AXIOM_RAW_PAYLOAD_MAX_SIZE)) {
-        EPRINTF("payload size too big - size: %d [%d]", payload_size,
-                AXIOM_RAW_PAYLOAD_MAX_SIZE);
-        return AXIOM_RET_ERROR;
-    }
+    ret = axiom_send_raw_prepare(&raw_msg.header, dst_id, port, type,
+            payload_size);
+    if (unlikely(!AXIOM_RET_IS_OK(ret)))
+        return ret;
 
-    raw_msg.header.tx.port_type.field.port = (port & 0x7);
-    raw_msg.header.tx.port_type.field.type = (type & 0x7);
-    raw_msg.header.tx.dst = dst_id;
-    raw_msg.header.tx.payload_size = payload_size;
     raw_msg.payload = payload;
 
     ret = ioctl(dev->fd_raw, AXNET_SEND_RAW, &raw_msg);
@@ -382,6 +462,62 @@ axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
             raw_msg.header.tx.payload_size);
 
     return ret;
+}
+
+axiom_err_t
+axiom_send_iov_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
+        axiom_type_t type, axiom_raw_payload_size_t payload_size,
+        struct iovec *iov, int iovcnt)
+{
+    axiom_ioctl_raw_iov_t raw_msg;
+    int ret;
+
+    if (unlikely(!dev || dev->fd_raw <= 0)) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    ret = axiom_send_raw_prepare(&raw_msg.header, dst_id, port, type,
+            payload_size);
+    if (unlikely(!AXIOM_RET_IS_OK(ret)))
+        return ret;
+
+    raw_msg.iov = iov;
+    raw_msg.iovcnt = iovcnt;
+
+    ret = ioctl(dev->fd_raw, AXNET_SEND_RAW_IOV, &raw_msg);
+    if (unlikely(ret < 0)) {
+        if (errno == EAGAIN)
+            return AXIOM_RET_NOTAVAIL;
+        if (errno == EINTR)
+            return AXIOM_RET_INTR;
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
+        return AXIOM_RET_ERROR;
+    }
+
+    DPRINTF("dst: 0x%x port: %d payload_size: 0x%x", raw_msg.header.tx.dst,
+            raw_msg.header.tx.port_type.field.port,
+            raw_msg.header.tx.payload_size);
+
+    return ret;
+}
+
+inline static axiom_err_t
+axiom_recv_raw_finalize(axiom_raw_hdr_t *header, axiom_node_id_t *src_id,
+        axiom_port_t *port, axiom_type_t *type,
+        axiom_raw_payload_size_t *payload_size)
+{
+
+    *src_id = header->rx.src;
+    *port = (header->rx.port_type.field.port & 0x7);
+    *type = (header->rx.port_type.field.type & 0x7);
+    *payload_size = header->rx.payload_size;
+
+    DPRINTF("src: 0x%x port: %d payload_size: 0x%x", header->rx.src,
+            header->rx.port_type.field.port,
+            header->rx.payload_size);
+
+    return header->rx.msg_id;
 }
 
 axiom_err_t
@@ -416,16 +552,46 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
         return AXIOM_RET_ERROR;
     }
 
-    *src_id = raw_msg.header.rx.src;
-    *port = (raw_msg.header.rx.port_type.field.port & 0x7);
-    *type = (raw_msg.header.rx.port_type.field.type & 0x7);
-    *payload_size = raw_msg.header.rx.payload_size;
+    return axiom_recv_raw_finalize(&raw_msg.header, src_id, port, type,
+            payload_size);
+}
 
-    DPRINTF("src: 0x%x port: %d payload_size: 0x%x", raw_msg.header.rx.src,
-            raw_msg.header.rx.port_type.field.port,
-            raw_msg.header.rx.payload_size);
+axiom_err_t
+axiom_recv_iov_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
+        axiom_port_t *port, axiom_type_t *type,
+        axiom_raw_payload_size_t *payload_size, struct iovec *iov, int iovcnt)
+{
+    axiom_ioctl_raw_iov_t raw_msg;
+    int ret;
 
-    return raw_msg.header.rx.msg_id;
+    if (unlikely(!dev || dev->fd_raw <= 0)) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    if (unlikely(*payload_size > AXIOM_RAW_PAYLOAD_MAX_SIZE)) {
+        EPRINTF("payload size too big - size: %d [%d]", *payload_size,
+                AXIOM_RAW_PAYLOAD_MAX_SIZE);
+        return AXIOM_RET_ERROR;
+    }
+
+    raw_msg.header.rx.payload_size = *payload_size;
+
+    raw_msg.iov = iov;
+    raw_msg.iovcnt = iovcnt;
+
+    ret = ioctl(dev->fd_raw, AXNET_RECV_RAW_IOV, &raw_msg);
+    if (unlikely(ret < 0)) {
+        if (errno == EAGAIN)
+            return AXIOM_RET_NOTAVAIL;
+        if (errno == EINTR)
+            return AXIOM_RET_INTR;
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
+        return AXIOM_RET_ERROR;
+    }
+
+    return axiom_recv_raw_finalize(&raw_msg.header, src_id, port, type,
+            payload_size);
 }
 
 int
@@ -490,6 +656,24 @@ axiom_flush_raw(axiom_dev_t *dev)
     return AXIOM_RET_OK;
 }
 
+inline static axiom_err_t
+axiom_send_long_prepare(axiom_rdma_hdr_t *header, axiom_node_id_t dst_id,
+        axiom_port_t port, axiom_long_payload_size_t payload_size)
+{
+    if (unlikely(payload_size > AXIOM_LONG_PAYLOAD_MAX_SIZE)) {
+        EPRINTF("payload size too big - size: %d [%d]", payload_size,
+                AXIOM_LONG_PAYLOAD_MAX_SIZE);
+        return AXIOM_RET_ERROR;
+    }
+
+    header->tx.port_type.field.port = (port & 0x7);
+    header->tx.port_type.field.type = (AXIOM_TYPE_LONG_DATA & 0x7);
+    header->tx.dst = dst_id;
+    header->tx.payload_size = payload_size;
+
+    return AXIOM_RET_OK;
+}
+
 axiom_err_t
 axiom_send_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
         axiom_long_payload_size_t payload_size, void *payload)
@@ -502,16 +686,11 @@ axiom_send_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
         return AXIOM_RET_ERROR;
     }
 
-    if (unlikely(payload_size > AXIOM_LONG_PAYLOAD_MAX_SIZE)) {
-        EPRINTF("payload size too big - size: %d [%d]", payload_size,
-                AXIOM_LONG_PAYLOAD_MAX_SIZE);
-        return AXIOM_RET_ERROR;
-    }
+    ret = axiom_send_long_prepare(&long_msg.header, dst_id, port,
+            payload_size);
+    if (unlikely(!AXIOM_RET_IS_OK(ret)))
+        return ret;
 
-    long_msg.header.tx.port_type.field.port = (port & 0x7);
-    long_msg.header.tx.port_type.field.type = (AXIOM_TYPE_LONG_DATA & 0x7);
-    long_msg.header.tx.dst = dst_id;
-    long_msg.header.tx.payload_size = payload_size;
     long_msg.payload = payload;
 
     ret = ioctl(dev->fd_long, AXNET_SEND_LONG, &long_msg);
@@ -528,6 +707,53 @@ axiom_send_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
             long_msg.header.tx.payload_size);
 
     return ret;
+}
+
+axiom_err_t
+axiom_send_iov_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
+        axiom_long_payload_size_t payload_size, struct iovec *iov, int iovcnt)
+{
+    axiom_ioctl_long_iov_t long_msg;
+    int ret;
+
+    if (unlikely(!dev || dev->fd_long <= 0)) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    ret = axiom_send_long_prepare(&long_msg.header, dst_id, port,
+            payload_size);
+    if (unlikely(!AXIOM_RET_IS_OK(ret)))
+        return ret;
+
+    long_msg.iov = iov;
+    long_msg.iovcnt = iovcnt;
+
+    ret = ioctl(dev->fd_long, AXNET_SEND_LONG_IOV, &long_msg);
+    if (unlikely(ret < 0)) {
+        if (errno == EAGAIN)
+            return AXIOM_RET_NOTAVAIL;
+        if (errno == EINTR)
+            return AXIOM_RET_INTR;
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
+        return AXIOM_RET_ERROR;
+    }
+
+    DPRINTF("dst: 0x%x payload_size: 0x%x", long_msg.header.tx.dst,
+            long_msg.header.tx.payload_size);
+
+    return ret;
+}
+
+inline static axiom_err_t
+axiom_recv_long_finalize(axiom_rdma_hdr_t *header, axiom_node_id_t *src_id,
+        axiom_port_t *port, axiom_long_payload_size_t *payload_size)
+{
+    *src_id = header->rx.src;
+    *port = (header->rx.port_type.field.port & 0x7);
+    *payload_size = header->rx.payload_size;
+
+    return header->rx.msg_id;
 }
 
 axiom_err_t
@@ -561,11 +787,45 @@ axiom_recv_long(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
         return AXIOM_RET_ERROR;
     }
 
-    *src_id = long_msg.header.rx.src;
-    *port = (long_msg.header.rx.port_type.field.port & 0x7);
-    *payload_size = long_msg.header.rx.payload_size;
+    return axiom_recv_long_finalize(&long_msg.header, src_id, port,
+            payload_size);
+}
 
-    return long_msg.header.rx.msg_id;
+axiom_err_t
+axiom_recv_iov_long(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
+        axiom_long_payload_size_t *payload_size, struct iovec *iov, int iovcnt)
+{
+    axiom_ioctl_long_iov_t long_msg;
+    int ret;
+
+    if (unlikely(!dev || dev->fd_long <= 0)) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    if (unlikely(*payload_size > AXIOM_LONG_PAYLOAD_MAX_SIZE)) {
+        EPRINTF("payload size too big - size: %d [%d]", *payload_size,
+                AXIOM_LONG_PAYLOAD_MAX_SIZE);
+        return AXIOM_RET_ERROR;
+    }
+
+    long_msg.header.rx.payload_size = *payload_size;
+
+    long_msg.iov = iov;
+    long_msg.iovcnt = iovcnt;
+
+    ret = ioctl(dev->fd_long, AXNET_RECV_LONG_IOV, &long_msg);
+    if (unlikely(ret < 0)) {
+        if (errno == EAGAIN)
+            return AXIOM_RET_NOTAVAIL;
+        if (errno == EINTR)
+            return AXIOM_RET_INTR;
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
+        return AXIOM_RET_ERROR;
+    }
+
+    return axiom_recv_long_finalize(&long_msg.header, src_id, port,
+            payload_size);
 }
 
 int
