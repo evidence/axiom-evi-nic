@@ -98,7 +98,7 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
         wake_up(&(drvdata->rdma_tx_ring.rdma_port.wait_queue));
     }
 
-    iowrite32(irq_pending, drvdata->vregs + AXIOMREG_IO_ACKIRQ);
+    iowrite32(irq_pending, drvdata->vregs + AXIOMREG_IO_PNDIRQ);
     serviced = IRQ_HANDLED;
     DPRINTF("end");
 

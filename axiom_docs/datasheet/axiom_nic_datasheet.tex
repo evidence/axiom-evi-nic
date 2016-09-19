@@ -77,11 +77,9 @@
 	register \\
         \hline \textbf{\nameref{mod:interrupt}} & & & & \\
                                                 & & & & \\
-	\hline \nameref{reg:ackirq} & 0x00000060 & 32 & wo & ACK Interrupt
+	\hline \nameref{reg:mskirq} & 0x00000060 & 32 & rw & Mask Interrupt
 	Register\\
-	\hline \nameref{reg:mskirq} & 0x00000064 & 32 & rw & Mask Interrupt
-	Register\\
-	\hline \nameref{reg:pndirq} & 0x00000068 & 32 & ro & Pending Interrupt
+	\hline \nameref{reg:pndirq} & 0x00000064 & 32 & rw & Pending Interrupt
 	Register\\
         \hline \textbf{\nameref{mod:routing}} & & & & \\
                                               & & & & \\
@@ -298,40 +296,16 @@
 
 \subsection{Register summary}
 \begin{regsummary}
-	\hline \nameref{reg:ackirq} & 0x00000060 & 32 & wo & 0x0 & ACK Interrupt
-	Register\\
-	\hline \nameref{reg:mskirq} & 0x00000064 & 32 & rw & 0x0 & Mask
+	\hline \nameref{reg:mskirq} & 0x00000060 & 32 & rw & 0x0 & Mask
 	Interrupt Register\\
-	\hline \nameref{reg:pndirq} & 0x00000068 & 32 & ro & 0x0 & Pending
+	\hline \nameref{reg:pndirq} & 0x00000064 & 32 & rw & 0x0 & Pending
 	Interrupt Register\\
 \end{regsummary}
-
-\subsubsection{ACKIRQ} \label{reg:ackirq}
-\begin{regdescription}
-	Name			\> ACKIRQ\\
-	Relative Address	\> 0x00000060\\
-	Width			\> 32 bits\\
-	Access Type		\> wo\\
-	Init Value		\> 0x00000000\\
-	Description		\> ACK Interrupt Register. Used to send an ack
-	                           for the interrupts\\
-\end{regdescription}
-\begin{regdetails}
-	\hline reserved & 31:4 & wo & 0x0 & Reserved. Writes are ignored.\\
-	\hline IRQ\_RDMA\_RX & 3 & wo & 0x0 & Interrupt RDMA RX queue.\\
-               & & & & When set to 1b, the RDMA TX interrupt is acknowledged.\\
-	\hline IRQ\_RDMA\_TX & 2 & wo & 0x0 & Interrupt RDMA TX queue.\\
-               & & & & When set to 1b, the RDMA RX interrupt is acknowledged.\\
-	\hline IRQ\_RAW\_RX & 1 & wo & 0x0 & Interrupt RAW RX queue.\\
-               & & & & When set to 1b, the RAW TX interrupt is acknowledged.\\
-	\hline IRQ\_RAW\_TX & 0 & wo & 0x0 & Interrupt RAW TX queue.\\
-               & & & & When set to 1b, the RAW RX interrupt is acknowledged.\\
-\end{regdetails}
 
 \subsubsection{MSKIRQ} \label{reg:mskirq}
 \begin{regdescription}
 	Name			\> MSKIRQ\\
-	Relative Address	\> 0x00000064\\
+	Relative Address	\> 0x00000060\\
 	Width			\> 32 bits\\
 	Access Type		\> rw\\
 	Init Value		\> 0x00000000\\
@@ -358,35 +332,36 @@
 \subsubsection{PNDIRQ} \label{reg:pndirq}
 \begin{regdescription}
 	Name			\> PNDIRQ\\
-	Relative Address	\> 0x00000068\\
+	Relative Address	\> 0x00000064\\
 	Width			\> 32 bits\\
-	Access Type		\> ro\\
+	Access Type		\> rw\\
 	Init Value		\> 0x00000000\\
 	Description		\> Pending Interrupt Register. Used to report
-	                           the cause of the interrupt\\
+	                           the cause of the interrupt and send back an
+	                           ACK, when the SW handles it.\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 31:4 & ro & 0x0 & Reserved. Read data is zero.\\
-	\hline IRQ\_RDMA\_RX & 3 & ro & 0x0 & Interrupt RDMA RX queue.\\
-               & & & & This bit is set to 1b when the RDMA RX queue generates
-               an interrupt.\\
-               & & & & This bit is reset to 0b when the RDMA RX queue interrupt
-               is acknowledged.\\
-	\hline IRQ\_RDMA\_TX & 2 & ro & 0x0 & Interrupt RDMA TX queue.\\
-               & & & & This bit is set to 1b when the RDMA TX queue generates
-               an interrupt.\\
-               & & & & This bit is reset to 0b when the RDMA TX queue interrupt
-               is acknowledged.\\
-	\hline IRQ\_RAW\_RX & 1 & ro & 0x0 & Interrupt RAW RX queue.\\
-               & & & & This bit is set to 1b when the RAW RX queue generates
-               an interrupt.\\
-               & & & & This bit is reset to 0b when the RAW RX queue interrupt
-               is acknowledged.\\
-	\hline IRQ\_RAW\_TX & 0 & ro & 0x0 & Interrupt RAW TX queue.\\
-               & & & & This bit is set to 1b when the RAW TX queue generates
-               an interrupt.\\
-               & & & & This bit is reset to 0b when the RAW TX queue interrupt
-               is acknowledged.\\
+	\hline reserved & 31:4 & rw & 0x0 & Reserved. Read data is zero.\\
+	\hline IRQ\_RDMA\_RX & 3 & rw & 0x0 & Interrupt RDMA RX queue.\\
+               & & & & This bit is set by the HW to 1b when the RDMA RX queue
+               generates an interrupt.\\
+               & & & & This bit is reset by the SW to 0b when the RDMA RX queue
+               interrupt is acknowledged.\\
+	\hline IRQ\_RDMA\_TX & 2 & rw & 0x0 & Interrupt RDMA TX queue.\\
+               & & & & This bit is set by the HW to 1b when the RDMA TX queue
+               generates an interrupt.\\
+               & & & & This bit is reset by the SW to 0b when the RDMA TX queue
+               interrupt is acknowledged.\\
+	\hline IRQ\_RAW\_RX & 1 & rw & 0x0 & Interrupt RAW RX queue.\\
+               & & & & This bit is set by the HW to 1b when the RAW RX queue
+               generates an interrupt.\\
+               & & & & This bit is reset by the SW to 0b when the RAW RX queue
+               interrupt is acknowledged.\\
+	\hline IRQ\_RAW\_TX & 0 & rw & 0x0 & Interrupt RAW TX queue.\\
+               & & & & This bit is set by the HW to 1b when the RAW TX queue
+               generates an interrupt.\\
+               & & & & This bit is reset by the SW to 0b when the RAW TX queue
+               interrupt is acknowledged.\\
 \end{regdetails}
 
 

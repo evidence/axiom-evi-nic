@@ -82,12 +82,10 @@
 
 /* Interrupt registers */
 
-/*! \brief ACKIRQ register - 32 bit w/o */
-#define AXIOMREG_IO_ACKIRQ                      0x00000060
 /*! \brief MKSIRQ register - 32 bit r/w */
-#define AXIOMREG_IO_MSKIRQ                      0x00000064
-/*! \brief PNDIRQ register - 32 bit r/o */
-#define AXIOMREG_IO_PNDIRQ                      0x00000068
+#define AXIOMREG_IO_MSKIRQ                      0x00000060
+/*! \brief PNDIRQ register - 32 bit r/w */
+#define AXIOMREG_IO_PNDIRQ                      0x00000064
 
 
 /* Routing table registers */
