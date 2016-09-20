@@ -890,7 +890,7 @@ axiom_flush_long(axiom_dev_t *dev)
     return AXIOM_RET_OK;
 }
 
-#define AXIOM_RDMA_FIXED_ADDR           ((void *)(0x30000000))
+#define AXIOM_RDMA_FIXED_ADDR           ((void *)(0x3000000000))
 void *
 axiom_rdma_mmap(axiom_dev_t *dev, uint64_t *size)
 {
@@ -919,7 +919,7 @@ axiom_rdma_mmap(axiom_dev_t *dev, uint64_t *size)
     }
 
     addr = mmap(AXIOM_RDMA_FIXED_ADDR, *size, PROT_READ | PROT_WRITE,
-            MAP_FIXED | MAP_SHARED, dev->fd_rdma, 0);
+            MAP_SHARED, dev->fd_rdma, 0);
     if (unlikely(addr == MAP_FAILED)) {
         EPRINTF("mmap failed - addr: %p - errno: %s", addr, strerror(errno));
         return NULL;
@@ -927,6 +927,12 @@ axiom_rdma_mmap(axiom_dev_t *dev, uint64_t *size)
 
     dev->rdma_addr = addr;
     dev->rdma_size = *size;
+
+    if (unlikely(addr != AXIOM_RDMA_FIXED_ADDR)) {
+        EPRINTF("mmap failed - addr: %p - errno: %s", addr, strerror(errno));
+        axiom_rdma_munmap(dev);
+        return NULL;
+    }
 
     return addr;
 }
