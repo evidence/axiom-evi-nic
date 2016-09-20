@@ -163,6 +163,19 @@ axiom_hw_set_long_buf(axiom_dev_t *dev, int buf_id,
         axiomreg_long_buf_t *long_buf);
 
 /*!
+ * \brief This function sets the IRQ avail threshold.
+ *
+ * \param dev           The axiom device private data pointer
+ * \param raw_tx        IRQ avail threashold for RAW TX queue
+ * \param raw_rx        IRQ avail threashold for RAW RX queue
+ * \param rdma_tx       IRQ avail threashold for RDMA TX queue
+ * \param rdma_rx       IRQ avail threashold for RDMA RX queue
+ */
+void
+axiom_hw_set_irq_avail(axiom_dev_t *dev, uint8_t raw_tx, uint8_t raw_rx,
+        uint8_t rdma_tx, uint8_t rdma_rx);
+
+/*!
  * \brief This function sets the id of a local node.
  *
  * \param dev           The axiom device private data pointer

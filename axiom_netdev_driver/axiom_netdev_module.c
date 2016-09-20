@@ -41,9 +41,18 @@ MODULE_DESCRIPTION("Axiom Network Device Driver");
 MODULE_VERSION("v0.8");
 
 /*! \brief verbose module parameter */
-int verbose = 0;
-module_param(verbose, int, 0);
+static int verbose = 0;
+module_param(verbose, int, 0644);
 MODULE_PARM_DESC(debug, "versbose level (0=none,...,16=all)");
+
+static uint8_t irq_avail_raw_tx = 0;
+module_param(irq_avail_raw_tx, byte, 0644);
+static uint8_t irq_avail_raw_rx = 0;
+module_param(irq_avail_raw_rx, byte, 0644);
+static uint8_t irq_avail_rdma_tx = 0;
+module_param(irq_avail_rdma_tx, byte, 0644);
+static uint8_t irq_avail_rdma_rx = 0;
+module_param(irq_avail_rdma_rx, byte, 0644);
 
 struct axiomnet_chrdev chrdev;
 
@@ -1366,10 +1375,10 @@ static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
         long_buf_lut->long_buf_sw = drvdata->long_rx_vaddr +
             (i * AXIOM_LONG_PAYLOAD_MAX_SIZE);
 
-        long_buf_lut->long_buf_hw.address = drvdata->rdma_size +
+        long_buf_lut->long_buf_hw.field.address = drvdata->rdma_size +
             (i * AXIOM_LONG_PAYLOAD_MAX_SIZE);
-        long_buf_lut->long_buf_hw.size = AXIOM_LONG_PAYLOAD_MAX_SIZE;
-        long_buf_lut->long_buf_hw.used_msg_id = AXIOMREG_LONG_BUF_FREE;
+        long_buf_lut->long_buf_hw.field.size = AXIOM_LONG_PAYLOAD_MAX_SIZE;
+        long_buf_lut->long_buf_hw.field.used_msg_id = AXIOMREG_LONG_BUF_FREE;
 
         /* set buf in the HW */
         axiom_hw_set_long_buf(drvdata->dev_api, i, &long_buf_lut->long_buf_hw);
@@ -1454,6 +1463,8 @@ static int axiomnet_probe(struct platform_device *pdev)
         err = -EIO;
         goto free_hw_dev;
     }
+    axiom_hw_set_irq_avail(drvdata->dev_api, irq_avail_raw_tx, irq_avail_raw_rx,
+            irq_avail_rdma_tx, irq_avail_rdma_rx);
 
     /* TODO: check version */
     version = ioread32(drvdata->vregs + AXIOMREG_IO_VERSION);

@@ -81,6 +81,8 @@
 	Register\\
 	\hline \nameref{reg:pndirq} & 0x00000064 & 32 & rw & Pending Interrupt
 	Register\\
+	\hline \nameref{reg:avlirq} & 0x00000068 & 32 & rw & Available threshold
+	Interrupt Register\\
         \hline \textbf{\nameref{mod:routing}} & & & & \\
                                               & & & & \\
         \hline \nameref{reg:routing_base} & 0x00000100+n & 8 & rw & Routing
@@ -300,6 +302,8 @@
 	Interrupt Register\\
 	\hline \nameref{reg:pndirq} & 0x00000064 & 32 & rw & 0x0 & Pending
 	Interrupt Register\\
+	\hline \nameref{reg:avlirq} & 0x00000068 & 32 & rw & 0x0 & Available
+	threshold Interrupt Register\\
 \end{regsummary}
 
 \subsubsection{MSKIRQ} \label{reg:mskirq}
@@ -337,8 +341,8 @@
 	Access Type		\> rw\\
 	Init Value		\> 0x00000000\\
 	Description		\> Pending Interrupt Register. Used to report
-	                           the cause of the interrupt and send back an
-	                           ACK, when the SW handles it.\\
+	                           the cause of the interrupt \\
+	                        \> and send back an ACK, when the SW handles it.\\
 \end{regdescription}
 \begin{regdetails}
 	\hline reserved & 31:4 & rw & 0x0 & Reserved. Read data is zero.\\
@@ -364,6 +368,26 @@
                interrupt is acknowledged.\\
 \end{regdetails}
 
+\subsubsection{AVLIRQ} \label{reg:avlirq}
+\begin{regdescription}
+	Name			\> AVLIRQ\\
+	Relative Address	\> 0x00000068\\
+	Width			\> 32 bits\\
+	Access Type		\> rw\\
+	Init Value		\> 0x00000000\\
+	Description		\> Available threshold Interrupt Register.\\
+	                        \> Used to set a threshold to generate an IRQ.
+	                           For each queue, you can specify \\
+	                        \> a threashold X. When available slots change
+	                           from X to X+1, an interrupt \\
+	                        \> is generated.\\
+\end{regdescription}
+\begin{regdetails}
+	\hline RDMA\_RX & 31:24 & rw & 0x0 & Available threshold for RDMA RX queue.\\
+	\hline RDMA\_TX & 23:16 & rw & 0x0 & Available threshold for RDMA TX queue.\\
+	\hline RAW\_RX & 15:8 & rw & 0x0 & Available threshold for RAW RX queue.\\
+	\hline RAW\_TX & 7:0 & rw & 0x0 & Available threshold for RAW TX queue.\\
+\end{regdetails}
 
 
 \section{Routing Registers} \label{mod:routing}

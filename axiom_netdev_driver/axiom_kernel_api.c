@@ -185,6 +185,20 @@ axiom_hw_rdma_rx_avail(axiom_dev_t *dev)
     return (ret & AXIOMREG_QSTATUS_AVAIL);
 }
 
+void
+axiom_hw_set_irq_avail(axiom_dev_t *dev, uint8_t raw_tx, uint8_t raw_rx,
+        uint8_t rdma_tx, uint8_t rdma_rx)
+{
+    axiomreg_availirq_t avlirq;
+
+    avlirq.field.raw_tx = raw_tx;
+    avlirq.field.raw_rx = raw_rx;
+    avlirq.field.rdma_tx = rdma_tx;
+    avlirq.field.rdma_rx = rdma_rx;
+
+    iowrite32(avlirq.raw, dev->vregs + AXIOMREG_IO_AVLIRQ);
+}
+
 uint32_t
 axiom_hw_read_ni_status(axiom_dev_t *dev)
 {
@@ -222,7 +236,7 @@ void
 axiom_hw_set_long_buf(axiom_dev_t *dev, int buf_id,
         axiomreg_long_buf_t *long_buf)
 {
-    writeq(*((uint64_t *)long_buf), dev->vregs + AXIOMREG_IO_LONG_BUF_BASE
+    writeq(long_buf->raw, dev->vregs + AXIOMREG_IO_LONG_BUF_BASE
             + (buf_id * AXIOMREG_SIZE_LONG_BUF));
 }
 
