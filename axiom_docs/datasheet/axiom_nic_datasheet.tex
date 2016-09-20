@@ -89,19 +89,19 @@
                                             & & & & \\
 	\hline \nameref{reg:raw_tx_status} & 0x00000300 & 32 & ro & RAW TX queue
 	status register\\
-        \hline \nameref{reg:raw_tx_desc} & 0x00000400 & 1056 & wo & RAW TX queue
+        \hline \nameref{reg:raw_tx_desc} & 0x00000400 & 32 & wo & RAW TX queue
         descriptor register\\
 	\hline \nameref{reg:raw_rx_status} & 0x00000310 & 32 & ro & RAW RX queue
 	status register\\
-        \hline \nameref{reg:raw_rx_desc} & 0x00000500 & 1056 & ro & RAW RX queue
+        \hline \nameref{reg:raw_rx_desc} & 0x00000500 & 32 & ro & RAW RX queue
         descriptor register\\
 	\hline \nameref{reg:rdma_tx_status} & 0x00000320 & 32 & ro & RDMA TX
 	queue status register\\
-        \hline \nameref{reg:rdma_tx_desc} & 0x00000600 & 104 & wo & RDMA TX queue
+        \hline \nameref{reg:rdma_tx_desc} & 0x00000600 & 32 & wo & RDMA TX queue
         descriptor register\\
 	\hline \nameref{reg:rdma_rx_status} & 0x00000330 & 32 & ro & RDMA RX
 	queue status register\\
-        \hline \nameref{reg:rdma_rx_desc} & 0x00000610 & 104 & ro & RDMA RX queue
+        \hline \nameref{reg:rdma_rx_desc} & 0x00000610 & 32 & ro & RDMA RX queue
         descriptor register\\
         \hline \nameref{reg:long_buf_base} & 0x00000620+8*n & 64 & rw & LONG
         buffers base register\\ & n=0...31 & & & \\
@@ -419,19 +419,19 @@
 \begin{regsummary}
 	\hline \nameref{reg:raw_tx_status} & 0x00000300 & 32 & ro & 0x0 & RAW TX
 	queue status register\\
-        \hline \nameref{reg:raw_tx_desc} & 0x00000400 & 1056 & wo & 0x0 & RAW TX
+        \hline \nameref{reg:raw_tx_desc} & 0x00000400 & 32 & wo & 0x0 & RAW TX
         queue descriptor register\\
 	\hline \nameref{reg:raw_rx_status} & 0x00000310 & 32 & ro & 0x0 & RAW RX
 	queue status register\\
-        \hline \nameref{reg:raw_rx_desc} & 0x00000500 & 1056 & ro & 0x0 & RAW RX
+        \hline \nameref{reg:raw_rx_desc} & 0x00000500 & 32 & ro & 0x0 & RAW RX
         queue descriptor register\\
 	\hline \nameref{reg:rdma_tx_status} & 0x00000320 & 32 & ro & 0x0 & RDMA
 	TX queue status register\\
-        \hline \nameref{reg:rdma_tx_desc} & 0x00000600 & 104 & wo & 0x0 & RDMA TX
+        \hline \nameref{reg:rdma_tx_desc} & 0x00000600 & 32 & wo & 0x0 & RDMA TX
         queue descriptor register\\
 	\hline \nameref{reg:rdma_rx_status} & 0x00000330 & 32 & ro & 0x0 & RDMA
 	RX queue status register\\
-        \hline \nameref{reg:rdma_rx_desc} & 0x00000610 & 104 & ro & 0x0 & RDMA RX
+        \hline \nameref{reg:rdma_rx_desc} & 0x00000610 & 32 & ro & 0x0 & RDMA RX
         queue descriptor register\\
         \hline \nameref{reg:long_buf_base} & 0x00000620+8*n & 64 & rw & 0x0 & LONG
         buffers base register\\
@@ -458,7 +458,7 @@
 \begin{regdescription}
 	Name			\> RAW\_TX\_DESC\\
 	Relative Address	\> 0x00000400\\
-	Width 	                \> 1056 bits\\
+	Width 	                \> 32 bits\\
 	Access Type		\> wo\\
 	Init Value		\> 0x00000000\\
 	Description		\> RAW TX queue descriptor register\\
@@ -509,7 +509,7 @@
 \begin{regdescription}
 	Name			\> RAW\_RX\_DESC\\
 	Relative Address	\> 0x00000400\\
-	Width (single row)	\> 1056 bits\\
+	Width (single row)	\> 32 bits\\
 	Access Type		\> ro\\
 	Init Value		\> 0x00000000\\
 	Description		\> RAW RX queue descriptor register\\
@@ -557,7 +557,7 @@
 \begin{regdescription}
 	Name			\> RDMA\_TX\_DESC\\
 	Relative Address	\> 0x00000600\\
-	Width 	                \> 104 bits\\
+	Width 	                \> 32 bits\\
 	Access Type		\> wo\\
 	Init Value		\> 0x00000000\\
 	Description		\> RDMA TX queue descriptor register\\
@@ -604,7 +604,7 @@
 \begin{regdescription}
 	Name			\> RDMA\_RX\_DESC\\
 	Relative Address	\> 0x00000610\\
-	Width                   \> 104 bits\\
+	Width                   \> 32 bits\\
 	Access Type		\> ro\\
 	Init Value		\> 0x00000000\\
 	Description		\> RDMA RX queue descriptor register\\
