@@ -31,7 +31,7 @@ typedef enum {
 /*! \brief Generic message payload for the axiom-init deamon */
 typedef struct axiom_init_payload {
     uint8_t  command;           /*!< \brief Command of messages */
-    uint8_t  spare[127];
+    uint8_t  payload[127];
 } axiom_init_payload_t;
 
 
@@ -119,31 +119,7 @@ typedef struct axiom_session_reply_payload {
 /******************************* Functions ************************************/
 
 /*!
- * \brief This function sends an init message.
- *
- * \param dev           The axiom device private data pointer
- * \param dst           Local interface or remote id identification
- * \param type          Type of the raw message
- * \param payload       Payload to send
- *
- * \return Returns XXX
- */
-inline static axiom_msg_id_t
-axiom_send_raw_init(axiom_dev_t *dev, axiom_node_id_t dst, axiom_type_t type,
-        axiom_init_payload_t *payload)
-{
-    axiom_msg_id_t ret;
-
-    ret = axiom_send_raw(dev, dst, AXIOM_RAW_PORT_INIT, type,
-            sizeof(*payload), payload);
-
-    DPRINTF("ret: %x payload: %x", ret, (*(uint32_t*)&payload));
-
-    return ret;
-}
-
-/*!
- * \brief This function receives an init message
+ * \brief This function receives the init messages
  *
  * \param dev           The axiom device private data pointer
  * \param src           Local interface or remote id identification
@@ -154,24 +130,24 @@ axiom_send_raw_init(axiom_dev_t *dev, axiom_node_id_t dst, axiom_type_t type,
  *
  * \return Returns XXX
  */
-inline static axiom_msg_id_t
-axiom_recv_raw_init(axiom_dev_t *dev, axiom_node_id_t *src, axiom_type_t *type,
-        axiom_init_cmd_t *cmd, axiom_raw_payload_size_t *payload_size,
-        axiom_init_payload_t *payload)
+inline static axiom_err_t
+axiom_recv_init(axiom_dev_t *dev, axiom_node_id_t *src, axiom_type_t *type,
+        axiom_init_cmd_t *cmd, size_t *payload_size, void *payload)
 {
     axiom_port_t port = AXIOM_RAW_PORT_INIT;
     axiom_msg_id_t ret;
 
-    ret = axiom_recv_raw(dev, src, &port, type, payload_size, payload);
+    ret = axiom_recv(dev, src, &port, type, payload_size, payload);
 
-    if ((ret < AXIOM_RET_OK) || (port != AXIOM_RAW_PORT_INIT))
+    if ((ret < AXIOM_RET_OK) || (port != AXIOM_RAW_PORT_INIT) ||
+            (*payload_size == 0))
     {
         EPRINTF("ret: %x port: %x type: %x", ret, port, *type);
         return AXIOM_RET_ERROR;
     }
 
     /* payload info */
-    *cmd = payload->command;
+    *cmd = ((axiom_init_payload_t *)payload)->command;
 
     return AXIOM_RET_OK;
 }
