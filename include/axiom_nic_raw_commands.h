@@ -56,5 +56,7 @@
 #define AXIOM_CMD_SESSION_REQ          19
 /*! \brief Session: session reply */
 #define AXIOM_CMD_SESSION_REPLY        20
+/*! \brief Session: session release */
+#define AXIOM_CMD_SESSION_RELEASE      21
 
 #endif /* !AXIOM_NIC_RAW_COMMANDS_h */
