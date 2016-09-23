@@ -42,4 +42,13 @@
 /*! \brief  Max memory segment size */
 #define AXIOM_MAX_SEGMENT_SIZE                  (2L*1024*1024*1204)
 
+/*! \brief Axiom allocator: RDMA memory size    1 GB */
+#define AXIOM_ALLOCATOR_MEM_SIZE                (1 << 30)
+/*! \brief Axiom allocator: L1 block size       16 MB */
+#define AXIOM_ALLOCATOR_L1_BSIZE                (1 << 24)
+/*! \brief Axiom allocator: L2 block size       1 MB */
+#define AXIOM_ALLOCATOR_L1_BSIZE                (1 << 20)
+/*! \brief Axiom allocator: number of app id available */
+#define AXIOM_ALLOCATOR_NUM_APP_ID              255
+
 #endif /* !AXIOM_NIC_LIMITS_h */

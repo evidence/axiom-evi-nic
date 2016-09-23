@@ -66,6 +66,21 @@ typedef struct axiom_netperf_payload {
     uint8_t  spare[101];
 } axiom_netperf_payload_t;
 
+
+/*! \brief Message payload for the axiom allocator */
+typedef struct axiom_allocator_payload {
+    uint8_t  command;           /*!< \brief Command of allocator messages */
+    int8_t   error;             /*!< \brief Error report */
+    uint8_t  reply_port;        /*!< \brief Port where to reply */
+    uint8_t  app_id;            /*!< \brief Application ID */
+    uint8_t  padding[4];
+    uint64_t shared_start;      /*!< \brief Start address of shared region */
+    uint64_t shared_size;       /*!< \brief Size of shared region */
+    uint64_t private_start;     /*!< \brief Start address of private region */
+    uint64_t private_size;      /*!< \brief Size of private region */
+} axiom_allocator_payload_t;
+
+
 /* flags fod spawn messages */
 
 /*! \brief Reset the given spawn session to default values */

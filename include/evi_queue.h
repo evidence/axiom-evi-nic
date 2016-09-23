@@ -15,11 +15,11 @@
 #ifdef __KERNEL__
 #define EVI_MALLOC(_1)  (kmalloc(_1, GFP_KERNEL))
 #define EVI_FREE(_1)    (kfree(_1))
-#define EVI_PRINTF(...)  (printk(KERN_INFO __VA_ARGS__))
+#define EVI_PRINTF(...) (printk(KERN_INFO __VA_ARGS__))
 #else /* !__KERNEL__ */
 #define EVI_MALLOC(_1)  (malloc(_1))
 #define EVI_FREE(_1)    (free(_1))
-#define EVI_PRINTF(...)  (printf(__VA_ARGS__))
+#define EVI_PRINTF(...) (printf(__VA_ARGS__))
 #endif /* __KERNEL__ */
 
 /*! \brief Pointer used in the EVI queue manager */
