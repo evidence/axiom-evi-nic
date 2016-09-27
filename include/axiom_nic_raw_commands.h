@@ -64,8 +64,6 @@
 #define AXIOM_CMD_ALLOC                 24
 #define AXIOM_CMD_ALLOC_REPLY           25
 #define AXIOM_CMD_ALLOC_RELEASE         26
-#define AXIOM_CMD_ALLOC_REGIONS         27
-#define AXIOM_CMD_ALLOC_SHBLOCK         28
 
 
 #endif /* !AXIOM_NIC_RAW_COMMANDS_h */

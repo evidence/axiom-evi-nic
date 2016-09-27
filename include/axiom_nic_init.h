@@ -14,7 +14,10 @@
 #include "axiom_nic_limits.h"
 #include "axiom_nic_types.h"
 #include "axiom_nic_raw_commands.h"
+#include "axiom_global_allocator.h"
 
+/*! \brief axiom master node */
+#define AXIOM_MASTER_NODE_INIT          0
 
 /********************************* Types **************************************/
 typedef uint8_t		axiom_init_cmd_t;   /*!< \brief init command type*/
@@ -72,12 +75,8 @@ typedef struct axiom_allocator_payload {
     uint8_t  command;           /*!< \brief Command of allocator messages */
     int8_t   error;             /*!< \brief Error report */
     uint8_t  reply_port;        /*!< \brief Port where to reply */
-    uint8_t  app_id;            /*!< \brief Application ID */
-    uint8_t  padding[4];
-    uint64_t shared_start;      /*!< \brief Start address of shared region */
-    uint64_t shared_size;       /*!< \brief Size of shared region */
-    uint64_t private_start;     /*!< \brief Start address of private region */
-    uint64_t private_size;      /*!< \brief Size of private region */
+    uint8_t  padding[5];
+    axiom_galloc_info_t info;
 } axiom_allocator_payload_t;
 
 
