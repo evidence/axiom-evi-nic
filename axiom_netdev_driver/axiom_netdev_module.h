@@ -58,7 +58,7 @@
 #define AXIOMNET_PORT_INVALID           -1
 
 /*! \brief max number of retry to send RDMA request */
-#define AXIOMNET_MAX_RDMA_RETRY         10
+#define AXIOMNET_MAX_RDMA_RETRY         100
 
 #define AXIOMNET_MAX_IOVEC              16
 
