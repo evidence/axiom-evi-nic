@@ -54,7 +54,7 @@ axiom_kthread_init(struct axiom_kthread *ctx, axkt_worker_fn_t worker_fn,
 
     init_waitqueue_head(&ctx->wq);
 
-    task = kthread_create(axkt_worker, (void *) ctx, "axiom-kthread-%s", name);
+    task = kthread_create(axkt_worker, (void *) ctx, "axkt-%s", name);
     if (IS_ERR(task)) {
         EPRINTF("Unable to allocate axiom-kthread");
         ret = PTR_ERR(task);

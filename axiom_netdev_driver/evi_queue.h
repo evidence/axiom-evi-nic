@@ -10,7 +10,7 @@
  * filled elements and one queue of free elements.
  */
 
-#define EVIQ_NONE       -1              /*!< \brief none elements */
+#define EVIQ_NONE       (eviq_pnt_t)(-1)        /*!< \brief none elements */
 
 #ifdef __KERNEL__
 #define EVI_MALLOC(_1)  (kmalloc(_1, GFP_KERNEL))

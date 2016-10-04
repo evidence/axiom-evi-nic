@@ -608,8 +608,7 @@ inline static int axiomnet_long_rx_avail(struct axiomnet_rdma_rx_hwring *rx_ring
 inline static bool axiomnet_rdma_rx_work_todo(void *data)
 {
     struct axiomnet_rdma_rx_hwring *rx_ring = data;
-    return (axiom_hw_rdma_rx_avail(rx_ring->drvdata->dev_api) != 0)
-        && (eviq_free_avail(&rx_ring->long_queue.evi_queue) != 0);
+    return (axiom_hw_rdma_rx_avail(rx_ring->drvdata->dev_api) != 0);
 }
 
 inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring)
@@ -629,7 +628,7 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
 
             if (unlikely((rdma_status->ack_received == true) ||
                         (rdma_status->header.tx.dst != rdma_hdr.rx.src))) {
-                EPRINTF("unexpected RDMA descriptor received - discarded");
+                EPRINTF("Message discarded - unexpected RDMA desc received");
                 continue;
             }
 
@@ -658,14 +657,17 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                  * if all is ok, continue to next packet, otherwise free all
                  * resources
                  */
-                if (likely(ret == rdma_hdr.tx.msg_id)) {
+                if (likely(ret == rdma_status->header.tx.msg_id)) {
                     continue;
                 }
             }
 
             if (rdma_hdr.rx.port_type.field.error == 1) {
-                EPRINTF("Message discarded after %d retries",
-                        rdma_status->retries);
+                EPRINTF("Message discarded after %d retries - "
+                        "msg_id: %u dst_id: %u port: %u", rdma_status->retries,
+                        rdma_status->header.tx.msg_id,
+                        rdma_status->header.tx.dst,
+                        rdma_status->header.tx.port_type.field.port);
             }
 
             /* if there is some process to wait, wakeup it, otherwise free the
@@ -697,7 +699,6 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                 eviq_free_push(&rdma_queue->evi_queue, rdma_status->queue_slot);
                 spin_unlock_irqrestore(&rdma_queue->queue_lock, flags);
 
-
                 if (wakeup_thread) {
                     wake_up(&(tx_ring->rdma_port.wait_queue));
                 }
@@ -711,7 +712,7 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
 
             if (unlikely(rdma_hdr.rx.port_type.field.type !=
                         AXIOM_TYPE_LONG_DATA)) {
-                EPRINTF("unexpected RDMA descriptor received - discarded");
+                EPRINTF("Message discarded - unexpected RDMA desc received");
                 continue;
             }
 
@@ -720,8 +721,8 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
             spin_unlock_irqrestore(&long_queue->queue_lock, flags);
 
             if (unlikely(queue_slot == EVIQ_NONE)) {
-                EPRINTF("LONG SW queue empty")
-                break;
+                EPRINTF("Message discarded - LONG SW queue empty");
+                continue;
             }
 
             long_msg = &long_queue->queue_desc[queue_slot];
@@ -733,7 +734,7 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
 
             /* check valid port */
             if (unlikely(port < 0 || port >= AXIOM_PORT_MAX)) {
-                EPRINTF("message discarded - wrong port %d", port);
+                EPRINTF("Message discarded - wrong port %d", port);
 
                 spin_lock_irqsave(&long_queue->queue_lock, flags);
                 eviq_free_push(&long_queue->evi_queue, queue_slot);
