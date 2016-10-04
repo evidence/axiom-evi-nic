@@ -644,15 +644,16 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                 mutex_lock(&tx_ring->rdma_port.mutex);
 
                 while (!axiom_hw_rdma_tx_avail(drvdata->dev_api)) {
-                    msleep(1);
                     /* XXX or wait_event_interruptible? */
+                    IPRINTF(1, "sleep 1 msec");
+                    msleep(1);
                 }
 
                 /* resend the previously packet */
                 ret = axiom_hw_rdma_tx(drvdata->dev_api, &rdma_status->header);
+                mutex_unlock(&tx_ring->rdma_port.mutex);
 
                 rdma_status->retries++;
-                mutex_unlock(&tx_ring->rdma_port.mutex);
                 /*
                  * if all is ok, continue to next packet, otherwise free all
                  * resources
@@ -1701,6 +1702,23 @@ inline static int axiomnet_check_port(struct axiomnet_priv *priv)
 
 /************************* AxiomNet Debug info  *******************************/
 
+void axiomnet_debug_raw(struct axiomnet_drvdata *drvdata)
+{
+    struct axiomnet_raw_tx_hwring *tx_ring = &drvdata->raw_tx_ring;
+    struct axiomnet_raw_rx_hwring *rx_ring = &drvdata->raw_rx_ring;
+    int i;
+
+    printk("---- AXIOM DEBUG RAW ----\n");
+    printk("  tx-avail [HW]: %u\n", axiom_hw_raw_tx_avail(drvdata->dev_api));
+    printk("  tx-avail [SW]: %u\n\n", axiomnet_raw_tx_avail(tx_ring));
+
+    printk("  rx-avail [HW]: %u\n", axiom_hw_raw_rx_avail(drvdata->dev_api));
+    for (i = 0; i < AXIOM_PORT_MAX; i++) {
+        printk("  rx-avail[%d] [SW]: %d\n", i, axiomnet_raw_rx_avail(rx_ring, i));
+    }
+
+}
+
 void axiomnet_debug_long(struct axiomnet_drvdata *drvdata)
 {
     struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
@@ -1708,20 +1726,26 @@ void axiomnet_debug_long(struct axiomnet_drvdata *drvdata)
     int i;
 
     printk("---- AXIOM DEBUG LONG ----\n");
-    printk("  tx-avail: %d\n", axiomnet_long_tx_avail(tx_ring));
+    printk("  tx-avail [SW]: %d\n", axiomnet_long_tx_avail(tx_ring));
 
     for (i = 0; i < AXIOM_PORT_MAX; i++) {
-        printk("  rx-avail[%d]: %d\n", i, axiomnet_long_rx_avail(rx_ring, i));
+        printk("  rx-avail[%d] [SW]: %d\n", i, axiomnet_long_rx_avail(rx_ring, i));
     }
 
 }
 
 void axiomnet_debug_rdma(struct axiomnet_drvdata *drvdata)
 {
+    struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
     struct axiomnet_rdma_rx_hwring *rx_ring = &drvdata->rdma_rx_ring;
     int i;
 
     printk("---- AXIOM DEBUG RDMA ----\n");
+    printk("  tx-avail [HW]: %u\n", axiom_hw_rdma_tx_avail(drvdata->dev_api));
+    printk("  tx-avail [SW]: %d\n\n", axiomnet_rdma_tx_avail(tx_ring));
+
+    printk("  rx-avail [HW]: %u\n\n", axiom_hw_rdma_rx_avail(drvdata->dev_api));
+
     for (i = 0; i < AXIOMNET_RDMA_QUEUE_FREE_LEN; i++) {
         axiom_rdma_status_t *rdma_status =
             &(rx_ring->tx_rdma_queue->queue_desc[i]);
@@ -1744,6 +1768,7 @@ int axiomnet_debug_info(struct axiomnet_drvdata *drvdata)
     axiom_print_control_reg(drvdata->dev_api);
 
     printk("\n---- AXIOM DRIVER DEBUG ----\n\n");
+    axiomnet_debug_raw(drvdata);
     axiomnet_debug_long(drvdata);
     axiomnet_debug_rdma(drvdata);
 
