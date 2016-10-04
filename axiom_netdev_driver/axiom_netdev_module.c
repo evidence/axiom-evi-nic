@@ -1573,6 +1573,7 @@ static int axiomnet_remove(struct platform_device *pdev)
 
     axiomnet_rdma_release(drvdata);
 
+    axiom_kthread_uninit(&drvdata->kthread_rdma);
     axiom_kthread_uninit(&drvdata->kthread_raw);
 
     axiomnet_rdma_rx_hwring_release(drvdata, &drvdata->rdma_rx_ring);
