@@ -42,7 +42,7 @@ axkt_worker(void *data)
         /* execute the worker function */
         ctx->worker_fn(ctx->worker_data);
 
-        //cond_resched();
+        cond_resched();
     }
 
     return 0;
