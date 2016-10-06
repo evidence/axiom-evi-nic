@@ -631,8 +631,7 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                 &(rx_ring->tx_rdma_queue->queue_desc[msg_id]);
             struct axiomnet_rdma_queue *rdma_queue = rx_ring->tx_rdma_queue;
 
-            if (unlikely((rdma_status->ack_received == true) ||
-                        (rdma_status->header.tx.dst != rdma_hdr.rx.src))) {
+            if (unlikely(rdma_status->header.tx.dst != rdma_hdr.rx.src)) {
                 EPRINTF("Message discarded - unexpected RDMA desc received");
                 continue;
             }
