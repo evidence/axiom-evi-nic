@@ -1720,6 +1720,8 @@ void axiomnet_debug_raw(struct axiomnet_drvdata *drvdata)
     printk("  tx-avail [SW]: %u\n\n", axiomnet_raw_tx_avail(tx_ring));
 
     printk("  rx-avail [HW]: %u\n", axiom_hw_raw_rx_avail(drvdata->dev_api));
+    printk("  rx-avail [SW] free_slot: %u\n",
+            eviq_free_avail(&rx_ring->sw_queue.evi_queue));
     for (i = 0; i < AXIOM_PORT_MAX; i++) {
         printk("  rx-avail[%d] [SW]: %d\n", i, axiomnet_raw_rx_avail(rx_ring, i));
     }
@@ -1730,11 +1732,14 @@ void axiomnet_debug_long(struct axiomnet_drvdata *drvdata)
 {
     struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
     struct axiomnet_rdma_rx_hwring *rx_ring = &drvdata->rdma_rx_ring;
+    struct axiomnet_long_queue *long_queue = &rx_ring->long_queue;
     int i;
 
     printk("---- AXIOM DEBUG LONG ----\n");
-    printk("  tx-avail [SW]: %d\n", axiomnet_long_tx_avail(tx_ring));
+    printk("  tx-avail [SW]: %d\n\n", axiomnet_long_tx_avail(tx_ring));
 
+    printk("  rx-avail [SW] free_slot: %u\n",
+            eviq_free_avail(&long_queue->evi_queue));
     for (i = 0; i < AXIOM_PORT_MAX; i++) {
         printk("  rx-avail[%d] [SW]: %d\n", i, axiomnet_long_rx_avail(rx_ring, i));
     }
