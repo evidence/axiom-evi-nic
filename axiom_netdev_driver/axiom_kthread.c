@@ -21,19 +21,28 @@ static int
 axkt_worker(void *data)
 {
     struct axiom_kthread *ctx = data;
+    int old_scheduled = atomic_read(&ctx->scheduled);
+    int new_scheduled = old_scheduled;
 
     for (;;) {
-        wait_event_interruptible(ctx->wq,
-                ctx->work_todo_fn(ctx->worker_data) ||
-                axkt_should_stop(ctx));
+        new_scheduled = atomic_read(&ctx->scheduled);
+
+        if (new_scheduled == old_scheduled &&
+                !ctx->work_todo_fn(ctx->worker_data)) {
+            wait_event_interruptible(ctx->wq,
+                    ctx->work_todo_fn(ctx->worker_data) ||
+                    axkt_should_stop(ctx));
+        }
 
         if (axkt_should_stop(ctx))
             break;
 
+        old_scheduled = new_scheduled;
+
         /* execute the worker function */
         ctx->worker_fn(ctx->worker_data);
 
-        cond_resched();
+        //cond_resched();
     }
 
     return 0;
@@ -42,6 +51,11 @@ axkt_worker(void *data)
 void
 axiom_kthread_wakeup(struct axiom_kthread *ctx)
 {
+    /*
+     * For us it is not important the counter value, but simply that it has
+     * changed since the last time the kthread saw it.
+     */
+    atomic_inc(&ctx->scheduled);
     wake_up(&ctx->wq);
 }
 
@@ -66,6 +80,7 @@ axiom_kthread_init(struct axiom_kthread *ctx, axkt_worker_fn_t worker_fn,
     ctx->worker_fn = worker_fn;
     ctx->work_todo_fn = work_todo_fn;
     ctx->worker_data = worker_data;
+    atomic_set(&ctx->scheduled, 0);
 
     /* start the kthread */
     wake_up_process(ctx->task);

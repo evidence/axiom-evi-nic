@@ -19,6 +19,7 @@ typedef bool (*axkt_work_todo_fn_t)(void *data);
 struct axiom_kthread {
     struct task_struct *task;           /*!< \brief Kernel thread task struct */
     wait_queue_head_t wq;               /*!< \brief Kernel thread wait queue */
+    atomic_t scheduled;                 /*!< \brief Pending wake_up request */
 
     axkt_worker_fn_t worker_fn;         /*!< \brief Worker function to exec */
     axkt_work_todo_fn_t work_todo_fn;   /*!< \brief Work todo function to call
