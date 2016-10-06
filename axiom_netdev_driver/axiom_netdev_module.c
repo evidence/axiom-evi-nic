@@ -505,7 +505,11 @@ inline static int axiomnet_rdma_tx(struct file *filep,
         rdma_status->queue_slot = queue_slot;
         rdma_status->callback = *callback;
     } else {
-        rdma_status->ack_waiting = true;
+        if (filep->f_flags & O_NONBLOCK) {
+            rdma_status->ack_waiting = false;
+        } else {
+            rdma_status->ack_waiting = true;
+        }
         rdma_status->callback.func = NULL;
     }
 
@@ -516,14 +520,11 @@ inline static int axiomnet_rdma_tx(struct file *filep,
         goto err;
     }
 
-    if (callback) {
+    /* if we don't need to wait, unlock the mutex and return */
+    if (!rdma_status->ack_waiting) {
         mutex_unlock(&tx_ring->rdma_port.mutex);
         return ret;
     }
-
-    /* XXX: maybe we can unlock the mutex */
-
-    /* TODO: handle if the user interrupt this function */
 
     /* wait the reply */
     while (rdma_status->ack_received == false) {
