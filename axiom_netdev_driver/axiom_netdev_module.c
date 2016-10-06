@@ -210,8 +210,16 @@ err:
 inline static bool axiomnet_raw_rx_work_todo(void *data)
 {
     struct axiomnet_raw_rx_hwring *rx_ring = data;
-    return (axiom_hw_raw_rx_avail(rx_ring->drvdata->dev_api) != 0)
-        && (eviq_free_avail(&rx_ring->sw_queue.evi_queue) != 0);
+    struct axiomnet_raw_queue *sw_queue = &rx_ring->sw_queue;
+    unsigned long flags;
+    bool ret;
+
+    spin_lock_irqsave(&sw_queue->queue_lock, flags);
+    ret = (axiom_hw_raw_rx_avail(rx_ring->drvdata->dev_api) != 0)
+        && (eviq_free_avail(&sw_queue->evi_queue) != 0);
+    spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
+
+    return ret;
 }
 
 inline static void axiom_raw_rx_dequeue(struct axiomnet_raw_rx_hwring *rx_ring)
@@ -257,11 +265,10 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_raw_rx_hwring *rx_ring)
         /* TODO: maybe this lock can be avoided with double check */
         mutex_lock(&rx_ring->ports[port].mutex);
 
+        spin_lock_irqsave(&sw_queue->queue_lock, flags);
         if (axiomnet_raw_rx_avail(rx_ring, port) == 0) {
             process_wakeup = 1;
         }
-
-        spin_lock_irqsave(&sw_queue->queue_lock, flags);
         eviq_enqueue(&sw_queue->evi_queue, port, queue_slot);
         spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
 
@@ -383,8 +390,6 @@ free_enqueue:
     }
 
 err:
-
-
     DPRINTF("end len:%zu", len);
     return len;
 }
@@ -746,11 +751,10 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
             /* TODO: maybe this lock can be avoided with double check */
             mutex_lock(&rx_ring->long_ports[port].mutex);
 
+            spin_lock_irqsave(&long_queue->queue_lock, flags);
             if (axiomnet_long_rx_avail(rx_ring, port) == 0) {
                 process_wakeup = 1;
             }
-
-            spin_lock_irqsave(&long_queue->queue_lock, flags);
             eviq_enqueue(&long_queue->evi_queue, port, queue_slot);
             spin_unlock_irqrestore(&long_queue->queue_lock, flags);
 
@@ -922,7 +926,7 @@ inline static ssize_t axiomnet_long_recv(struct file *filep,
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_rdma_rx_hwring *rx_ring = &drvdata->rdma_rx_ring;
-    struct axiomnet_long_buf_lut *long_buf_lut;
+    struct axiomnet_long_buf_lut *long_buf_lut = NULL;
     int port = priv->bind_port, wakeup_kthread = 0, ret;
     int i, offset;
     ssize_t len;
@@ -963,8 +967,6 @@ inline static ssize_t axiomnet_long_recv(struct file *filep,
     queue_slot = eviq_dequeue(&long_queue->evi_queue, port);
     spin_unlock_irqrestore(&long_queue->queue_lock, flags);
 
-    mutex_unlock(&rx_ring->long_ports[port].mutex);
-
     /* XXX: impossible! */
     if (unlikely(queue_slot == EVIQ_NONE)) {
         len = -EFAULT;
@@ -986,7 +988,7 @@ inline static ssize_t axiomnet_long_recv(struct file *filep,
         EPRINTF("payload received too big - payload: available %d - received %d",
                 header->rx.payload_size, long_msg->header.rx.payload_size);
         len = -EFBIG;
-        goto free_hwbuf;
+        goto free_enqueue;
     }
 
     memcpy(header, &(long_msg->header), sizeof(*header));
@@ -1009,13 +1011,8 @@ inline static ssize_t axiomnet_long_recv(struct file *filep,
 
     len = sizeof(*header) + long_msg->header.rx.payload_size;
 
-free_hwbuf:
-    /* free the buffer for the HW */
-    axiom_hw_set_long_buf(drvdata->dev_api, long_buf_lut->buf_id,
-            &long_buf_lut->long_buf_hw);
 free_enqueue:
     spin_lock_irqsave(&long_queue->queue_lock, flags);
-
     /* send a notification to kthread if the free queue was empty */
     if (eviq_free_avail(&long_queue->evi_queue) == 0) {
         wakeup_kthread = 1;
@@ -1023,10 +1020,19 @@ free_enqueue:
     eviq_free_push(&long_queue->evi_queue, queue_slot);
     spin_unlock_irqrestore(&long_queue->queue_lock, flags);
 
+    if (long_buf_lut) {
+        /* free the buffer for the HW */
+        axiom_hw_set_long_buf(drvdata->dev_api, long_buf_lut->buf_id,
+                &long_buf_lut->long_buf_hw);
+    }
+
     if (wakeup_kthread) {
         axiom_kthread_wakeup(&drvdata->kthread_rdma);
     }
+
 err:
+    mutex_unlock(&rx_ring->long_ports[port].mutex);
+
     DPRINTF("end len:%zu", len);
     return len;
 }
@@ -1078,11 +1084,12 @@ static long axiomnet_long_flush(struct axiomnet_priv *priv) {
             goto err;
         }
 
+        eviq_free_push(&long_queue->evi_queue, queue_slot);
+
         /* free the buffer for the HW */
         axiom_hw_set_long_buf(drvdata->dev_api, long_buf_lut->buf_id,
                 &long_buf_lut->long_buf_hw);
 
-        eviq_free_push(&long_queue->evi_queue, queue_slot);
 
         DPRINTF("queue remove - queue_slot: %d port: %d", queue_slot, port);
     }
