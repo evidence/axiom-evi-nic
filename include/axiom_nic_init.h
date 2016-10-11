@@ -73,7 +73,6 @@ typedef struct axiom_netperf_payload {
 /*! \brief Message payload for the axiom allocator */
 typedef struct axiom_allocator_payload {
     uint8_t  command;           /*!< \brief Command of allocator messages */
-    int8_t   error;             /*!< \brief Error report */
     uint8_t  reply_port;        /*!< \brief Port where to reply */
     uint8_t  padding[5];
     axiom_galloc_info_t info;
