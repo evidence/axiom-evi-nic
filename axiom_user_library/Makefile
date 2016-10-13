@@ -20,7 +20,7 @@ AR := ${CCPREFIX}ar
 RANLIB := ${CCPREFIX}ranlib
 
 DFLAGS := -g -DPDEBUG
-CFLAGS += -Wall $(DFLAGS) -I$(AXIOM_INCLUDE) -I$(AXIOM_DRIVER)
+CFLAGS += -fPIC -Wall $(DFLAGS) -I$(AXIOM_INCLUDE) -I$(AXIOM_DRIVER)
 
 .PHONY: all clean install
 
