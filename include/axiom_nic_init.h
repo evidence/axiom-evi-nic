@@ -14,10 +14,10 @@
 #include "axiom_nic_limits.h"
 #include "axiom_nic_types.h"
 #include "axiom_nic_raw_commands.h"
-#include "axiom_global_allocator.h"
+#include "axiom_allocator_protocol.h" /* XXX: to remove */
 
-/*! \brief axiom master node */
-#define AXIOM_MASTER_NODE_INIT          0
+/*! \brief AXIOM init master node */
+#define AXIOM_INIT_MASTER_NODE          1
 
 /********************************* Types **************************************/
 typedef uint8_t		axiom_init_cmd_t;   /*!< \brief init command type*/
@@ -75,7 +75,7 @@ typedef struct axiom_allocator_payload {
     uint8_t  command;           /*!< \brief Command of allocator messages */
     uint8_t  reply_port;        /*!< \brief Port where to reply */
     uint8_t  padding[5];
-    axiom_galloc_info_t info;
+    axiom_alloc_msg_t info;
 } axiom_allocator_payload_t;
 
 

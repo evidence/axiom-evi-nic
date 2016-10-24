@@ -295,7 +295,7 @@ main (int argc, char *argv[])
     for (i = 0; i < num_ports; i++) {
         ret = listen_socket_init(&listen_sd[i], AXSW_PORT_START + i);
         if (ret) {
-            EPRINTF("listen_socket_init error");
+            EPRINTF("listen_socket_init error - port: %d", AXSW_PORT_START + i);
             exit(-1);
         }
 

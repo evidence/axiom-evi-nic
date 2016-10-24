@@ -56,7 +56,7 @@ axiom_send_raw_delivery(axiom_dev_t *dev, axiom_node_id_t dst_node_id,
     payload.if_mask = payload_if_mask;
 
     ret = axiom_send_raw(dev, dst_node_id, AXIOM_RAW_PORT_INIT,
-            0, sizeof(payload), &payload);
+            AXIOM_TYPE_RAW_DATA, sizeof(payload), &payload);
 
     return ret;
 }
