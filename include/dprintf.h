@@ -62,6 +62,7 @@
         fprintf(stderr, "%03d.%06d %s[%d]: %s() - %s\n  message: " _fmt "%s\n",\
                 (int)(_t0.tv_sec % 1000), (int)_t0.tv_usec,                    \
                 __FILENAME__, __LINE__, __func__, type , __VA_ARGS__);         \
+        fflush(stderr);                                                        \
     } while (0);
 #endif /* __KERNEL */
 
