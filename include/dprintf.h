@@ -17,9 +17,9 @@
  * \param verbose       If it is true, the message is printed
  */
 #define IPRINTF(verbose, ...)\
-    do {                                                                \
-        if (verbose)                                                    \
-            _DPRINTF("INFO", __VA_ARGS__, "")                           \
+    do {                                                                       \
+        if (verbose)                                                           \
+            _DPRINTF("INFO", __VA_ARGS__, "")                                  \
     } while(0);
 /*! \brief Disable print debug messages */
 #define NDPRINTF(...) do {} while(0);
@@ -48,8 +48,8 @@
     do {                                                                       \
         struct timeval _t0;                                                    \
         do_gettimeofday(&_t0);                                                 \
-        printk(KERN_ERR "%03d.%06d %s[%d]: %s() - %s\n  message: " _fmt "%s\n",\
-                (int)(_t0.tv_sec % 1000), (int)_t0.tv_usec,                    \
+        printk(KERN_ERR "%04d.%06d %s[%d] %s() %s: " _fmt "%s\n",              \
+                (int)(_t0.tv_sec), (int)_t0.tv_usec,                           \
                 __FILENAME__, __LINE__, __func__, type , __VA_ARGS__);         \
     } while (0);
 #else /* !__KERNEL__ */
@@ -59,8 +59,8 @@
     do {                                                                       \
         struct timeval _t0;                                                    \
         gettimeofday(&_t0, NULL);                                              \
-        fprintf(stderr, "%03d.%06d %s[%d]: %s() - %s\n  message: " _fmt "%s\n",\
-                (int)(_t0.tv_sec % 1000), (int)_t0.tv_usec,                    \
+        fprintf(stderr, "%04d.%06d %s[%d] %s() %s: " _fmt "%s\n",              \
+                (int)(_t0.tv_sec), (int)_t0.tv_usec,                           \
                 __FILENAME__, __LINE__, __func__, type , __VA_ARGS__);         \
         fflush(stderr);                                                        \
     } while (0);

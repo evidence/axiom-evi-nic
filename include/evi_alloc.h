@@ -18,7 +18,7 @@
 #else /* !__KERNEL__ */
 #define EVIA_MALLOC(_1)  (malloc(_1))
 #define EVIA_FREE(_1)    (free(_1))
-#define EVIA_PRINTF(...)  (printf(__VA_ARGS__))
+#define EVIA_PRINTF(...)  (fprintf(stderr, __VA_ARGS__))
 #endif /* __KERNEL__ */
 
 /*! \brief Element used in the EVI alloc manager */
@@ -30,6 +30,29 @@ typedef struct evi_alloc {
     int free;                   /*!< number of free elements */
     evia_elem_t *array;         /*!< \brief array of elements */
 } evi_alloc_t;
+
+//#define EVIA_DEBUG
+#ifdef EVIA_DEBUG
+static void
+evia_dump(evi_alloc_t *ea)
+{
+    int i;
+
+    EVIA_PRINTF("evi_alloc: free %d - total %d", ea->free, ea->elems);
+
+    for (i = 0; i < ea->elems; i++) {
+        if (!(i % 10))
+            EVIA_PRINTF("\n %04d:  ", i);
+
+        EVIA_PRINTF(1, "0x%02x ", ea->array[i]);
+    }
+
+    EVIA_PRINTF(1, "\n");
+}
+#define EVIA_DUMP(_1)   evia_dump(_1)
+#else /* !EVIA_DEBUG */
+#define EVIA_DUMP(_1)
+#endif /* EVIA_DEBUG */
 
 /*!
  * \brief Release the resorces for the EVI alloc status
@@ -70,6 +93,8 @@ evia_init(evi_alloc_t *ea, int elems)
         ea->array[i] = EVIA_NONE;
     }
 
+    EVIA_DUMP(ea);
+
     return 0;
 
 err:
@@ -82,7 +107,10 @@ evia_alloc(evi_alloc_t *ea, evia_elem_t value, int num)
 {
     int i, count = 0, start;
 
+    EVIA_DUMP(ea);
+
     if (num > ea->free) {
+        DPRINTF("num %d free %d", num, ea->free);
         return -1;
     }
 
@@ -95,6 +123,7 @@ evia_alloc(evi_alloc_t *ea, evia_elem_t value, int num)
     }
 
     if (count != num) {
+        DPRINTF("num %d count %d", num, count);
         return -1;
     }
 
@@ -106,6 +135,8 @@ evia_alloc(evi_alloc_t *ea, evia_elem_t value, int num)
 
     ea->free -= count;
 
+    EVIA_DUMP(ea);
+
     return start;
 }
 
@@ -114,28 +145,16 @@ evia_free(evi_alloc_t *ea, evia_elem_t value)
 {
     int i;
 
+    EVIA_DUMP(ea);
+
     for (i = 0; i < ea->elems; i++) {
         if (ea->array[i] == value) {
             ea->array[i] = EVIA_NONE;
             ea->free++;
         }
     }
+
+    EVIA_DUMP(ea);
 }
 
-#ifdef EVIA_DEBUG
-static void
-evia_dump(evi_alloc_t *ea)
-{
-    int i;
-
-    EVIA_PRINTF("evi_alloc: free %d - total %d", ea->free, ea->elems);
-    for (i = 0; i < ea->elems; i++) {
-        if (!(i % 10))
-            EVIA_PRINTF("\n %04d:  ", i);
-
-        EVIA_PRINTF("0x%02x ", ea->array[i]);
-    }
-    EVIA_PRINTF("\n");
-}
-#endif /* EVIA_DEBUG */
 #endif /* EVI_ALLOC_h */
