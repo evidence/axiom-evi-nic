@@ -1,4 +1,5 @@
 AXIOM_INCLUDE := ../include
+AXIOM_MEM_DEV_INCLUDE := ../../axiom-evi-allocator-drv
 
 obj-m := axiom_netdev.o
 axiom_netdev-objs := axiom_kernel_api.o axiom_netdev_module.o axiom_kthread.o
@@ -24,6 +25,7 @@ endif
 
 DFLAGS := -g -DPDEBUG
 ccflags-y += -Wall $(DFLAGS) -I${MKFILE_DIR}/${AXIOM_INCLUDE}
+ccflags-y += -I${MKFILE_DIR}/${AXIOM_MEM_DEV_INCLUDE}
 
 default:
 	$(MAKE) $(CROSS_COMPILE) -C $(KERNELDIR) M=$(PWD) modules
