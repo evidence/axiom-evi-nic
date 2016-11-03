@@ -12,9 +12,16 @@ ifdef CCARCH
     CCPREFIX := ${BUILDROOT}/output/host/usr/bin/$(CCARCH)-linux-
 endif
 
+ifndef AXIOMHOME
+    AXIOMHOME=$(realpath ${PWD}/..)
+endif
+ifndef HOST_DIR
+   HOST_DIR=${AXIOMHOME}/output
+endif
+
 DFLAGS := -g -DPDEBUG
 
-.PHONY: all clean install $(APPS_DIR) $(CLEAN_DIR) $(INSTALL_DIR)
+.PHONY: all clean install installhost $(APPS_DIR) $(CLEAN_DIR) $(INSTALL_DIR)
 
 all: $(APPS_DIR)
 
@@ -33,3 +40,9 @@ clean: $(CLEAN_DIR)
 $(CLEAN_DIR): _clean_%:
 	cd $(subst _clean_,,$@) && make clean
 
+
+installhost:
+	mkdir -p ${HOST_DIR}
+	cp -r include ${HOST_DIR}
+	mkdir -p ${HOST_DIR}/lib
+	cp axiom_user_library/libaxiom_user_api.a ${HOST_DIR}/lib
