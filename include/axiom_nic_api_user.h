@@ -390,7 +390,7 @@ axiom_recv_long_avail(axiom_dev_t *dev);
  *
  * \param dev             The axiom device private data pointer
  * \param remote_id       The remote node id where data will be stored
- * \param payload_size    size of data to be transfer in 64bits words
+ * \param payload_size    size of data to be transfer (must be multiple of 8)
  * \param local_src_addr  local address inside the RDMA zone where data
  *                        will be read
  * \param remote_dst_addr remote address inside the RDMA zone where data
@@ -400,15 +400,14 @@ axiom_recv_long_avail(axiom_dev_t *dev);
  */
 axiom_err_t
 axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
-        axiom_rdma_payload_size_t payload_size,
-        void *local_src_addr, void *remote_dst_addr);
+        size_t payload_size, void *local_src_addr, void *remote_dst_addr);
 
 /*!
  * \brief This function reads data from a remote node memory.
  *
  * \param dev             The axiom device private data pointer
  * \param remote_id       The remote node id where data will be read
- * \param payload_size    size of data to be transfer in 64bits words
+ * \param payload_size    size of data to be transfer (must be multiple of 8)
  * \param remote_src_addr remote address inside the RDMA zone where data
  *                        will be read
  * \param local_dst_addr  local address inside the RDMA zone where data
@@ -418,8 +417,7 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
  */
 axiom_err_t
 axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
-        axiom_rdma_payload_size_t payload_size,
-        void *remote_src_addr, void *local_dst_addr);
+        size_t payload_size, void *remote_src_addr, void *local_dst_addr);
 
 
 /*!

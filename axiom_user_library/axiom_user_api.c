@@ -989,8 +989,7 @@ axiom_rdma_munmap(axiom_dev_t *dev)
 
 axiom_err_t
 axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
-        axiom_rdma_payload_size_t payload_size,
-        void *local_src_addr, void *remote_dst_addr)
+        size_t payload_size, void *local_src_addr, void *remote_dst_addr)
 {
     axiom_ioctl_rdma_t rdma;
     int ret;
@@ -1000,9 +999,14 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
         return AXIOM_RET_ERROR;
     }
 
-    if (unlikely(payload_size >
-            (AXIOM_RDMA_PAYLOAD_MAX_SIZE >> AXIOM_RDMA_PAYLOAD_SIZE_ORDER))) {
-        EPRINTF("payload size too big - size: %d [%d]", payload_size,
+    if (unlikely(payload_size & ((1 << AXIOM_RDMA_PAYLOAD_SIZE_ORDER) - 1))) {
+        EPRINTF("payload size [%zu] must be multiple of %d", payload_size,
+                (1 << AXIOM_RDMA_PAYLOAD_SIZE_ORDER));
+        return AXIOM_RET_ERROR;
+    }
+
+    if (unlikely(payload_size > (AXIOM_RDMA_PAYLOAD_MAX_SIZE))) {
+        EPRINTF("payload size too big - size: %zu [%d]", payload_size,
                 AXIOM_RAW_PAYLOAD_MAX_SIZE);
         return AXIOM_RET_ERROR;
     }
@@ -1034,8 +1038,7 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
 
 axiom_err_t
 axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
-        axiom_rdma_payload_size_t payload_size,
-        void *remote_src_addr, void *local_dst_addr)
+        size_t payload_size, void *remote_src_addr, void *local_dst_addr)
 {
     axiom_ioctl_rdma_t rdma;
     int ret;
@@ -1045,9 +1048,14 @@ axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
         return AXIOM_RET_ERROR;
     }
 
-    if (unlikely(payload_size >
-            (AXIOM_RDMA_PAYLOAD_MAX_SIZE >> AXIOM_RDMA_PAYLOAD_SIZE_ORDER))) {
-        EPRINTF("payload size too big - size: %d [%d]", payload_size,
+    if (unlikely(payload_size & ((1 << AXIOM_RDMA_PAYLOAD_SIZE_ORDER) - 1))) {
+        EPRINTF("payload size [%zu] must be multiple of %d", payload_size,
+                (1 << AXIOM_RDMA_PAYLOAD_SIZE_ORDER));
+        return AXIOM_RET_ERROR;
+    }
+
+    if (unlikely(payload_size > (AXIOM_RDMA_PAYLOAD_MAX_SIZE))) {
+        EPRINTF("payload size too big - size: %zu [%d]", payload_size,
                 AXIOM_RAW_PAYLOAD_MAX_SIZE);
         return AXIOM_RET_ERROR;
     }
