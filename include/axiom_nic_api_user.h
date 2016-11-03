@@ -390,38 +390,36 @@ axiom_recv_long_avail(axiom_dev_t *dev);
  *
  * \param dev             The axiom device private data pointer
  * \param remote_id       The remote node id where data will be stored
- * \param port            port of the rdma message
  * \param payload_size    size of data to be transfer in 64bits words
- * \param local_src_addr  local offset inside the RDMA zone where data
+ * \param local_src_addr  local address inside the RDMA zone where data
  *                        will be read
- * \param remote_dst_addr remote offset inside the RDMA zone where data
+ * \param remote_dst_addr remote address inside the RDMA zone where data
  *                        will be stored
  *
  * \return Returns a unique positive message id on success, an error otherwise.
  */
 axiom_err_t
 axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
-        axiom_port_t port, axiom_rdma_payload_size_t payload_size,
-        axiom_addr_t local_src_addr, axiom_addr_t remote_dst_addr);
+        axiom_rdma_payload_size_t payload_size,
+        void *local_src_addr, void *remote_dst_addr);
 
 /*!
  * \brief This function reads data from a remote node memory.
  *
  * \param dev             The axiom device private data pointer
  * \param remote_id       The remote node id where data will be read
- * \param port            port of the rdma message
  * \param payload_size    size of data to be transfer in 64bits words
- * \param remote_src_addr remote offset inside the RDMA zone where data
+ * \param remote_src_addr remote address inside the RDMA zone where data
  *                        will be read
- * \param local_dst_addr  local offset inside the RDMA zone where data
+ * \param local_dst_addr  local address inside the RDMA zone where data
  *                        will be stored
  *
  * \return Returns a unique positive message id on success, an error otherwise.
  */
 axiom_err_t
 axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
-        axiom_port_t port, axiom_rdma_payload_size_t payload_size,
-        axiom_addr_t remote_src_addr, axiom_addr_t local_dst_addr);
+        axiom_rdma_payload_size_t payload_size,
+        void *remote_src_addr, void *local_dst_addr);
 
 
 /*!
@@ -431,9 +429,12 @@ axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
  * \param size            return the size of the rdma zone
  *
  * \return Returns a pointer to the RDMA zone on success, NULL otherwise.
+ *
+ * \deprecated This function can be used to map all RDMA region. (To use only
+ *             for debug)
  */
 void *
-axiom_rdma_mmap(axiom_dev_t *dev, uint64_t *size);
+axiom_rdma_mmap(axiom_dev_t *dev, size_t *size);
 
 
 /*!
@@ -442,6 +443,8 @@ axiom_rdma_mmap(axiom_dev_t *dev, uint64_t *size);
  * \param dev             The axiom device private data pointer
  *
  * \return Returns AXIOM_RET_OK on success, an error otherwise.
+ *
+ * \deprecated This function can be used to unmap all RDMA region.
  */
 axiom_err_t
 axiom_rdma_munmap(axiom_dev_t *dev);

@@ -2024,8 +2024,9 @@ static long axiomnet_ioctl_rdma(struct file *filep, unsigned int cmd,
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     void __user* argp = (void __user*)arg;
-    axiom_rdma_hdr_t buf_rdma;
+    axiom_ioctl_rdma_t buf_rdma;
     uint64_t buf_uint64;
+    unsigned long buf_ulong;
     long ret = 0;
 
     DPRINTF("start");
@@ -2043,7 +2044,31 @@ static long axiomnet_ioctl_rdma(struct file *filep, unsigned int cmd,
         ret = copy_from_user(&buf_rdma, argp, sizeof(buf_rdma));
         if (ret)
             return -EFAULT;
-        ret = axiomnet_rdma_tx(filep, &(buf_rdma), NULL);
+
+        ret = axiom_mem_dev_virt2off(buf_rdma.app_id,
+                (unsigned long)(buf_rdma.src_addr),
+                buf_rdma.header.tx.payload_size << AXIOM_RDMA_PAYLOAD_SIZE_ORDER,
+                &buf_ulong);
+        if (ret) {
+            EPRINTF("axiom_mem_dev_virt2off - ret %ld", ret);
+            return -EFAULT;
+        }
+        buf_rdma.header.tx.src_addr = buf_ulong;
+
+        ret = axiom_mem_dev_virt2off(buf_rdma.app_id,
+                (unsigned long)(buf_rdma.dst_addr),
+                buf_rdma.header.tx.payload_size << AXIOM_RDMA_PAYLOAD_SIZE_ORDER,
+                &buf_ulong);
+        if (ret) {
+            EPRINTF("axiom_mem_dev_virt2off - ret %ld", ret);
+            return -EFAULT;
+        }
+        buf_rdma.header.tx.dst_addr = buf_ulong;
+
+        IPRINTF(verbose, "RDMA - src_offset: %d dst_offset: %d",
+                buf_rdma.header.tx.src_addr, buf_rdma.header.tx.dst_addr);
+
+        ret = axiomnet_rdma_tx(filep, &(buf_rdma.header), NULL);
         break;
     default:
         ret = -EINVAL;

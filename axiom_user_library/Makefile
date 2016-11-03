@@ -1,5 +1,6 @@
 AXIOM_INCLUDE := ../include
 AXIOM_DRIVER :=	../axiom_netdev_driver
+AXIOM_ALLOC_INCLUDE := ../../axiom-allocator/include
 
 APPS := axiom_user_test
 HEADERS := $(AXIOM_INCLUDE)/*.h
@@ -21,6 +22,7 @@ RANLIB := ${CCPREFIX}ranlib
 
 DFLAGS := -g -DPDEBUG
 CFLAGS += -Wall -fPIC $(DFLAGS) -I$(AXIOM_INCLUDE) -I$(AXIOM_DRIVER)
+CFLAGS += -I$(AXIOM_ALLOC_INCLUDE)
 
 .PHONY: all clean install
 
