@@ -4,7 +4,7 @@
 /*!
  * \file axiom_nic_raw_commands.h
  *
- * \version     v0.8
+ * \version     v0.9
  * \date        2016-03-22
  *
  * This file contains the AXIOM raw messages commands
