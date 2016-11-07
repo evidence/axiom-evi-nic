@@ -25,6 +25,8 @@ DFLAGS := -g -DPDEBUG
 
 all: $(APPS_DIR)
 
+libs: axiom_user_library
+
 $(APPS_DIR):
 	cd $@ && make CCARCH=$(CCARCH) CCPREFIX=$(CCPREFIX) DFLAGS="$(DFLAGS)"
 

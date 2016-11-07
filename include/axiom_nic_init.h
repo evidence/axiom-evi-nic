@@ -4,7 +4,7 @@
 /*!
  * \file axiom_nic_init.h
  *
- * \version     v0.8
+ * \version     v0.9
  * \date        2016-04-13
  *
  * This file contains the AXIOM NIC types for axiom-init deamon
@@ -14,7 +14,10 @@
 #include "axiom_nic_limits.h"
 #include "axiom_nic_types.h"
 #include "axiom_nic_raw_commands.h"
+#include "axiom_allocator_protocol.h" /* XXX: to remove */
 
+/*! \brief AXIOM init master node */
+#define AXIOM_INIT_MASTER_NODE          1
 
 /********************************* Types **************************************/
 typedef uint8_t		axiom_init_cmd_t;   /*!< \brief init command type*/
@@ -65,6 +68,16 @@ typedef struct axiom_netperf_payload {
     uint8_t  error;             /*!< \brief Error report */
     uint8_t  spare[101];
 } axiom_netperf_payload_t;
+
+
+/*! \brief Message payload for the axiom allocator */
+typedef struct axiom_allocator_payload {
+    uint8_t  command;           /*!< \brief Command of allocator messages */
+    uint8_t  reply_port;        /*!< \brief Port where to reply */
+    uint8_t  padding[5];
+    axiom_alloc_msg_t info;
+} axiom_allocator_payload_t;
+
 
 /* flags fod spawn messages */
 

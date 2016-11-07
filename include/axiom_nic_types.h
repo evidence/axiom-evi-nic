@@ -4,7 +4,7 @@
 /*!
  * \file axiom_nic_types.h
  *
- * \version     v0.8
+ * \version     v0.9
  * \date        2016-06-22
  *
  * This file contains the AXIOM types, return values and flags
@@ -20,6 +20,8 @@ typedef uint8_t	            axiom_type_t;
 typedef uint32_t            axiom_queue_len_t;
 /*! \brief AXIOM node identifier */
 typedef uint8_t             axiom_node_id_t;
+/*! \brief AXIOM application identifier */
+typedef uint8_t             axiom_app_id_t;
 /*! \brief AXIOM message identifier */
 typedef uint8_t             axiom_msg_id_t;
 /*! \brief AXIOM interface identifier */
@@ -43,6 +45,8 @@ typedef uint64_t            axiom_flags_t;
 
 /*! \brief Invalid node ID */
 #define AXIOM_NULL_NODE                 255
+/*! \brief Invalid node ID */
+#define AXIOM_NULL_APP_ID               255
 /*! \brief Ask any port number during the bind */
 #define AXIOM_PORT_ANY                  255
 
@@ -55,6 +59,8 @@ typedef uint64_t            axiom_flags_t;
 #define AXIOM_RET_NOTAVAIL              -2
 /*! \brief Return value INTR: system call interrupted */
 #define AXIOM_RET_INTR                  -3
+/*! \brief Return value NOMEM: memory not available */
+#define AXIOM_RET_NOMEM                 -4
 
 
 /*! \brief Check if return value is OK */

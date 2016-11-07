@@ -3,7 +3,7 @@
 /*!
  * \file axiom_netdev_module.h
  *
- * \version     v0.8
+ * \version     v0.9
  * \date        2016-05-03
  *
  * This file contains the structures and macros for the Axiom NIC kernel module.
@@ -177,7 +177,6 @@ struct axiomnet_drvdata {
     int irq;                            /*!< \brief IRQ descriptor */
 
     /* DMA */
-    void *dma_vaddr;
     dma_addr_t dma_paddr;
     uint64_t dma_size;
 
@@ -186,6 +185,8 @@ struct axiomnet_drvdata {
     uint64_t rdma_size;
 
     /* LONG */
+    dma_addr_t long_paddr;
+    void *long_vaddr;
     void *long_rx_vaddr;
     void *long_tx_vaddr;
     uint64_t long_size;

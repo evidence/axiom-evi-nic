@@ -1,7 +1,7 @@
 /*!
  * \file axiom_netdev_module.c
  *
- * \version     v0.8
+ * \version     v0.9
  * \date        2016-05-03
  *
  * This file contains the implementation of the Axiom NIC kernel module.
@@ -34,11 +34,12 @@
 #include "axiom_nic_packets.h"
 #include "axiom_netdev_module.h"
 #include "axiom_netdev_user.h"
+#include "axiom_mem_dev.h"
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Evidence SRL");
 MODULE_DESCRIPTION("Axiom Network Device Driver");
-MODULE_VERSION("v0.8");
+MODULE_VERSION("v0.9");
 
 /*! \brief verbose module parameter */
 static int verbose = 0;
@@ -1241,29 +1242,31 @@ err:
 
 static void axiomnet_rdma_release(struct axiomnet_drvdata *drvdata)
 {
-    dma_free_coherent(drvdata->dev, drvdata->dma_size, drvdata->dma_vaddr,
-            drvdata->dma_paddr);
-    drvdata->dma_vaddr = NULL;
+    iounmap(drvdata->long_vaddr);
+    drvdata->long_vaddr = NULL;
     drvdata->dma_paddr = 0;
     drvdata->dma_size = 0;
     drvdata->rdma_paddr = 0;
     drvdata->rdma_size = 0;
+    drvdata->long_paddr = 0;
     drvdata->long_size = 0;
 }
 
 static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
 {
+    unsigned long mem_app_base, mem_nic_base;
+    size_t mem_app_size, mem_nic_size;
     int ret, i;
 
     /*  ___________________________
-     * |                           |
+     * |                           | mem_app_base
      * |                           |
      * |                           |
      * |         RDMA zone         |
      * |                           |
      * |                           |
      * |___________________________|
-     * |                           |
+     * |                           | mem_nic_base
      * |    LONG Rx Buf (32x4k)    |
      * |___________________________|
      * |                           |
@@ -1271,26 +1274,39 @@ static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
      * |___________________________|
      *
      */
+    if (axiom_mem_dev_get_appspace(&mem_app_base, &mem_app_size)) {
+        ret = -EFAULT;
+        goto err;
+    }
+    IPRINTF(1, "RDMA APP physical addr: 0x%lx size:%zu", mem_app_base,
+            mem_app_size);
 
-    drvdata->rdma_size = (1 << 26);
+    if (axiom_mem_dev_get_nicspace(&mem_nic_base, &mem_nic_size)) {
+        ret = -EFAULT;
+        goto err;
+    }
+    IPRINTF(1, "RDMA NIC physical addr: 0x%lx size:%zu", mem_nic_base,
+            mem_nic_size);
+
+    drvdata->rdma_paddr = mem_app_base;
+    drvdata->rdma_size = mem_app_size;
+    drvdata->long_paddr = mem_nic_base;
     drvdata->long_size = 2 * (AXIOMREG_LEN_LONG_BUF * AXIOM_LONG_PAYLOAD_MAX_SIZE);
-
+    drvdata->dma_paddr = drvdata->rdma_paddr;
     drvdata->dma_size = drvdata->rdma_size + drvdata->long_size;
 
-    drvdata->dma_vaddr = dma_zalloc_coherent(drvdata->dev, drvdata->dma_size,
-            &drvdata->dma_paddr, GFP_KERNEL);
-    if (drvdata->dma_vaddr == NULL) {
-        ret = -ENOMEM;
+    if (drvdata->long_size > mem_nic_size) {
+        ret = -EFAULT;
         goto err;
     }
 
-    drvdata->rdma_paddr = drvdata->dma_paddr;
-    drvdata->long_rx_vaddr = drvdata->dma_vaddr + drvdata->rdma_size;
+    drvdata->long_vaddr = ioremap(drvdata->long_paddr, drvdata->long_size);
+    drvdata->long_rx_vaddr = drvdata->long_vaddr;
     drvdata->long_tx_vaddr = drvdata->long_rx_vaddr +
         (AXIOMREG_LEN_LONG_BUF * AXIOM_LONG_PAYLOAD_MAX_SIZE);
 
-    IPRINTF(1, "DMA mapped - vaddr 0x%p paddr 0x%llx size 0x%llx",
-            drvdata->dma_vaddr, drvdata->dma_paddr, drvdata->dma_size);
+    IPRINTF(1, "DMA private NIC mapped - vaddr 0x%p paddr 0x%llx size 0x%llx",
+            drvdata->long_vaddr, drvdata->long_paddr, drvdata->long_size);
 
     axiom_hw_set_rdma_zone(drvdata->dev_api, drvdata->dma_paddr,
             drvdata->dma_paddr + drvdata->dma_size - 1);
@@ -2008,8 +2024,9 @@ static long axiomnet_ioctl_rdma(struct file *filep, unsigned int cmd,
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     void __user* argp = (void __user*)arg;
-    axiom_rdma_hdr_t buf_rdma;
+    axiom_ioctl_rdma_t buf_rdma;
     uint64_t buf_uint64;
+    unsigned long buf_ulong;
     long ret = 0;
 
     DPRINTF("start");
@@ -2027,7 +2044,31 @@ static long axiomnet_ioctl_rdma(struct file *filep, unsigned int cmd,
         ret = copy_from_user(&buf_rdma, argp, sizeof(buf_rdma));
         if (ret)
             return -EFAULT;
-        ret = axiomnet_rdma_tx(filep, &(buf_rdma), NULL);
+
+        ret = axiom_mem_dev_virt2off(buf_rdma.app_id,
+                (unsigned long)(buf_rdma.src_addr),
+                buf_rdma.header.tx.payload_size << AXIOM_RDMA_PAYLOAD_SIZE_ORDER,
+                &buf_ulong);
+        if (ret) {
+            EPRINTF("axiom_mem_dev_virt2off - ret %ld", ret);
+            return -EFAULT;
+        }
+        buf_rdma.header.tx.src_addr = buf_ulong;
+
+        ret = axiom_mem_dev_virt2off(buf_rdma.app_id,
+                (unsigned long)(buf_rdma.dst_addr),
+                buf_rdma.header.tx.payload_size << AXIOM_RDMA_PAYLOAD_SIZE_ORDER,
+                &buf_ulong);
+        if (ret) {
+            EPRINTF("axiom_mem_dev_virt2off - ret %ld", ret);
+            return -EFAULT;
+        }
+        buf_rdma.header.tx.dst_addr = buf_ulong;
+
+        IPRINTF(verbose, "RDMA - src_offset: %d dst_offset: %d",
+                buf_rdma.header.tx.src_addr, buf_rdma.header.tx.dst_addr);
+
+        ret = axiomnet_rdma_tx(filep, &(buf_rdma.header), NULL);
         break;
     default:
         ret = -EINVAL;

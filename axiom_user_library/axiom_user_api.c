@@ -1,7 +1,7 @@
 /*!
  * \file axiom_user_api.c
  *
- * \version     v0.8
+ * \version     v0.9
  * \date        2016-05-03
  *
  * This file contains the implementation of Axiom NIC API for the user-space
@@ -25,6 +25,7 @@
 #include "axiom_nic_packets.h"
 #include "axiom_netdev_user.h"
 #include "axiom_utility.h"
+#include "axiom_allocator_protocol.h"
 
 /*! \brief Axiom char dev default name */
 #define AXIOM_DEV_NAME          "/dev/axiom"
@@ -33,6 +34,8 @@
 #define AXIOM_DEV_RDMA_NAME     "/dev/axiom-rdma"
 
 #define AXIOM_NUM_RECV_FDS      2
+
+#define AXIOM_RDMA_DEBUG
 
 /*!
  * \brief axiom arguments for the axiom_open() function
@@ -46,9 +49,25 @@ typedef struct axiom_dev {
     axiom_flags_t flags; /*!< \brief axiom flags */
     void *rdma_addr;     /*!< \brief rdma zone pointer */
     uint64_t rdma_size;  /*!< \brief rdma zone size */
+    int appid;           /*!< \brief application ID to use in the RDMA */
 } axiom_dev_t;
 
 
+static int
+axiom_get_appid(void)
+{
+    char *appid_s;
+    unsigned long appid = 0;
+
+    appid_s = getenv(AXIOM_ENV_ALLOC_APPID);
+    if (appid_s == NULL) {
+        return AXIOM_RET_ERROR;
+    }
+
+    appid = strtoul(appid_s, NULL, 10);
+
+    return (axiom_app_id_t)(appid);
+}
 
 axiom_dev_t *
 axiom_open(axiom_args_t *args) {
@@ -97,6 +116,8 @@ axiom_open(axiom_args_t *args) {
             goto close_fd_rdma;
         }
     }
+
+    dev->appid = axiom_get_appid();
 
     return dev;
 
@@ -892,12 +913,13 @@ axiom_flush_long(axiom_dev_t *dev)
 
 #define AXIOM_RDMA_FIXED_ADDR           ((void *)(0x3000000000))
 void *
-axiom_rdma_mmap(axiom_dev_t *dev, uint64_t *size)
+axiom_rdma_mmap(axiom_dev_t *dev, size_t *sizep)
 {
+    uint64_t size = *sizep;
     void *addr;
     int ret;
 
-    if (unlikely(!dev || dev->fd_rdma <= 0 || !size)) {
+    if (unlikely(!dev || dev->fd_rdma <= 0 || !sizep)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
         return NULL;
     }
@@ -907,32 +929,33 @@ axiom_rdma_mmap(axiom_dev_t *dev, uint64_t *size)
         return NULL;
     }
 
-    ret = ioctl(dev->fd_rdma, AXNET_RDMA_SIZE, size);
+    ret = ioctl(dev->fd_rdma, AXNET_RDMA_SIZE, &size);
     if (ret < 0) {
         EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         return NULL;
     }
 
-    if (unlikely(*size <= 0)) {
-        EPRINTF("size error [%" PRIu64 "]", *size);
+    if (unlikely(size <= 0)) {
+        EPRINTF("size error [%" PRIu64 "]", size);
         return NULL;
     }
 
-    addr = mmap(AXIOM_RDMA_FIXED_ADDR, *size, PROT_READ | PROT_WRITE,
+    addr = mmap(AXIOM_RDMA_FIXED_ADDR, size, PROT_READ | PROT_WRITE,
             MAP_SHARED, dev->fd_rdma, 0);
     if (unlikely(addr == MAP_FAILED)) {
         EPRINTF("mmap failed - addr: %p - errno: %s", addr, strerror(errno));
         return NULL;
     }
 
-    dev->rdma_addr = addr;
-    dev->rdma_size = *size;
-
     if (unlikely(addr != AXIOM_RDMA_FIXED_ADDR)) {
         EPRINTF("mmap failed - addr: %p - errno: %s", addr, strerror(errno));
         axiom_rdma_munmap(dev);
         return NULL;
     }
+
+    dev->rdma_addr = addr;
+    dev->rdma_size = size;
+    *sizep = size;
 
     return addr;
 }
@@ -966,10 +989,9 @@ axiom_rdma_munmap(axiom_dev_t *dev)
 
 axiom_err_t
 axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
-        axiom_port_t port, axiom_rdma_payload_size_t payload_size,
-        axiom_addr_t local_src_addr, axiom_addr_t remote_dst_addr)
+        size_t payload_size, void *local_src_addr, void *remote_dst_addr)
 {
-    axiom_rdma_hdr_t rdma_hdr;
+    axiom_ioctl_rdma_t rdma;
     int ret;
 
     if (unlikely(!dev || dev->fd_rdma <= 0)) {
@@ -977,32 +999,31 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
         return AXIOM_RET_ERROR;
     }
 
-    if (unlikely(payload_size >
-            (AXIOM_RDMA_PAYLOAD_MAX_SIZE >> AXIOM_RDMA_PAYLOAD_SIZE_ORDER))) {
-        EPRINTF("payload size too big - size: %d [%d]", payload_size,
+    if (unlikely(payload_size & ((1 << AXIOM_RDMA_PAYLOAD_SIZE_ORDER) - 1))) {
+        EPRINTF("payload size [%zu] must be multiple of %d", payload_size,
+                (1 << AXIOM_RDMA_PAYLOAD_SIZE_ORDER));
+        return AXIOM_RET_ERROR;
+    }
+
+    if (unlikely(payload_size > (AXIOM_RDMA_PAYLOAD_MAX_SIZE))) {
+        EPRINTF("payload size too big - size: %zu [%d]", payload_size,
                 AXIOM_RAW_PAYLOAD_MAX_SIZE);
         return AXIOM_RET_ERROR;
     }
 
-    if (unlikely((local_src_addr +
-            (payload_size << AXIOM_RDMA_PAYLOAD_SIZE_ORDER)) > dev->rdma_size)){
-        EPRINTF("out of RDMA zone - rdma_size: %" PRIu64, dev->rdma_size);
-        return AXIOM_RET_ERROR;
-    }
-
-
     DPRINTF("[packet] payload_size: 0x%x", payload_size);
 
-    rdma_hdr.tx.port_type.field.type = AXIOM_TYPE_RDMA_WRITE;
-    rdma_hdr.tx.port_type.field.port = port;
-    rdma_hdr.tx.port_type.field.s = 0;
-    rdma_hdr.tx.dst = remote_id;
-    rdma_hdr.tx.payload_size = payload_size;
-    rdma_hdr.tx.src_addr = local_src_addr;
-    rdma_hdr.tx.dst_addr = remote_dst_addr;
+    rdma.header.tx.port_type.field.type = AXIOM_TYPE_RDMA_WRITE;
+    rdma.header.tx.port_type.field.s = 0;
+    rdma.header.tx.dst = remote_id;
+    rdma.header.tx.payload_size = payload_size;
+
+    rdma.app_id = dev->appid;
+    rdma.src_addr = local_src_addr;
+    rdma.dst_addr = remote_dst_addr;
 
 
-    ret = ioctl(dev->fd_rdma, AXNET_RDMA_WRITE, &rdma_hdr);
+    ret = ioctl(dev->fd_rdma, AXNET_RDMA_WRITE, &rdma);
     if (unlikely(ret < 0)) {
         if (errno == EAGAIN)
             return AXIOM_RET_NOTAVAIL;
@@ -1017,10 +1038,9 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
 
 axiom_err_t
 axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
-        axiom_port_t port, axiom_rdma_payload_size_t payload_size,
-        axiom_addr_t remote_src_addr, axiom_addr_t local_dst_addr)
+        size_t payload_size, void *remote_src_addr, void *local_dst_addr)
 {
-    axiom_rdma_hdr_t rdma_hdr;
+    axiom_ioctl_rdma_t rdma;
     int ret;
 
     if (unlikely(!dev || dev->fd_rdma <= 0)) {
@@ -1028,29 +1048,29 @@ axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
         return AXIOM_RET_ERROR;
     }
 
-    if (unlikely(payload_size >
-            (AXIOM_RDMA_PAYLOAD_MAX_SIZE >> AXIOM_RDMA_PAYLOAD_SIZE_ORDER))) {
-        EPRINTF("payload size too big - size: %d [%d]", payload_size,
+    if (unlikely(payload_size & ((1 << AXIOM_RDMA_PAYLOAD_SIZE_ORDER) - 1))) {
+        EPRINTF("payload size [%zu] must be multiple of %d", payload_size,
+                (1 << AXIOM_RDMA_PAYLOAD_SIZE_ORDER));
+        return AXIOM_RET_ERROR;
+    }
+
+    if (unlikely(payload_size > (AXIOM_RDMA_PAYLOAD_MAX_SIZE))) {
+        EPRINTF("payload size too big - size: %zu [%d]", payload_size,
                 AXIOM_RAW_PAYLOAD_MAX_SIZE);
         return AXIOM_RET_ERROR;
     }
 
-    if (unlikely((local_dst_addr +
-            (payload_size << AXIOM_RDMA_PAYLOAD_SIZE_ORDER)) > dev->rdma_size)){
-        EPRINTF("out of RDMA zone - rdma_size: %" PRIu64, dev->rdma_size);
-        return AXIOM_RET_ERROR;
-    }
+    rdma.header.tx.port_type.field.type = AXIOM_TYPE_RDMA_READ;
+    rdma.header.tx.port_type.field.s = 0;
+    rdma.header.tx.dst = remote_id;
+    rdma.header.tx.payload_size = payload_size;
 
-    rdma_hdr.tx.port_type.field.type = AXIOM_TYPE_RDMA_READ;
-    rdma_hdr.tx.port_type.field.port = port;
-    rdma_hdr.tx.port_type.field.s = 0;
-    rdma_hdr.tx.dst = remote_id;
-    rdma_hdr.tx.payload_size = payload_size;
-    rdma_hdr.tx.src_addr = remote_src_addr;
-    rdma_hdr.tx.dst_addr = local_dst_addr;
+    rdma.app_id = dev->appid;
+    rdma.src_addr = remote_src_addr;
+    rdma.dst_addr = local_dst_addr;
 
 
-    ret = ioctl(dev->fd_rdma, AXNET_RDMA_READ, &rdma_hdr);
+    ret = ioctl(dev->fd_rdma, AXNET_RDMA_READ, &rdma);
     if (unlikely(ret < 0)) {
         if (errno == EAGAIN)
             return AXIOM_RET_NOTAVAIL;

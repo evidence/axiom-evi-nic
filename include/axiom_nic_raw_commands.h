@@ -4,7 +4,7 @@
 /*!
  * \file axiom_nic_raw_commands.h
  *
- * \version     v0.8
+ * \version     v0.9
  * \date        2016-03-22
  *
  * This file contains the AXIOM raw messages commands
@@ -33,28 +33,37 @@
 /*! \brief Routing phase: End of routing table */
 #define AXIOM_RT_CMD_END_INFO           9
 /*! \brief Routing phase: Confirm routing table reception*/
-#define AXIOM_RT_CMD_RT_REPLY          10
+#define AXIOM_RT_CMD_RT_REPLY           10
 
 /*! \brief Network utilities: ping request */
-#define AXIOM_CMD_PING                 11
+#define AXIOM_CMD_PING                  11
 /*! \brief Network utilities: ping reply */
-#define AXIOM_CMD_PONG                 12
+#define AXIOM_CMD_PONG                  12
 /*! \brief Network utilities: traceroute request */
-#define AXIOM_CMD_TRACEROUTE           13
+#define AXIOM_CMD_TRACEROUTE            13
 /*! \brief Network utilities: traceroute replay*/
-#define AXIOM_CMD_TRACEROUTE_REPLY     14
+#define AXIOM_CMD_TRACEROUTE_REPLY      14
 /*! \brief Network utilities: netperf payload packet */
-#define AXIOM_CMD_NETPERF              15
+#define AXIOM_CMD_NETPERF               15
 /*! \brief Network utilities: netperf start */
-#define AXIOM_CMD_NETPERF_START        16
+#define AXIOM_CMD_NETPERF_START         16
 /*! \brief Network utilities: netperf end */
-#define AXIOM_CMD_NETPERF_END          17
+#define AXIOM_CMD_NETPERF_END           17
 
 /*! \brief SPAWN: spawner request */
-#define AXIOM_CMD_SPAWN_REQ            18
+#define AXIOM_CMD_SPAWN_REQ             18
 /*! \brief Session: session request */
-#define AXIOM_CMD_SESSION_REQ          19
+#define AXIOM_CMD_SESSION_REQ           19
 /*! \brief Session: session reply */
-#define AXIOM_CMD_SESSION_REPLY        20
+#define AXIOM_CMD_SESSION_REPLY         20
+/*! \brief Session: session release */
+#define AXIOM_CMD_SESSION_RELEASE       21
+
+#define AXIOM_CMD_ALLOC_APPID           22
+#define AXIOM_CMD_ALLOC_APPID_REPLY     23
+#define AXIOM_CMD_ALLOC                 24
+#define AXIOM_CMD_ALLOC_REPLY           25
+#define AXIOM_CMD_ALLOC_RELEASE         26
+
 
 #endif /* !AXIOM_NIC_RAW_COMMANDS_h */
