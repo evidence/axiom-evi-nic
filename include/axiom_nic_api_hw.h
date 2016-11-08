@@ -245,5 +245,49 @@ axiom_err_t
 axiom_hw_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
         uint8_t *if_features);
 
+/*!
+ * \brief This function enables all interrup of the AXIOM NIC.
+ *
+ * \param dev           The axiom device private data pointer
+ */
+void
+axiom_hw_enable_irq(axiom_dev_t *dev);
+
+/*!
+ * \brief This function disables all interrup of the AXIOM NIC.
+ *
+ * \param dev           The axiom device private data pointer
+ */
+void
+axiom_hw_disable_irq(axiom_dev_t *dev);
+
+/*!
+ * \brief This function returns the pending interrupts.
+ *
+ * \param dev           The axiom device private data pointer
+ *
+ * \return Returns pending interrupts
+ */
+uint32_t
+axiom_hw_pending_irq(axiom_dev_t *dev);
+
+/*!
+ * \brief This function acks the specified interrupts.
+ *
+ * \param dev           The axiom device private data pointer
+ * \param ack_irq       Interrupt to acknowledge
+ */
+void
+axiom_hw_ack_irq(axiom_dev_t *dev, uint32_t ack_irq);
+
+/*!
+ * \brief This function checks the version of the NIC.
+ *
+ * \param dev           The axiom device private data pointer
+ *
+ * \return Returns AXIOM_RET_OK on success, an error otherwise.
+ */
+axiom_err_t
+axiom_hw_check_version(axiom_dev_t *dev);
 
 #endif /* !AXIOM_NIC_API_HW_h */

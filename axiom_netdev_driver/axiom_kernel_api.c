@@ -23,6 +23,8 @@ MODULE_AUTHOR("Evidence SRL");
 MODULE_DESCRIPTION("Axiom Network Device Driver");
 MODULE_VERSION("v0.9");
 
+extern int verbose;
+
 /*! \brief AXIOM HW device status */
 typedef struct axiom_dev {
     void __iomem *vregs;        /*!< \brief Memory mapped IO registers */
@@ -48,6 +50,41 @@ axiom_hw_dev_free(axiom_dev_t *dev)
     vfree(dev);
 }
 
+void
+axiom_hw_enable_irq(axiom_dev_t *dev)
+{
+    iowrite32(AXIOMREG_IRQ_ALL, dev->vregs + AXIOMREG_IO_MSKIRQ);
+}
+
+void
+axiom_hw_disable_irq(axiom_dev_t *dev)
+{
+    iowrite32(~(uint32_t)(AXIOMREG_IRQ_ALL), dev->vregs + AXIOMREG_IO_MSKIRQ);
+}
+
+uint32_t
+axiom_hw_pending_irq(axiom_dev_t *dev)
+{
+    return ioread32(dev->vregs + AXIOMREG_IO_PNDIRQ);
+}
+
+void
+axiom_hw_ack_irq(axiom_dev_t *dev, uint32_t ack_irq)
+{
+    iowrite32(ack_irq, dev->vregs + AXIOMREG_IO_PNDIRQ);
+}
+
+axiom_err_t
+axiom_hw_check_version(axiom_dev_t *dev)
+{
+    uint32_t version;
+
+    /* TODO: check version */
+    version = ioread32(dev->vregs + AXIOMREG_IO_VERSION);
+    IPRINTF(verbose, "version: 0x%08x", version);
+
+    return AXIOM_RET_OK;
+}
 
 axiom_msg_id_t
 axiom_hw_raw_tx(axiom_dev_t *dev, axiom_raw_hdr_t *header,

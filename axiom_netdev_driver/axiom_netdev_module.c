@@ -42,7 +42,7 @@ MODULE_DESCRIPTION("Axiom Network Device Driver");
 MODULE_VERSION("v0.9");
 
 /*! \brief verbose module parameter */
-static int verbose = 0;
+int verbose = 0;
 module_param(verbose, int, 0644);
 MODULE_PARM_DESC(debug, "versbose level (0=none,...,16=all)");
 
@@ -72,17 +72,6 @@ static const struct of_device_id axiomnet_of_match[] = {
     {},
 };
 
-static inline void axiomnet_enable_irq(struct axiomnet_drvdata *drvdata)
-{
-    iowrite32(AXIOMREG_IRQ_ALL, drvdata->vregs + AXIOMREG_IO_MSKIRQ);
-}
-
-static inline void axiomnet_disable_irq(struct axiomnet_drvdata *drvdata)
-{
-    iowrite32(~AXIOMREG_IRQ_ALL, drvdata->vregs + AXIOMREG_IO_MSKIRQ);
-}
-
-
 static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
 {
     struct axiomnet_drvdata *drvdata = dev_id;
@@ -90,7 +79,7 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
     uint32_t irq_pending;
 
     DPRINTF("start");
-    irq_pending = ioread32(drvdata->vregs + AXIOMREG_IO_PNDIRQ);
+    irq_pending = axiom_hw_pending_irq(drvdata->dev_api);
 
     if (irq_pending & AXIOMREG_IRQ_RAW_RX) {
         axiom_kthread_wakeup(&drvdata->kthread_raw);
@@ -108,7 +97,7 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
         wake_up(&(drvdata->rdma_tx_ring.rdma_port.wait_queue));
     }
 
-    iowrite32(irq_pending, drvdata->vregs + AXIOMREG_IO_PNDIRQ);
+    axiom_hw_ack_irq(drvdata->dev_api, irq_pending);
     serviced = IRQ_HANDLED;
     DPRINTF("end");
 
@@ -1351,11 +1340,7 @@ err:
 static int axiomnet_probe(struct platform_device *pdev)
 {
     struct axiomnet_drvdata *drvdata;
-    uint32_t version;
-    unsigned int off;
-    unsigned long regs_pfn, regs_phys;
     int err = 0;
-
 
     DPRINTF("start");
 
@@ -1385,19 +1370,7 @@ static int axiomnet_probe(struct platform_device *pdev)
         goto free_local;
     }
 
-    /* XXX: to remove */
-    off = ((unsigned long)drvdata->vregs) % PAGE_SIZE;
-    regs_pfn = vmalloc_to_pfn(drvdata->vregs);
-    regs_phys = (regs_pfn << PAGE_SHIFT) + off;
-
-    DPRINTF("drvdata: %p", drvdata);
-    DPRINTF("--- is_vmalloc_addr(%p): %d", drvdata->vregs,
-            is_vmalloc_addr(drvdata->vregs))
-    DPRINTF("--- vregs: %p regs_pfn:%lx regs_phys:%lx res->start:%zx",
-            drvdata->vregs, regs_pfn, regs_phys,
-            (size_t)drvdata->regs_res->start);
-
-    axiomnet_disable_irq(drvdata);
+    axiom_hw_disable_irq(drvdata->dev_api);
 
     /* setup IRQ */
     drvdata->irq = platform_get_irq(pdev, 0);
@@ -1412,8 +1385,11 @@ static int axiomnet_probe(struct platform_device *pdev)
             irq_avail_rdma_tx, irq_avail_rdma_rx);
 
     /* TODO: check version */
-    version = ioread32(drvdata->vregs + AXIOMREG_IO_VERSION);
-    IPRINTF(verbose, "version: 0x%08x", version);
+    err = axiom_hw_check_version(drvdata->dev_api);
+    if (err) {
+        dev_err(&pdev->dev, "check version failed\n");
+        goto free_irq;
+    }
 
     if (verbose > 1) {
         axiom_print_status_reg(drvdata->dev_api);
@@ -1480,7 +1456,7 @@ static int axiomnet_probe(struct platform_device *pdev)
         goto free_rdma_kthread;
     }
 
-    axiomnet_enable_irq(drvdata);
+    axiom_hw_enable_irq(drvdata->dev_api);
 
     IPRINTF(1, "AXIOM NIC driver loaded");
     DPRINTF("end");
@@ -1513,7 +1489,7 @@ static int axiomnet_remove(struct platform_device *pdev)
     struct axiomnet_drvdata *drvdata = platform_get_drvdata(pdev);
     DPRINTF("start");
 
-    axiomnet_disable_irq(drvdata);
+    axiom_hw_disable_irq(drvdata->dev_api);
 
     axiomnet_rdma_release(drvdata);
 
