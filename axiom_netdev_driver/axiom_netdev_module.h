@@ -76,7 +76,8 @@ typedef struct axiom_callback {
 
 /*! \brief Structure to handle msg id assignment */
 typedef struct axiom_rdma_status {
-    axiom_msg_id_t msg_id;              /*!< \brief Message id value */
+    axiom_msg_id_t msg_id;              /*!< \brief Message ID value */
+    uint32_t msg_id_counter;            /*!< \brief Message ID counter */
     uint8_t retries;                    /*!< \brief number of retries */
     bool ack_received;                  /*!< \brief Is ack received? */
     bool ack_waiting;                   /*!< \brief We need to wait the ack */

@@ -435,7 +435,8 @@ inline static int axiomnet_rdma_tx_avail(struct axiomnet_rdma_tx_hwring *tx_ring
 }
 
 inline static int axiomnet_rdma_tx(struct file *filep,
-        axiom_rdma_hdr_t *header, axiom_callback_t *callback)
+        axiom_rdma_hdr_t *header, axiom_token_t *token,
+        axiom_callback_t *callback)
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
@@ -481,6 +482,12 @@ inline static int axiomnet_rdma_tx(struct file *filep,
 
     rdma_status = &(rdma_queue->queue_desc[queue_slot]);
     header->tx.msg_id = rdma_status->msg_id;
+
+    /* setup token to check the rdma status */
+    if (token) {
+        token->rdma.msg_id = rdma_status->msg_id;
+        token->rdma.value = rdma_status->msg_id_counter;
+    }
 
     /* reset error and s bit */
     header->tx.port_type.field.error = 0;
@@ -555,6 +562,61 @@ err_nolock:
     DPRINTF("end");
 
     return ret;
+}
+
+static long axiomnet_rdma_check(struct file *filep, axiom_token_t *token)
+{
+    struct axiomnet_priv *priv = filep->private_data;
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
+    struct axiomnet_rdma_queue *rdma_queue = &tx_ring->rdma_queue;
+    axiom_msg_id_t msg_id = token->rdma.msg_id;
+    axiom_rdma_status_t *rdma_status;
+
+    if (msg_id >= AXIOMNET_RDMA_QUEUE_FREE_LEN) {
+        return -EINVAL;
+    }
+
+    rdma_status = &(rdma_queue->queue_desc[msg_id]);
+
+    if (rdma_status->msg_id_counter == token->rdma.value) {
+        return -EAGAIN;
+    }
+
+    return 0;
+}
+
+static long axiomnet_rdma_wait(struct file *filep, axiom_token_t *token)
+{
+    struct axiomnet_priv *priv = filep->private_data;
+    struct axiomnet_drvdata *drvdata = priv->drvdata;
+    struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
+    struct axiomnet_rdma_queue *rdma_queue = &tx_ring->rdma_queue;
+    axiom_msg_id_t msg_id = token->rdma.msg_id;
+    axiom_rdma_status_t *rdma_status;
+
+    if (msg_id >= AXIOMNET_RDMA_QUEUE_FREE_LEN) {
+        return -EINVAL;
+    }
+
+    rdma_status = &(rdma_queue->queue_desc[msg_id]);
+
+    /* wait the reply */
+    while (rdma_status->msg_id_counter == token->rdma.value) {
+#if 0
+        /* no blocking write */
+        if (filep->f_flags & O_NONBLOCK) {
+            return -EAGAIN;
+        }
+#endif
+        /* put the process in the wait_queue to wait the ack */
+        if (wait_event_interruptible(rdma_status->wait_queue,
+                    rdma_status->msg_id_counter == token->rdma.value)) {
+            return -ERESTARTSYS;
+        }
+    }
+
+    return 0;
 }
 
 inline static int axiomnet_long_rx_avail(struct axiomnet_rdma_rx_hwring *rx_ring,
@@ -638,6 +700,7 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
             /* if there is some process to wait, wakeup it, otherwise free the
              * status
              */
+            rdma_status->msg_id_counter++;
             if (rdma_status->ack_waiting) {
                 rdma_status->ack_received = true;
                 /* wake up waitinig process */
@@ -824,7 +887,7 @@ inline static int axiomnet_long_send(struct file *filep,
     cb.func = axiomnet_long_callback;
     cb.data = (void *)(uintptr_t)queue_slot;
 
-    ret = axiomnet_rdma_tx(filep, &(long_msg->header), &cb);
+    ret = axiomnet_rdma_tx(filep, &(long_msg->header), NULL, &cb);
     if (ret < 0) {
         EPRINTF("axiomnet_rdma_tx error");
         goto err;
@@ -1203,6 +1266,7 @@ static int axiomnet_rdma_tx_hwring_init(struct axiomnet_drvdata *drvdata,
 
     for (i = 0; i < AXIOMNET_RDMA_QUEUE_FREE_LEN; i++) {
         tx_ring->rdma_queue.queue_desc[i].msg_id = i;
+        tx_ring->rdma_queue.queue_desc[i].msg_id_counter = 0;
         tx_ring->rdma_queue.queue_desc[i].header.tx.dst = AXIOM_NULL_NODE;
         init_waitqueue_head(&(tx_ring->rdma_queue.queue_desc[i].wait_queue));
     }
@@ -2001,6 +2065,7 @@ static long axiomnet_ioctl_rdma(struct file *filep, unsigned int cmd,
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     void __user* argp = (void __user*)arg;
     axiom_ioctl_rdma_t buf_rdma;
+    axiom_token_t buf_token;
     uint64_t buf_uint64;
     unsigned long buf_ulong;
     long ret = 0;
@@ -2044,7 +2109,30 @@ static long axiomnet_ioctl_rdma(struct file *filep, unsigned int cmd,
         IPRINTF(verbose, "RDMA - src_offset: %d dst_offset: %d",
                 buf_rdma.header.tx.src_addr, buf_rdma.header.tx.dst_addr);
 
-        ret = axiomnet_rdma_tx(filep, &(buf_rdma.header), NULL);
+        ret = axiomnet_rdma_tx(filep, &(buf_rdma.header), &(buf_rdma.token),
+                NULL);
+        if (ret)
+            return -EFAULT;
+
+        ret = copy_to_user(argp, &buf_rdma, sizeof(buf_rdma));
+        if (ret)
+            return -EFAULT;
+        break;
+    case AXNET_RDMA_CHECK:
+        ret = copy_from_user(&buf_token, argp, sizeof(buf_token));
+        if (ret)
+            return -EFAULT;
+
+        ret = axiomnet_rdma_check(filep, &(buf_token));
+
+        break;
+    case AXNET_RDMA_WAIT:
+        ret = copy_from_user(&buf_token, argp, sizeof(buf_token));
+        if (ret)
+            return -EFAULT;
+
+        ret = axiomnet_rdma_wait(filep, &(buf_token));
+
         break;
     default:
         ret = -EINVAL;

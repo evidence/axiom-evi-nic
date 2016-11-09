@@ -42,6 +42,8 @@ typedef struct axiom_dev    axiom_dev_t;
 typedef struct axiom_args   axiom_args_t;
 /*! \brief AXIOM flags */
 typedef uint64_t            axiom_flags_t;
+/*! \brief AXIOM token */
+typedef union axiom_token   axiom_token_t;
 
 /*! \brief Invalid node ID */
 #define AXIOM_NULL_NODE                 255
@@ -72,5 +74,15 @@ typedef uint64_t            axiom_flags_t;
 /*! \brief Avoid flush of RX port queue after the axiom_bind() API */
 #define AXIOM_FLAG_NOFLUSH              0x00000002
 
+/*********************** struct/union definitions *****************************/
 
+/*! \brief AXIOM token definition */
+union axiom_token {
+    uint64_t raw;
+    struct {
+        uint64_t msg_id : 8;
+        uint64_t padding : 24;
+        uint64_t value : 32;
+    } rdma;
+};
 #endif /* !AXIOM_NIC_TYPES_h */

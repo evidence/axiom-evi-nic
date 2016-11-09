@@ -989,7 +989,8 @@ axiom_rdma_munmap(axiom_dev_t *dev)
 
 axiom_err_t
 axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
-        size_t payload_size, void *local_src_addr, void *remote_dst_addr)
+        size_t payload_size, void *local_src_addr, void *remote_dst_addr,
+        axiom_token_t *token)
 {
     axiom_ioctl_rdma_t rdma;
     int ret;
@@ -1033,12 +1034,17 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
         return AXIOM_RET_ERROR;
     }
 
-    return ret;
+    if (token) {
+        *token = rdma.token;
+    }
+
+    return rdma.token.rdma.msg_id;
 }
 
 axiom_err_t
 axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
-        size_t payload_size, void *remote_src_addr, void *local_dst_addr)
+        size_t payload_size, void *remote_src_addr, void *local_dst_addr,
+        axiom_token_t *token)
 {
     axiom_ioctl_rdma_t rdma;
     int ret;
@@ -1080,7 +1086,52 @@ axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
         return AXIOM_RET_ERROR;
     }
 
-    return ret;
+    if (token) {
+        *token = rdma.token;
+    }
+
+    return rdma.token.rdma.msg_id;
+}
+
+axiom_err_t
+axiom_rdma_check(axiom_dev_t *dev, axiom_token_t *token)
+{
+    int ret;
+
+    if (unlikely(!dev || dev->fd_rdma <= 0)) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    ret = ioctl(dev->fd_rdma, AXNET_RDMA_CHECK, token);
+    if (unlikely(ret < 0)) {
+        if (errno == EAGAIN)
+            return AXIOM_RET_NOTAVAIL;
+
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
+        return AXIOM_RET_ERROR;
+    }
+
+    return AXIOM_RET_OK;
+}
+
+axiom_err_t
+axiom_rdma_wait(axiom_dev_t *dev, axiom_token_t *token)
+{
+    int ret;
+
+    if (unlikely(!dev || dev->fd_rdma <= 0)) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    ret = ioctl(dev->fd_rdma, AXNET_RDMA_WAIT, token);
+    if (unlikely(ret < 0)) {
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
+        return AXIOM_RET_ERROR;
+    }
+
+    return AXIOM_RET_OK;
 }
 
 uint32_t

@@ -395,12 +395,15 @@ axiom_recv_long_avail(axiom_dev_t *dev);
  *                        will be read
  * \param remote_dst_addr remote address inside the RDMA zone where data
  *                        will be stored
+ * \param token           token that can be used to check the status of the RDMA
+ *                        (it can be NULL)
  *
  * \return Returns a unique positive message id on success, an error otherwise.
  */
 axiom_err_t
 axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
-        size_t payload_size, void *local_src_addr, void *remote_dst_addr);
+        size_t payload_size, void *local_src_addr, void *remote_dst_addr,
+        axiom_token_t *token);
 
 /*!
  * \brief This function reads data from a remote node memory.
@@ -412,13 +415,38 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
  *                        will be read
  * \param local_dst_addr  local address inside the RDMA zone where data
  *                        will be stored
+ * \param token           token that can be used to check the status of the RDMA
+ *                        (it can be NULL)
  *
  * \return Returns a unique positive message id on success, an error otherwise.
  */
 axiom_err_t
 axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
-        size_t payload_size, void *remote_src_addr, void *local_dst_addr);
+        size_t payload_size, void *remote_src_addr, void *local_dst_addr,
+        axiom_token_t *token);
 
+/*!
+ * \brief This function checks if the RDMA is completed.
+ *
+ * \param dev             the axiom device private data pointer
+ * \param token           token that can be used to check the status of the RDMA
+ *
+ * \return returns a unique positive message id on success,
+ *         AXIOM_RET_NOTAVAIL if the rdma is not completed or a generic error.
+ */
+axiom_err_t
+axiom_rdma_check(axiom_dev_t *dev, axiom_token_t *token);
+
+/*!
+ * \brief This function waits a completion of the RDMA.
+ *
+ * \param dev             the axiom device private data pointer
+ * \param token           token that can be used to check the status of the RDMA
+ *
+ * \return returns a unique positive message id on success or a generic error.
+ */
+axiom_err_t
+axiom_rdma_wait(axiom_dev_t *dev, axiom_token_t *token);
 
 /*!
  * \brief This function map in the userspace process the RDMA zone
