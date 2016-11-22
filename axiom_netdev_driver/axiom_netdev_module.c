@@ -2068,7 +2068,7 @@ static long axiomnet_ioctl_rdma(struct file *filep, unsigned int cmd,
     axiom_token_t buf_token;
     uint64_t buf_uint64;
     unsigned long buf_ulong;
-    long ret = 0;
+    long ret = 0, err;
 
     DPRINTF("start");
 
@@ -2111,11 +2111,11 @@ static long axiomnet_ioctl_rdma(struct file *filep, unsigned int cmd,
 
         ret = axiomnet_rdma_tx(filep, &(buf_rdma.header), &(buf_rdma.token),
                 NULL);
-        if (ret)
-            return -EFAULT;
+        if (ret < 0)
+            return ret;
 
-        ret = copy_to_user(argp, &buf_rdma, sizeof(buf_rdma));
-        if (ret)
+        err = copy_to_user(argp, &buf_rdma, sizeof(buf_rdma));
+        if (err)
             return -EFAULT;
         break;
     case AXNET_RDMA_CHECK:
