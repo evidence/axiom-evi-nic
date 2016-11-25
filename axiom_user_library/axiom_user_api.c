@@ -1017,7 +1017,7 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
     rdma.header.tx.port_type.field.type = AXIOM_TYPE_RDMA_WRITE;
     rdma.header.tx.port_type.field.s = 0;
     rdma.header.tx.dst = remote_id;
-    rdma.header.tx.payload_size = payload_size;
+    rdma.header.tx.payload_size = payload_size >> AXIOM_RDMA_PAYLOAD_SIZE_ORDER;
 
     rdma.app_id = dev->appid;
     rdma.src_addr = local_src_addr;
@@ -1069,7 +1069,7 @@ axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
     rdma.header.tx.port_type.field.type = AXIOM_TYPE_RDMA_READ;
     rdma.header.tx.port_type.field.s = 0;
     rdma.header.tx.dst = remote_id;
-    rdma.header.tx.payload_size = payload_size;
+    rdma.header.tx.payload_size = payload_size >> AXIOM_RDMA_PAYLOAD_SIZE_ORDER;
 
     rdma.app_id = dev->appid;
     rdma.src_addr = remote_src_addr;
