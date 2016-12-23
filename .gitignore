@@ -9,11 +9,13 @@ axiom_user_library/axiom_user_test
 #
 .*
 *.o
+*.d
 *.o.*
 *.a
 *.s
 *.ko
 *.so
+*.so.*
 *.so.dbg
 *.mod.c
 *.i

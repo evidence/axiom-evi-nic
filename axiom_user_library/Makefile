@@ -1,47 +1,60 @@
-AXIOM_INCLUDE := ../include
-AXIOM_DRIVER :=	../axiom_netdev_driver
-AXIOM_ALLOC_INCLUDE := ../../axiom-allocator/include
+
+MAJOR:=0
+MINOR:=0
+SUBLEVEL:=0
+VERSION:=${MAJOR}.${MINOR}.${SUBLEVEL}
+
+include ../common.mk
 
 APPS := axiom_user_test
-HEADERS := $(AXIOM_INCLUDE)/*.h
-LIBS := libaxiom_user_api.a
-CLEANFILES = $(APPS) $(LIBS) *.o
+LIBS := libaxiom_user_api.so.$(MAJOR)
+SRCS_USERTEST := axiom_user_test.c
+OBJS_USERTEST := $(SRCS_USERTEST:.c=.o)
+DEPS_USERTEST := $(SRCS_USERTEST:.c=.d)
+SRCS_USERAPI := axiom_user_api.c
+OBJS_USERAPI := $(SRCS_USERAPI:.c=.o)
+DEPS_USERAPI := $(SRCS_USERAPI:.c=.d)
 
-PWD := $(shell pwd)
-#MKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+CLEANFILES = $(APPS) $(LIBS) $(OBJS_USERTEST) $(OBJS_USERAPI) $(DEPS_USERTEST) $(DEPS_USERAPI)
 
-ifdef CCARCH
-    BUILDROOT := ${PWD}/../../axiom-evi-buildroot
-    DESTDIR := ${BUILDROOT}/output/target
-    CCPREFIX := ${BUILDROOT}/output/host/usr/bin/$(CCARCH)-linux-
-endif
-
-CC := ${CCPREFIX}gcc
-AR := ${CCPREFIX}ar
-RANLIB := ${CCPREFIX}ranlib
-
-DFLAGS := -g -DPDEBUG
 CFLAGS += -Wall -fPIC $(DFLAGS) -I$(AXIOM_INCLUDE) -I$(AXIOM_DRIVER)
-CFLAGS += -I$(AXIOM_ALLOC_INCLUDE)
 
-.PHONY: all clean install
+.PHONY: all clean install distclean
 
 all: $(APPS) $(LIBS)
 
-libaxiom_user_api.a: axiom_user_api.o
-	$(AR) rcs $@ $?
-	$(RANLIB) $@
+-include $(DEPS_USERTEST) $(DEPS_USERAPI)
 
-axiom_user_api.o: axiom_user_api.c $(HEADERS) $(AXIOM_DRIVER)/axiom_netdev_user.h
+libaxiom_user_api.so.$(MAJOR): $(OBJS_USERAPI)
+	$(CC) -fPIC -shared -o $@ $?
 
+axiom_user_test: $(OBJS_USERTEST) libaxiom_user_api.so.$(MAJOR)
 
-axiom_user_test: axiom_user_test.o libaxiom_user_api.a
-
-axiom_user_test.o: axiom_user_test.c $(HEADERS)
-
+PREFIX=/usr
 
 install: all
-	cp $(APPS) $(DESTDIR)/usr/bin/
+	for DESTDIR in $(SYSROOT_DIR2); do \
+		mkdir -p $${DESTDIR}$(PREFIX)/include/axiom ;\
+		cp $(AXIOM_INCLUDE)/*.h $${DESTDIR}$(PREFIX)/include/axiom ;\
+		mkdir -p $${DESTDIR}$(PREFIX)/lib/pkgconfig ;\
+		for LIB in $(LIBS); do \
+			cp $${LIB} $${DESTDIR}$(PREFIX)/lib/$${LIB}.$(MINOR).$(SUBLEVEL) ;\
+			ln -sf $${LIB}.$(MINOR).$(SUBLEVEL) $${DESTDIR}$(PREFIX)/lib/$${LIB}.$(MINOR) ;\
+			ln -sf $${LIB}.$(MINOR).$(SUBLEVEL) $${DESTDIR}$(PREFIX)/lib/$${LIB} ;\
+		done ;\
+		sed -e "s,@PREFIX@,$(PREFIX)," axiom_user_api.pc.in \
+			> $${DESTDIR}$(PREFIX)/lib/pkgconfig/axiom_user_api.pc ;\
+	done ;\
+	for DESTDIR in $(TARGET_DIR2); do \
+		mkdir -p $${DESTDIR}$(PREFIX)/bin ;\
+		cp $(APPS) $${DESTDIR}$(PREFIX)/bin/ ;\
+		mkdir -p $${DESTDIR}$(PREFIX)/lib ;\
+		for LIB in $(LIBS); do \
+			cp $${LIB} $${DESTDIR}$(PREFIX)/lib/$${LIB}.$(MINOR).$(SUBLEVEL) ;\
+			ln -sf $${LIB}.$(MINOR).$(SUBLEVEL) $${DESTDIR}$(PREFIX)/lib/$${LIB}.$(MINOR) ;\
+			ln -sf $${LIB}.$(MINOR).$(SUBLEVEL) $${DESTDIR}$(PREFIX)/lib/$${LIB} ;\
+		done ;\
+	done
 
-clean:
+clean distclean:
 	rm -rf $(CLEANFILES)

@@ -1,30 +1,32 @@
-AXIOM_INCLUDE := ../include
+include ../common.mk
 
 APPS := axiom_switch
-HEADERS := $(AXIOM_INCLUDE)/*.h
-CLEANFILES = $(APPS) *.o
+SRCS := $(wildcard *.c)
+OBJS := $(SRCS:.c=.o)
+DEPS := $(SRCS:.c=.d)
 
-DFLAGS := -g -DPDEBUG
+CLEANFILES = $(APPS) $(OBJS) $(DEPS)
+
 CFLAGS += -Wall $(DFLAGS) -I$(AXIOM_INCLUDE)
 LDLIBS += -lm
 
+CC := gcc
 
-.PHONY: all install clean
+.PHONY: all install clean distclean
 
 all: $(APPS)
 
-axiom_switch: axiom_switch.o axiom_switch_logic_default.o axiom_switch_topology.o axiom_switch_event_loop.o
+-include $(DEPS)
 
-axiom_switch.o: axiom_switch.c axiom_switch_logic.h axiom_switch.h axiom_switch_event_loop.h axiom_switch_qemu.h axiom_switch_topology.h $(HEADERS)
+axiom_switch: $(OBJS)
 
-axiom_switch_logic_default.o: axiom_switch_logic_default.c axiom_switch_logic.h axiom_switch.h $(HEADERS)
-
-axiom_switch_event_loop.o: axiom_switch_event_loop.h axiom_switch_event_loop.c axiom_switch.h
-
-axiom_switch_topology.o: axiom_switch_topology.c axiom_switch_topology.h 
-
+PREFIX=/usr
 
 install: all
+	for DESTDIR in $(HOST_DIR); do \
+		mkdir -p $${DESTDIR}$(PREFIX)/bin ;\
+		cp $(APPS) $${DESTDIR}$(PREFIX)/bin ;\
+	done
 
-clean:
+clean distclean:
 	rm -rf $(CLEANFILES)

@@ -1,46 +1,26 @@
-AXIOM_INCLUDE := ../include
-AXIOM_MEM_DEV_INCLUDE := ../../axiom-evi-allocator-drv
+MKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+PWD := $(shell pwd)
+
+include $(MKFILE_DIR)/../common.mk
 
 obj-m := axiom_netdev.o
 axiom_netdev-objs := axiom_kernel_api.o axiom_netdev_module.o axiom_kthread.o
 
-PWD := $(shell pwd)
-MKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+ccflags-y += -Wall $(DFLAGS) -I${AXIOM_INCLUDE}
+ccflags-y += -I${AXIOM_MEM_DEV_INCLUDE}
 
-ifdef CCARCH
-    BUILDROOT := ${PWD}/../../axiom-evi-buildroot
-    KERNELDIR := ${BUILDROOT}/output/build/linux-custom
-    DESTDIR := ${BUILDROOT}/output/target
-    CCPREFIX := ${BUILDROOT}/output/host/usr/bin/$(CCARCH)-linux-
-ifeq ($(CCARCH), aarch64)
-    CROSS_COMPILE := ARCH=arm64 CROSS_COMPILE=$(CCPREFIX)
-else
-    CROSS_COMPILE := ARCH=$(CCARCH) CROSS_COMPILE=$(CCPREFIX)
-endif
-else
-    KERNELDIR := /lib/modules/$(shell uname -r)/build
-    CCPREFIX :=
-    CROSS_COMPILE :=
-endif
-
-DFLAGS := -g -DPDEBUG
-ccflags-y += -Wall $(DFLAGS) -I${MKFILE_DIR}/${AXIOM_INCLUDE}
-ccflags-y += -I${MKFILE_DIR}/${AXIOM_MEM_DEV_INCLUDE}
-
-default:
+default::
 	$(MAKE) $(CROSS_COMPILE) -C $(KERNELDIR) M=$(PWD) modules
 
 install: default
-	$(MAKE) $(CROSS_COMPILE) -C $(KERNELDIR) M=$(PWD) INSTALL_MOD_PATH=$(DESTDIR) modules_install
+	$(MAKE) $(CROSS_COMPILE) -C $(KERNELDIR) M=$(PWD) INSTALL_MOD_PATH=$(TARGET_DIR) modules_install
 
-
-clean:
+clean distclean:
 	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c .tmp_versions
 	rm -rf Module.symvers modules.order
 
 depend .depend dep:
 	$(CC) $(EXTRA_CFLAGS) -M *.c > .depend
-
 
 ifeq (.depend,$(wildcard .depend))
 	include .depend

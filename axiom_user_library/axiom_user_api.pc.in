@@ -1,0 +1,27 @@
+#axiom_home=/home/massy/axiom-evi
+#
+#axiom_nic_include=${axiom_home}/axiom-evi-nic/include
+#axiom_allocator_include=${axiom_home}/axiom-allocator/include
+#axiom_apps_include=${axiom_home}/axiom-evi-apps/include
+#
+#axiom_nic_lib=${axiom_home}/axiom-evi-nic/axiom_user_library
+#axiom_allocator_lib=${axiom_home}/axiom-evi-buildroot/output/target/usr/lib
+#axiom_apps_lib=${axiom_home}/axiom-evi-apps/axiom-run/lib
+#
+#axiom_overlay=${axiom_home}/scripts/buildroot/overlay
+#axiom_alloc_lds=${axiom_overlay}/usr/axiom-evi-allocator-lib/xs_map64.lds
+#
+
+prefix=@PREFIX@
+exec_prefix=${prefix}
+bindir=${exec_prefix}/bin
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: axiom_user_api
+Description: axiom user api description
+Version: 0.9
+
+Cflags: -I${includedir}/axiom
+Libs: -L${libdir} -laxiom_user_api 
+
