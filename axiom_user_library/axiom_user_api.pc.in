@@ -20,8 +20,7 @@ includedir=${prefix}/include
 
 Name: axiom_user_api
 Description: axiom user api description
-Version: 0.9
+Version: @VERSION@
 
 Cflags: -I${includedir}/axiom
 Libs: -L${libdir} -laxiom_user_api 
-
