@@ -1,3 +1,4 @@
+
 include ../common.mk
 
 APPS := axiom_switch
@@ -7,7 +8,7 @@ DEPS := $(SRCS:.c=.d)
 
 CLEANFILES = $(APPS) $(OBJS) $(DEPS)
 
-CFLAGS += -Wall $(DFLAGS) -I$(AXIOM_INCLUDE)
+CFLAGS += -Wall $(DFLAGS) -I$(AXIOM_NIC_INCLUDE)
 LDLIBS += -lm
 
 CC := gcc
