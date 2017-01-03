@@ -1,21 +1,38 @@
 
+#
+# default architecture
+#
+
 CCARCH := aarch64
 
+#
+# version numbers
+#
+
+VERSION := $(shell git describe --tags --dirty | sed -re 's/^axiom-v([0-9.]*).*/\1/')
+MAJOR := $(shell echo $(VERSION) | sed -e 's/\..*//')
+MINOR := $(shell echo $(VERSION) | sed -re 's/[0-9]*\.([0-9]*).*/\1/')
+SUBLEVEL := $(shell echo $(VERSION) | sed -r -e 's/([0-9]*\.){2}([0-9]*).*/\2/' -e 's/[0-9]*\.[0-9]*/0/')
+VERSION := $(MAJOR).$(MINOR).$(SUBLEVEL)
+
+#
+# variuos output directories
+#
+
 COMMKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-#BUILDROOT := ${COMMKFILE_DIR}/../axiom-evi-buildroot
 OUTPUT_DIR := ${COMMKFILE_DIR}/../output
 TARGET_DIR := $(realpath ${OUTPUT_DIR}/target)
 SYSROOT_DIR := $(realpath ${OUTPUT_DIR}/staging)
 HOST_DIR := $(realpath ${OUTPUT_DIR}/host)
 
 #
-# various directories for THIS project
+# internal directory structure & tools
 #
 
-AXIOM_INCLUDE := $(COMMKFILE_DIR)/include
-AXIOM_DRIVER :=	$(COMMKFILE_DIR)/axiom_netdev_driver
-# need by nic_driver (to remove)
-AXIOM_MEM_DEV_INCLUDE := $(realpath $(COMMKFILE_DIR)/../axiom-evi-allocator-drv)
+AXIOM_NIC_INCLUDE := $(COMMKFILE_DIR)/include
+AXIOM_NIC_DRIVER := $(COMMKFILE_DIR)/axiom_netdev_driver
+# to find the header files of the axiom-evi-allocator-drv kernel module
+AXIOM_KERNEL_CFLAGS := -I$(realpath $(SYSROOT_DIR)/usr/include/linux)
 
 ifdef CCARCH
     KERNELDIR := ${OUTPUT_DIR}/build/linux-custom
@@ -30,8 +47,6 @@ else
     CCPREFIX :=
     CROSS_COMPILE :=
 endif
-
-
 
 CC := ${CCPREFIX}gcc
 AR := ${CCPREFIX}ar
