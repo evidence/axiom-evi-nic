@@ -25,7 +25,6 @@
 #include "axiom_nic_packets.h"
 #include "axiom_netdev_user.h"
 #include "axiom_utility.h"
-#include "axiom_allocator_protocol.h"
 
 /*! \brief Axiom char dev default name */
 #define AXIOM_DEV_NAME          "/dev/axiom"

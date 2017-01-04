@@ -13,6 +13,8 @@
 #include "axiom_nic_types.h"
 #include <sys/uio.h>
 
+/*! \brief unique application ID */
+#define AXIOM_ENV_ALLOC_APPID           "AXIOM_ALLOC_APPID"
 
 /*!
  * \brief  axiom arguments for the axiom_open() function
