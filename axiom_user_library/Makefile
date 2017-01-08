@@ -21,7 +21,7 @@ all: $(APPS) $(foreach lib,$(LIBS),$(lib).$(VERSION))
 -include $(DEPS_USERTEST) $(DEPS_USERAPI)
 
 libaxiom_user_api.so.$(VERSION): $(OBJS_USERAPI)
-	$(CC) -shared -Wl,-soname,libaxiom_user_api.$(MAJOR) -o $@ $?
+	$(CC) -shared -Wl,-soname,libaxiom_user_api.$(MAJOR) -o $@ $^
 
 axiom_user_test: $(OBJS_USERTEST) libaxiom_user_api.so.$(VERSION)
 
