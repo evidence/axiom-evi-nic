@@ -3,7 +3,7 @@
 /*!
  * \file axiom_switch_event_loop.h
  *
- * \version     v0.9
+ * \version     v0.10
  * \date        2016-05-03
  *
  * This file contains API to implements the event loop in the Axiom Switch
