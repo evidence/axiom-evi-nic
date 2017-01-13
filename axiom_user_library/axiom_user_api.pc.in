@@ -17,6 +17,7 @@ exec_prefix=${prefix}
 bindir=${exec_prefix}/bin
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include
+rbindir=${pc_sysrootdir}${bindir}
 
 Name: axiom_user_api
 Description: axiom user api description
