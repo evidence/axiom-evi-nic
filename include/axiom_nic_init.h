@@ -88,8 +88,10 @@ typedef struct axiom_netperf_payload {
 
 /*! \brief Size of spwan message header */
 #define AXIOM_SPAWN_HEADER_SIZE 4
+/*! \brief Max size of spawn messages */
+#define AXIOM_SPAWN_MAX_SIZE 4096
 /*! \brief Max size of data into spawn messages */
-#define AXIOM_SPAWN_MAX_DATA_SIZE (AXIOM_RAW_PAYLOAD_MAX_SIZE-AXIOM_SPAWN_HEADER_SIZE)
+#define AXIOM_SPAWN_MAX_DATA_SIZE (AXIOM_SPAWN_MAX_SIZE-AXIOM_SPAWN_HEADER_SIZE)
 
 /*! \brief Message payload for the axiom-netperf application */
 typedef struct axiom_spawn_req_payload {
