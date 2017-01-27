@@ -1,6 +1,3 @@
-#ifndef AXIOM_NIC_REGS_H
-#define AXIOM_NIC_REGS_H
-
 /*!
  * \file axiom_nic_regs.h
  *
@@ -13,6 +10,16 @@
  *      - version macros
  *      - register bitmask and description
  *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
+ */
+#ifndef AXIOM_NIC_REGS_H
+#define AXIOM_NIC_REGS_H
+
+/**
+ * \defgroup AXIOM_NIC
+ *
+ * \{
  */
 
 /*! \brief axiom-nic compatible id */
@@ -252,5 +259,7 @@ typedef union axiomreg_long_buf {
 #define AXIOMREG_LONG_BUF_FREE              0xFFFF
     } field;
 } axiomreg_long_buf_t;
+
+/** \} */
 
 #endif /* AXIOM_NIC_REGS_H */

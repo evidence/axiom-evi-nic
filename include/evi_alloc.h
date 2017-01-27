@@ -1,5 +1,3 @@
-#ifndef EVI_ALLOC_h
-#define EVI_ALLOC_h
 /*!
  * \file evi_alloc.h
  *
@@ -7,7 +5,12 @@
  * \date        2016-05-03
  *
  * This file contains the EVI alloc manager.
+ *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
  */
+#ifndef EVI_ALLOC_h
+#define EVI_ALLOC_h
 
 #define EVIA_NONE       (evia_elem_t)(-1)       /*!< \brief none elements */
 

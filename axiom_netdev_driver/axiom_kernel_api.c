@@ -5,6 +5,9 @@
  * \date        2016-05-03
  *
  * This file contains the Axiom NIC hardware API implementation.
+ *
+ * Copyright (C) 2016, Evidence Srl
+ * Terms of use are as specified in COPYING
  */
 #include <linux/module.h>
 #include <linux/kernel.h>

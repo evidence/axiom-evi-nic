@@ -6,6 +6,9 @@
  *
  * This file implements the Axiom Switch: emulate network topology to
  * interconnect multiple QEMU AXIOM VMs to each other.
+ *
+ * Copyright (C) 2016, Evidence Srl
+ * Terms of use are as specified in COPYING
  */
 #include <errno.h>
 #include <stdio.h>

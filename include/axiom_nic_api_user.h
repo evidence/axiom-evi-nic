@@ -1,5 +1,3 @@
-#ifndef AXIOM_NIC_API_USER_h
-#define AXIOM_NIC_API_USER_h
 /*!
  * \file axiom_nic_api_user.h
  *
@@ -8,6 +6,16 @@
  *
  * This file contains the AXIOM NIC API for the userspace
  *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
+ */
+#ifndef AXIOM_NIC_API_USER_h
+#define AXIOM_NIC_API_USER_h
+
+/**
+ * \defgroup AXIOM_NIC
+ *
+ * \{
  */
 
 #include "axiom_nic_types.h"
@@ -674,5 +682,6 @@ axiom_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
 axiom_err_t
 axiom_debug_info(axiom_dev_t *dev);
 
+/** \} */
 
 #endif /* !AXIOM_NIC_API_USER_h */

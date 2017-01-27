@@ -1,5 +1,3 @@
-#ifndef EVI_QUEUE_h
-#define EVI_QUEUE_h
 /*!
  * \file evi_queue.h
  *
@@ -8,7 +6,12 @@
  *
  * This file contains the EVI queue manager. It can handle multiple queue of
  * filled elements and one queue of free elements.
+ *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
  */
+#ifndef EVI_QUEUE_h
+#define EVI_QUEUE_h
 
 #define EVIQ_NONE       (eviq_pnt_t)(-1)        /*!< \brief none elements */
 

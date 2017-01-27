@@ -1,5 +1,3 @@
-#ifndef AXIOM_SWITCH_LOGIC_h
-#define AXIOM_SWITCH_LOGIC_h
 /*!
  * \file axiom_switch_logic.h
  *
@@ -7,7 +5,12 @@
  * \date        2016-05-03
  *
  * This file contains API to implements the logic in the Axiom Switch
+ *
+ * Copyright (C) 2016, Evidence Srl
+ * Terms of use are as specified in COPYING
  */
+#ifndef AXIOM_SWITCH_LOGIC_h
+#define AXIOM_SWITCH_LOGIC_h
 
 /*! \brief logic status structure */
 typedef struct axsw_logic {

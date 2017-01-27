@@ -1,6 +1,3 @@
-#ifndef AXIOM_NIC_TYPES_h
-#define AXIOM_NIC_TYPES_h
-
 /*!
  * \file axiom_nic_types.h
  *
@@ -9,6 +6,16 @@
  *
  * This file contains the AXIOM types, return values and flags
  *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
+ */
+#ifndef AXIOM_NIC_TYPES_h
+#define AXIOM_NIC_TYPES_h
+
+/**
+ * \defgroup AXIOM_NIC
+ *
+ * \{
  */
 
 /********************************* Types **************************************/
@@ -85,4 +92,7 @@ union axiom_token {
         uint64_t value : 32;
     } rdma;
 };
+
+/** \} */
+
 #endif /* !AXIOM_NIC_TYPES_h */

@@ -5,6 +5,9 @@
  * \date        2016-06-15
  *
  * This file contains the implementation of the Axiom kernel kthread.
+ *
+ * Copyright (C) 2016, Evidence Srl
+ * Terms of use are as specified in COPYING
  */
 #include <linux/kthread.h>
 

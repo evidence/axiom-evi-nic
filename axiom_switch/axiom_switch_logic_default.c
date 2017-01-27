@@ -5,6 +5,9 @@
  * \date        2016-05-03
  *
  * This file contains the default implementation of the logic in the Axiom Switch
+ *
+ * Copyright (C) 2016, Evidence Srl
+ * Terms of use are as specified in COPYING
  */
 #include <stdio.h>
 #include <stdlib.h>

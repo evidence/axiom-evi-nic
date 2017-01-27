@@ -1,5 +1,3 @@
-#ifndef DPRINTF_H
-#define DPRINTF_H
 /*!
  * \file dprintf.h
  *
@@ -8,6 +6,16 @@
  *
  * This file contains some functions to print debugging information
  *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
+ */
+#ifndef DPRINTF_H
+#define DPRINTF_H
+
+/**
+ * \defgroup AXIOM_NIC
+ *
+ * \{
  */
 
 /*! \brief Print ERROR debug messages */
@@ -66,5 +74,6 @@
     } while (0);
 #endif /* __KERNEL */
 
+/** \} */
 
 #endif /* DPRINTF_H */

@@ -1,6 +1,3 @@
-#ifndef AXIOM_UTILITY_h
-#define AXIOM_UTILITY_h
-
 /*!
  * \file axiom_utility.h
  *
@@ -13,6 +10,16 @@
  *  - timeval utility
  *  - usec/msec utility
  *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
+ */
+#ifndef AXIOM_UTILITY_h
+#define AXIOM_UTILITY_h
+
+/**
+ * \defgroup AXIOM_NIC
+ *
+ * \{
  */
 
 /***************** Preprocessor macros for branch prediction *****************/
@@ -109,5 +116,7 @@ timespec2nsec(struct timespec ts)
 
     return ((uint64_t)(ts.tv_nsec) + ((uint64_t)(ts.tv_sec) * 1000000000));
 }
+
+/** \} */
 
 #endif /* AXIOM_UTILITY_h */

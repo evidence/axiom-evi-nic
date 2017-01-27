@@ -1,5 +1,3 @@
-#ifndef AXIOM_SWITCH_h
-#define AXIOM_SWITCH_h
 /*!
  * \file axiom_switch.h
  *
@@ -7,7 +5,12 @@
  * \date        2016-05-03
  *
  * This file contains some macro for Axiom Switch application
+ *
+ * Copyright (C) 2016, Evidence Srl
+ * Terms of use are as specified in COPYING
  */
+#ifndef AXIOM_SWITCH_h
+#define AXIOM_SWITCH_h
 
 #include "dprintf.h"
 #include "axiom_nic_types.h"

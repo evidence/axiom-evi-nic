@@ -1,6 +1,3 @@
-#ifndef AXIOM_NIC_RAW_COMMANDS_h
-#define AXIOM_NIC_RAW_COMMANDS_h
-
 /*!
  * \file axiom_nic_raw_commands.h
  *
@@ -9,6 +6,16 @@
  *
  * This file contains the AXIOM raw messages commands
  *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
+ */
+#ifndef AXIOM_NIC_RAW_COMMANDS_h
+#define AXIOM_NIC_RAW_COMMANDS_h
+
+/**
+ * \defgroup AXIOM_NIC
+ *
+ * \{
  */
 
 /*! \brief Discovery phase: Request the node ID */
@@ -59,11 +66,17 @@
 /*! \brief Session: session release */
 #define AXIOM_CMD_SESSION_RELEASE       21
 
+/*! \brief Allocator: require unique Application ID */
 #define AXIOM_CMD_ALLOC_APPID           22
+/*! \brief Allocator: reply unique Application ID */
 #define AXIOM_CMD_ALLOC_APPID_REPLY     23
+/*! \brief Allocator: require private and shared regions */
 #define AXIOM_CMD_ALLOC                 24
+/*! \brief Allocator: reply private and shared regions */
 #define AXIOM_CMD_ALLOC_REPLY           25
+/*! \brief Allocator: release private and shared regions */
 #define AXIOM_CMD_ALLOC_RELEASE         26
 
+/** \} */
 
 #endif /* !AXIOM_NIC_RAW_COMMANDS_h */

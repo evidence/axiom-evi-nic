@@ -1,6 +1,3 @@
-#ifndef AXIOM_SWITCH_PACKETS_H
-#define AXIOM_SWITCH_PACKETS_H
-
 /*!
  * \file axiom_switch_packets.h
  *
@@ -9,10 +6,19 @@
  *
  * This file contains the AXIOM switch packets used only in the QEMU emulation.
  *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
+ */
+#ifndef AXIOM_SWITCH_PACKETS_H
+#define AXIOM_SWITCH_PACKETS_H
+
+/**
+ * \defgroup AXIOM_NIC
+ *
+ * \{
  */
 
 #include "axiom_nic_packets.h"
-
 
 /********************* Ethernet type for AXIOM switch *************************/
 
@@ -109,4 +115,7 @@ typedef union axiom_eth_pkt {
     axiom_eth_rdma_hdr_t rdma_hdr;/*!< \brief AXIOM RDMA packet with only hdr */
     axiom_eth_ctrl_t ctrl;      /*!< \brief AXIOM control packet */
 } axiom_eth_pkt_t;
+
+/** \} */
+
 #endif /* !AXIOM_NIC_PACKETS_H */

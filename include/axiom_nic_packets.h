@@ -1,6 +1,3 @@
-#ifndef AXIOM_NIC_PACKETS_HEADER_H
-#define AXIOM_NIC_PACKETS_HEADER_H
-
 /*!
  * \file axiom_nic_packets.h
  *
@@ -11,9 +8,19 @@
  *      - RAW data packet
  *      - RAW to neighbour
  *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
  */
-#include "axiom_nic_limits.h"
+#ifndef AXIOM_NIC_PACKETS_HEADER_H
+#define AXIOM_NIC_PACKETS_HEADER_H
 
+/**
+ * \defgroup AXIOM_NIC
+ *
+ * \{
+ */
+
+#include "axiom_nic_limits.h"
 
 /************************* Well-known AXIOM port ******************************/
 
@@ -150,5 +157,7 @@ typedef struct axiom_long_msg {
 typedef struct axiom_long_payload {
     uint8_t raw[AXIOM_LONG_PAYLOAD_MAX_SIZE];
 } __attribute__((packed)) axiom_long_payload_t;
+
+/** \} */
 
 #endif /* !AXIOM_NIC_PACKETS_H */

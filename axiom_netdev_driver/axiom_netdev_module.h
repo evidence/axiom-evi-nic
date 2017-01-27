@@ -1,5 +1,3 @@
-#ifndef AXIOM_NETDEV_MODULE_H
-#define AXIOM_NETDEV_MODULE_H
 /*!
  * \file axiom_netdev_module.h
  *
@@ -7,7 +5,12 @@
  * \date        2016-05-03
  *
  * This file contains the structures and macros for the Axiom NIC kernel module.
+ *
+ * Copyright (C) 2016, Evidence Srl
+ * Terms of use are as specified in COPYING
  */
+#ifndef AXIOM_NETDEV_MODULE_H
+#define AXIOM_NETDEV_MODULE_H
 
 #include "dprintf.h"
 #include "axiom_nic_regs.h"

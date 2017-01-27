@@ -1,5 +1,3 @@
-#ifndef AXIOM_SWITCH_EVENT_LOOP_h
-#define AXIOM_SWITCH_EVENT_LOOP_h
 /*!
  * \file axiom_switch_event_loop.h
  *
@@ -7,8 +5,12 @@
  * \date        2016-05-03
  *
  * This file contains API to implements the event loop in the Axiom Switch
+ *
+ * Copyright (C) 2016, Evidence Srl
+ * Terms of use are as specified in COPYING
  */
-
+#ifndef AXIOM_SWITCH_EVENT_LOOP_h
+#define AXIOM_SWITCH_EVENT_LOOP_h
 
 /*!
  * \brief event loop status

@@ -1,5 +1,3 @@
-#ifndef AXIOM_SWITCH_QEMU_h
-#define AXIOM_SWITCH_QEMU_h
 /*!
  * \file axiom_switch_qemu.h
  *
@@ -8,7 +6,12 @@
  *
  * This file contains the interface to send/receive message to/from QEMU socket
  * backend.
+ *
+ * Copyright (C) 2016, Evidence Srl
+ * Terms of use are as specified in COPYING
  */
+#ifndef AXIOM_SWITCH_QEMU_h
+#define AXIOM_SWITCH_QEMU_h
 
 #include "axiom_nic_regs.h"
 

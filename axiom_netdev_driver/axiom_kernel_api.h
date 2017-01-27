@@ -1,5 +1,3 @@
-#ifndef AXIOM_KERNEL_API_H
-#define AXIOM_KERNEL_API_H
 /*!
  * \file axiom_kernel_api.h
  *
@@ -7,7 +5,12 @@
  * \date        2016-05-03
  *
  * This file contains the Axiom NIC hardware API prototypes.
+ *
+ * Copyright (C) 2016, Evidence Srl
+ * Terms of use are as specified in COPYING
  */
+#ifndef AXIOM_KERNEL_API_H
+#define AXIOM_KERNEL_API_H
 
 #include "dprintf.h"
 #include "axiom_nic_api_hw.h"

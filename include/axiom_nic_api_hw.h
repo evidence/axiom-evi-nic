@@ -1,6 +1,3 @@
-#ifndef AXIOM_NIC_API_HW_h
-#define AXIOM_NIC_API_HW_h
-
 /*!
  * \file axiom_nic_api_hw.h
  *
@@ -9,7 +6,18 @@
  *
  * This file contains the AXIOM NIC HARDWARE API
  *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
  */
+#ifndef AXIOM_NIC_API_HW_h
+#define AXIOM_NIC_API_HW_h
+
+/**
+ * \defgroup AXIOM_NIC
+ *
+ * \{
+ */
+
 #include "axiom_nic_types.h"
 
 
@@ -289,5 +297,7 @@ axiom_hw_ack_irq(axiom_dev_t *dev, uint32_t ack_irq);
  */
 axiom_err_t
 axiom_hw_check_version(axiom_dev_t *dev);
+
+/** \} */
 
 #endif /* !AXIOM_NIC_API_HW_h */

@@ -1,6 +1,3 @@
-#ifndef AXIOM_NIC_ROUTING_H
-#define AXIOM_NIC_ROUTING_H
-
 /*!
  * \file axiom_nic_routing.h
  *
@@ -9,6 +6,16 @@
  *
  * This file contains the AXIOM NIC API for the routing phase
  *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
+ */
+#ifndef AXIOM_NIC_ROUTING_H
+#define AXIOM_NIC_ROUTING_H
+
+/**
+ * \defgroup AXIOM_NIC
+ *
+ * \{
  */
 
 #include "axiom_nic_types.h"
@@ -163,4 +170,7 @@ axiom_recv_raw_set_routing(axiom_dev_t *dev, axiom_if_id_t *interface,
 
     return AXIOM_RET_OK;
 }
+
+/** \} */
+
 #endif /* !AXIOM_NIC_ROUTING_H */

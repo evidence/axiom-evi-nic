@@ -1,5 +1,3 @@
-#ifndef AXIOM_SWITCH_TOPOLOGY_h
-#define AXIOM_SWITCH_TOPOLOGY_h
 /*!
  * \file axiom_switch_topology.h
  *
@@ -7,7 +5,12 @@
  * \date        2016-05-03
  *
  * This file contains API to manage the topology in the Axiom Switch
+ *
+ * Copyright (C) 2016, Evidence Srl
+ * Terms of use are as specified in COPYING
  */
+#ifndef AXIOM_SWITCH_TOPOLOGY_h
+#define AXIOM_SWITCH_TOPOLOGY_h
 
 /*!
  * \brief Initialize the topology structure in the logic status

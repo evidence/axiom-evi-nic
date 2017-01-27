@@ -1,5 +1,3 @@
-#ifndef AXIOM_KTHREAD_H
-#define AXIOM_KTHREAD_H
 /*!
  * \file axiom_kthread.h
  *
@@ -7,8 +5,12 @@
  * \date        2016-06-15
  *
  * This file contains the structures and macros for the Axiom kernel kthread.
+ *
+ * Copyright (C) 2016, Evidence Srl
+ * Terms of use are as specified in COPYING
  */
-
+#ifndef AXIOM_KTHREAD_H
+#define AXIOM_KTHREAD_H
 
 /*! \brief AXIOM kernel thread worker function pointer */
 typedef void (*axkt_worker_fn_t)(void *data);

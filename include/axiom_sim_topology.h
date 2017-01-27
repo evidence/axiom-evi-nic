@@ -1,6 +1,3 @@
-#ifndef AXIOM_SIM_TOPOLOGY_h
-#define AXIOM_SIM_TOPOLOGY_H
-
 /*!
  * \file axiom_sim_topology.h
  *
@@ -10,6 +7,16 @@
  * This file contains the AXIOM NIC topology structure and functions. It is
  * used only for the QEMU emulation, inside the Axiom switch.
  *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
+ */
+#ifndef AXIOM_SIM_TOPOLOGY_h
+#define AXIOM_SIM_TOPOLOGY_H
+
+/**
+ * \defgroup AXIOM_NIC
+ *
+ * \{
  */
 
 /*!
@@ -80,5 +87,6 @@ axsw_if_topology_init(axiom_topology_t *topology, int num_nodes)
     }
 }
 
-#endif  /* !AXIOM_SIM_TOPOLOGY_h */
+/** \} */
 
+#endif  /* !AXIOM_SIM_TOPOLOGY_h */

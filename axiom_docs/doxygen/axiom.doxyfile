@@ -32,7 +32,7 @@ DOXYFILE_ENCODING      = UTF-8
 # title of most generated pages and in a few other places.
 # The default value is: My Project.
 
-PROJECT_NAME           = "AXIOM NIC"
+PROJECT_NAME           = "AXIOM Software Stack"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number. This
 # could be handy for archiving the generated documentation or if some version
@@ -785,6 +785,8 @@ WARN_LOGFILE           =
 
 INPUT                  = ../../include \
                          ../../../axiom-evi-apps \
+                         ../../../axiom-allocator \
+                         ../../../axiom-evi-allocator-lib \
                          ../../axiom_switch \
                          ../../axiom_user_library \
                          ../../axiom_netdev_driver

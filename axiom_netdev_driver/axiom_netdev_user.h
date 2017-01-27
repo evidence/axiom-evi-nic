@@ -1,5 +1,3 @@
-#ifndef AXIOM_NETDEV_USER_h
-#define AXIOM_NETDEV_USER_h
 /*!
  * \file axiom_netdev_user.h
  *
@@ -8,7 +6,12 @@
  *
  * This file contains the Axiom-NIC interface beetween user-space and kernel
  * through IOCTLs
+ *
+ * Copyright (C) 2016, Evidence Srl
+ * Terms of use are as specified in COPYING
  */
+#ifndef AXIOM_NETDEV_USER_h
+#define AXIOM_NETDEV_USER_h
 
 /*! \brief AXIOM ioctl routing parameters */
 typedef struct axiom_ioctl_routing {

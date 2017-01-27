@@ -1,6 +1,3 @@
-#ifndef AXIOM_NIC_LIMITS_h
-#define AXIOM_NIC_LIMITS_h
-
 /*!
  * \file axiom_nic_limits.h
  *
@@ -9,6 +6,16 @@
  *
  * This file contains the AXIOM limits
  *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
+ */
+#ifndef AXIOM_NIC_LIMITS_h
+#define AXIOM_NIC_LIMITS_h
+
+/**
+ * \defgroup AXIOM_NIC
+ *
+ * \{
  */
 
 /*! \brief Maximum number of nodes supported by the AXIOM NIC */
@@ -41,5 +48,7 @@
 
 /*! \brief  Max memory segment size */
 #define AXIOM_MAX_SEGMENT_SIZE                  (2L*1024*1024*1204)
+
+/** \} */
 
 #endif /* !AXIOM_NIC_LIMITS_h */

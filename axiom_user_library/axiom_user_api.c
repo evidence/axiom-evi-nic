@@ -5,6 +5,9 @@
  * \date        2016-05-03
  *
  * This file contains the implementation of Axiom NIC API for the user-space
+ *
+ * Copyright (C) 2016, Evidence Srl
+ * Terms of use are as specified in COPYING
  */
 #include <errno.h>
 #include <fcntl.h>

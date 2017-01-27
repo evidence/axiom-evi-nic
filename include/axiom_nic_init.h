@@ -1,6 +1,3 @@
-#ifndef AXIOM_NIC_INIT_h
-#define AXIOM_NIC_INIT_h
-
 /*!
  * \file axiom_nic_init.h
  *
@@ -9,7 +6,18 @@
  *
  * This file contains the AXIOM NIC types for axiom-init deamon
  *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
  */
+#ifndef AXIOM_NIC_INIT_h
+#define AXIOM_NIC_INIT_h
+
+/**
+ * \defgroup AXIOM_NIC
+ *
+ * \{
+ */
+
 #include "dprintf.h"
 #include "axiom_nic_limits.h"
 #include "axiom_nic_types.h"
@@ -155,4 +163,7 @@ axiom_recv_init(axiom_dev_t *dev, axiom_node_id_t *src, axiom_type_t *type,
 
     return AXIOM_RET_OK;
 }
+
+/** \} */
+
 #endif /* !AXIOM_NIC_INIT_h */
