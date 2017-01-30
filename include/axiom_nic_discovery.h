@@ -54,16 +54,16 @@ typedef struct axiom_discovery_payload {
  * \param payload_src_if  Soruce interface id to put into the payload
  * \param payload_dst_if  Destination interface id to put into the payload
  *
- * \return Returns XXX
+ * \return Returns AXIOM_RET_OK on success, an error otherwise.
  */
-inline static axiom_msg_id_t
+inline static axiom_err_t
 axiom_send_raw_discovery (axiom_dev_t *dev, axiom_if_id_t interface,
         axiom_discovery_cmd_t cmd, axiom_node_id_t payload_src_id,
         axiom_node_id_t payload_dst_id, axiom_if_id_t payload_src_if,
         axiom_if_id_t payload_dst_if)
 {
     axiom_discovery_payload_t payload;
-    axiom_msg_id_t ret;
+    axiom_err_t ret;
 
 
     payload.command = cmd;
@@ -94,7 +94,7 @@ axiom_send_raw_discovery (axiom_dev_t *dev, axiom_if_id_t interface,
  * \param payload_src_if  Soruce interface id from the payload
  * \param payload_dst_if  Destination interface id from the payload
  *
- * \return Returns XXX
+ * \return Returns AXIOM_RET_OK on success, an error otherwise.
  */
 inline static axiom_err_t
 axiom_recv_raw_discovery(axiom_dev_t *dev, axiom_if_id_t *interface,
@@ -105,7 +105,7 @@ axiom_recv_raw_discovery(axiom_dev_t *dev, axiom_if_id_t *interface,
     axiom_discovery_payload_t payload;
     axiom_port_t port;
     axiom_type_t type;
-    axiom_msg_id_t ret;
+    axiom_err_t ret;
     axiom_raw_payload_size_t payload_size = sizeof(payload);
 
     port = AXIOM_RAW_PORT_INIT;

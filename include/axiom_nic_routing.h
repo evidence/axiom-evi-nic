@@ -48,15 +48,15 @@ typedef struct axiom_routing_payload {
  * \param payload_node_id  Node to set in the routing table
  * \param payload_if_mask  Interface mask to set for the node_id
  *
- * \return Returns XXX
+ * \return Returns AXIOM_RET_OK on success, an error otherwise.
  */
-inline static axiom_msg_id_t
+inline static axiom_err_t
 axiom_send_raw_delivery(axiom_dev_t *dev, axiom_node_id_t dst_node_id,
         axiom_routing_cmd_t cmd, axiom_node_id_t payload_node_id,
         axiom_if_id_t payload_if_mask)
 {
     axiom_routing_payload_t payload;
-    axiom_msg_id_t ret;
+    axiom_err_t ret;
 
     payload.command = cmd;
     payload.node_id = payload_node_id;
@@ -77,10 +77,9 @@ axiom_send_raw_delivery(axiom_dev_t *dev, axiom_node_id_t dst_node_id,
  * \param payload_node_id  Node to set in the routing table
  * \param payload_if_mask  Interface mask to set for the node_id
  *
- * \return Returns a unique positive message id on success, -1 otherwise.
- * XXX: the return type is unsigned!
+ * \return Returns AXIOM_RET_OK on success, an error otherwise.
 */
-inline static axiom_msg_id_t
+inline static axiom_err_t
 axiom_recv_raw_delivery(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
         axiom_routing_cmd_t *cmd, axiom_node_id_t *payload_node_id,
         axiom_if_id_t *payload_if_mask)
@@ -89,7 +88,7 @@ axiom_recv_raw_delivery(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
     axiom_raw_payload_size_t payload_size = sizeof(payload);
     axiom_port_t port;
     axiom_type_t type;
-    axiom_msg_id_t ret;
+    axiom_err_t ret;
 
     port = AXIOM_RAW_PORT_INIT;
     type = AXIOM_TYPE_RAW_DATA;
@@ -117,14 +116,14 @@ axiom_recv_raw_delivery(axiom_dev_t *dev, axiom_node_id_t *src_node_id,
  * \param interface     Sender interface where to send the message
  * \param cmd           Command of routing message
  *
- * \return Returns XXX
+ * \return Returns AXIOM_RET_OK on success, an error otherwise.
  */
-inline static axiom_msg_id_t
+inline static axiom_err_t
 axiom_send_raw_set_routing(axiom_dev_t *dev, axiom_if_id_t interface,
         axiom_routing_cmd_t cmd)
 {
     axiom_routing_payload_t payload;
-    axiom_msg_id_t ret;
+    axiom_err_t ret;
 
     payload.command = cmd;
     payload.node_id = 0;
@@ -143,9 +142,9 @@ axiom_send_raw_set_routing(axiom_dev_t *dev, axiom_if_id_t interface,
  * \param interface     Receiver interface where the message is received
  * \param cmd           Command of routing message
  *
- * \return Returns XXX
+ * \return Returns AXIOM_RET_OK on success, an error otherwise.
  */
-inline static axiom_msg_id_t
+inline static axiom_err_t
 axiom_recv_raw_set_routing(axiom_dev_t *dev, axiom_if_id_t *interface,
         axiom_routing_cmd_t *cmd)
 {
@@ -153,7 +152,7 @@ axiom_recv_raw_set_routing(axiom_dev_t *dev, axiom_if_id_t *interface,
     axiom_raw_payload_size_t payload_size = sizeof(payload);
     axiom_port_t port;
     axiom_type_t type;
-    axiom_msg_id_t ret;
+    axiom_err_t ret;
 
     port = AXIOM_RAW_PORT_INIT;
     type = AXIOM_TYPE_RAW_NEIGHBOUR;

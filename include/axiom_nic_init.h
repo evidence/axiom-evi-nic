@@ -140,14 +140,14 @@ typedef struct axiom_session_reply_payload {
  * \param payload_size  Size of payload received
  * \param payload       Payload received
  *
- * \return Returns XXX
+ * \return Returns AXIOM_RET_OK on success, an error otherwise.
  */
 inline static axiom_err_t
 axiom_recv_init(axiom_dev_t *dev, axiom_node_id_t *src, axiom_type_t *type,
         axiom_init_cmd_t *cmd, size_t *payload_size, void *payload)
 {
     axiom_port_t port = AXIOM_RAW_PORT_INIT;
-    axiom_msg_id_t ret;
+    axiom_err_t ret;
 
     ret = axiom_recv(dev, src, &port, type, payload_size, payload);
 
