@@ -32,37 +32,37 @@
 #ifdef AXIOM_EXTRAE_SUPPORT
 #include <extrae_types.h>
 #include <extrae_user_events.h>
-static extrae_type_t axiom_extrae_api_nic = 9990000;
-static int axiom_extrae_api_init = 0;
+static extrae_type_t axiom_extrae_apinic = 9990000;
+static int axiom_extrae_apinic_init = 0;
 
 typedef enum {
-    AX_EXTRAE_API_END,
-    AX_EXTRAE_API_OPEN,
-    AX_EXTRAE_API_CLOSE,
-    AX_EXTRAE_API_SEND,
-    AX_EXTRAE_API_SEND_IOV,
-    AX_EXTRAE_API_RECV,
-    AX_EXTRAE_API_RECV_IOV,
-    AX_EXTRAE_API_SEND_RAW,
-    AX_EXTRAE_API_SEND_IOV_RAW,
-    AX_EXTRAE_API_RECV_RAW,
-    AX_EXTRAE_API_RECV_IOV_RAW,
-    AX_EXTRAE_API_SEND_RAW_AVAIL,
-    AX_EXTRAE_API_RECV_RAW_AVAIL,
-    AX_EXTRAE_API_SEND_LONG,
-    AX_EXTRAE_API_SEND_IOV_LONG,
-    AX_EXTRAE_API_RECV_LONG,
-    AX_EXTRAE_API_RECV_IOV_LONG,
-    AX_EXTRAE_API_SEND_LONG_AVAIL,
-    AX_EXTRAE_API_RECV_LONG_AVAIL,
-    AX_EXTRAE_API_RDMA_READ,
-    AX_EXTRAE_API_RDMA_WRITE,
-    AX_EXTRAE_API_RDMA_CHECK,
-    AX_EXTRAE_API_RDMA_WAIT,
-    AX_EXTRAE_API_LAST
-} axiom_extrae_api_nic_t;
+    AX_EXTRAE_APINIC_END,
+    AX_EXTRAE_APINIC_OPEN,
+    AX_EXTRAE_APINIC_CLOSE,
+    AX_EXTRAE_APINIC_SEND,
+    AX_EXTRAE_APINIC_SEND_IOV,
+    AX_EXTRAE_APINIC_RECV,
+    AX_EXTRAE_APINIC_RECV_IOV,
+    AX_EXTRAE_APINIC_SEND_RAW,
+    AX_EXTRAE_APINIC_SEND_IOV_RAW,
+    AX_EXTRAE_APINIC_RECV_RAW,
+    AX_EXTRAE_APINIC_RECV_IOV_RAW,
+    AX_EXTRAE_APINIC_SEND_RAW_AVAIL,
+    AX_EXTRAE_APINIC_RECV_RAW_AVAIL,
+    AX_EXTRAE_APINIC_SEND_LONG,
+    AX_EXTRAE_APINIC_SEND_IOV_LONG,
+    AX_EXTRAE_APINIC_RECV_LONG,
+    AX_EXTRAE_APINIC_RECV_IOV_LONG,
+    AX_EXTRAE_APINIC_SEND_LONG_AVAIL,
+    AX_EXTRAE_APINIC_RECV_LONG_AVAIL,
+    AX_EXTRAE_APINIC_RDMA_READ,
+    AX_EXTRAE_APINIC_RDMA_WRITE,
+    AX_EXTRAE_APINIC_RDMA_CHECK,
+    AX_EXTRAE_APINIC_RDMA_WAIT,
+    AX_EXTRAE_APINIC_LAST
+} axiom_extrae_apinic_t;
 
-char* axiom_extrae_api_nic_desc[] = {
+char* axiom_extrae_apinic_desc[] = {
     "axiom_open()",
     "axiom_close()",
     "axiom_send()",
@@ -88,8 +88,8 @@ char* axiom_extrae_api_nic_desc[] = {
 };
 
 void axiom_extrae_init(extrae_type_t *type, char *name, char **val_desc,
-        unsigned val_num) {
-    if (!axiom_extrae_api_init && Extrae_is_initialized()) {
+        unsigned val_num, int *initialized) {
+    if (!(*initialized) && Extrae_is_initialized()) {
         extrae_value_t *values = malloc(sizeof(*values) *val_num);
         int i;
 
@@ -98,17 +98,18 @@ void axiom_extrae_init(extrae_type_t *type, char *name, char **val_desc,
 
         Extrae_define_event_type(type, name, &val_num, values, val_desc);
 
-        IPRINTF(1, "extrae initialized");
+        IPRINTF(1, "%s - extrae initialized", name);
 
         free(values);
 
-        axiom_extrae_api_init = 1;
+        *initialized = 1;
     }
 }
 #define AXIOM_EXTRAE(f)                                                 \
     do {                                                                \
-        axiom_extrae_init(&axiom_extrae_api_nic, "AXIOM NIC API",       \
-                axiom_extrae_api_nic_desc, AX_EXTRAE_API_LAST - 1);     \
+        axiom_extrae_init(&axiom_extrae_apinic, "AXIOM NIC API",        \
+                axiom_extrae_apinic_desc, AX_EXTRAE_APINIC_LAST - 1,    \
+                &axiom_extrae_apinic_init);                             \
         f;                                                              \
     } while(0);
 #else
@@ -161,7 +162,7 @@ axiom_dev_t *
 axiom_open(axiom_args_t *args) {
     axiom_dev_t *dev;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_OPEN));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_OPEN));
 
     dev = calloc(1, sizeof(*dev));
     if (!dev) {
@@ -209,7 +210,7 @@ axiom_open(axiom_args_t *args) {
 
     dev->appid = axiom_get_appid();
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return dev;
 
 close_fd_rdma:
@@ -222,14 +223,14 @@ close_fd_gen:
     close(dev->fd_generic);
 free_dev:
     free(dev);
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return NULL;
 }
 
 void
 axiom_close(axiom_dev_t *dev)
 {
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_CLOSE));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_CLOSE));
 
     if (!dev)
         return;
@@ -240,7 +241,7 @@ axiom_close(axiom_dev_t *dev)
     close(dev->fd_generic);
     free(dev);
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
 }
 
 static axiom_err_t
@@ -399,7 +400,7 @@ axiom_send(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
         size_t payload_size, void *payload)
 {
     axiom_err_t ret;
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_SEND));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_SEND));
 
     if (payload_size <= AXIOM_RAW_PAYLOAD_MAX_SIZE) {
         ret = axiom_send_raw(dev, dst_id, port, AXIOM_TYPE_RAW_DATA,
@@ -409,7 +410,7 @@ axiom_send(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
                 (axiom_long_payload_size_t)(payload_size), payload);
     }
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
 
     return ret;
 }
@@ -420,7 +421,7 @@ axiom_send_iov(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
 {
     axiom_err_t ret;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_SEND_IOV));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_SEND_IOV));
 
     if (payload_size <= AXIOM_RAW_PAYLOAD_MAX_SIZE) {
         ret = axiom_send_iov_raw(dev, dst_id, port, AXIOM_TYPE_RAW_DATA,
@@ -430,7 +431,7 @@ axiom_send_iov(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
                 (axiom_long_payload_size_t)(payload_size), iov, iovcnt);
     }
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
 
     return ret;
 }
@@ -442,7 +443,7 @@ axiom_recv(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
     axiom_err_t ret;
     int timeout = -1, fds_ready, i;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_RECV));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_RECV));
 
     if (unlikely(!dev)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -492,7 +493,7 @@ axiom_recv(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
     }
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -503,7 +504,7 @@ axiom_recv_iov(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
     axiom_err_t ret;
     int timeout = -1, fds_ready, i;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_RECV_IOV));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_RECV_IOV));
 
     if (unlikely(!dev)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -554,7 +555,7 @@ axiom_recv_iov(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
     }
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -585,7 +586,7 @@ axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
     axiom_ioctl_raw_t raw_msg;
     int ret;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_SEND_RAW));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_SEND_RAW));
 
     if (unlikely(!dev || dev->fd_raw <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -618,7 +619,7 @@ axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
             raw_msg.header.tx.payload_size);
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -630,8 +631,8 @@ axiom_send_iov_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
     axiom_ioctl_raw_iov_t raw_msg;
     int ret;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic,
-                AX_EXTRAE_API_SEND_IOV_RAW));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic,
+                AX_EXTRAE_APINIC_SEND_IOV_RAW));
 
     if (unlikely(!dev || dev->fd_raw <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -665,7 +666,7 @@ axiom_send_iov_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
             raw_msg.header.tx.payload_size);
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -695,7 +696,7 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
     axiom_ioctl_raw_t raw_msg;
     int ret;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_RECV_RAW));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_RECV_RAW));
 
     if (unlikely(!dev || dev->fd_raw <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -730,7 +731,7 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
             payload_size);
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -742,8 +743,8 @@ axiom_recv_iov_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
     axiom_ioctl_raw_iov_t raw_msg;
     int ret;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic,
-                AX_EXTRAE_API_RECV_IOV_RAW));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic,
+                AX_EXTRAE_APINIC_RECV_IOV_RAW));
 
     if (unlikely(!dev || dev->fd_raw <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -779,7 +780,7 @@ axiom_recv_iov_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
     ret = axiom_recv_raw_finalize(&raw_msg.header, src_id, port, type,
             payload_size);
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -788,8 +789,8 @@ axiom_send_raw_avail(axiom_dev_t *dev)
 {
     int ret, avail;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic,
-                AX_EXTRAE_API_SEND_RAW_AVAIL));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic,
+                AX_EXTRAE_APINIC_SEND_RAW_AVAIL));
 
     if (unlikely(!dev || dev->fd_raw <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -808,7 +809,7 @@ axiom_send_raw_avail(axiom_dev_t *dev)
     ret = avail;
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -817,8 +818,8 @@ axiom_recv_raw_avail(axiom_dev_t *dev)
 {
     int ret, avail;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic,
-                AX_EXTRAE_API_RECV_RAW_AVAIL));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic,
+                AX_EXTRAE_APINIC_RECV_RAW_AVAIL));
 
     if (unlikely(!dev || dev->fd_raw <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -837,7 +838,7 @@ axiom_recv_raw_avail(axiom_dev_t *dev)
     ret = avail;
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -886,7 +887,7 @@ axiom_send_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
     axiom_long_msg_t long_msg;
     int ret;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_SEND_LONG));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_SEND_LONG));
 
     if (unlikely(!dev || dev->fd_long <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -918,7 +919,7 @@ axiom_send_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
             long_msg.header.tx.payload_size);
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -929,8 +930,8 @@ axiom_send_iov_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
     axiom_ioctl_long_iov_t long_msg;
     int ret;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic,
-                AX_EXTRAE_API_SEND_IOV_LONG));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic,
+                AX_EXTRAE_APINIC_SEND_IOV_LONG));
 
     if (unlikely(!dev || dev->fd_long <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -963,7 +964,7 @@ axiom_send_iov_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
             long_msg.header.tx.payload_size);
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -985,7 +986,7 @@ axiom_recv_long(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
     axiom_long_msg_t long_msg;
     int ret;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_RECV_LONG));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_RECV_LONG));
 
     if (unlikely(!dev || dev->fd_long <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -1020,7 +1021,7 @@ axiom_recv_long(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
             payload_size);
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -1031,8 +1032,8 @@ axiom_recv_iov_long(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *por
     axiom_ioctl_long_iov_t long_msg;
     int ret;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic,
-                AX_EXTRAE_API_RECV_IOV_LONG));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic,
+                AX_EXTRAE_APINIC_RECV_IOV_LONG));
 
     if (unlikely(!dev || dev->fd_long <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -1068,7 +1069,7 @@ axiom_recv_iov_long(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *por
     ret = axiom_recv_long_finalize(&long_msg.header, src_id, port,
             payload_size);
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -1077,8 +1078,8 @@ axiom_send_long_avail(axiom_dev_t *dev)
 {
     int ret, avail;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic,
-                AX_EXTRAE_API_SEND_LONG_AVAIL));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic,
+                AX_EXTRAE_APINIC_SEND_LONG_AVAIL));
 
     if (unlikely(!dev || dev->fd_long <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -1097,7 +1098,7 @@ axiom_send_long_avail(axiom_dev_t *dev)
     ret = avail;
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -1106,8 +1107,8 @@ axiom_recv_long_avail(axiom_dev_t *dev)
 {
     int ret, avail;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic,
-                AX_EXTRAE_API_RECV_LONG_AVAIL));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic,
+                AX_EXTRAE_APINIC_RECV_LONG_AVAIL));
 
     if (unlikely(!dev || dev->fd_long <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -1126,7 +1127,7 @@ axiom_recv_long_avail(axiom_dev_t *dev)
     ret = avail;
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -1234,7 +1235,7 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
     axiom_ioctl_rdma_t rdma;
     int ret;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_RDMA_WRITE));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_RDMA_WRITE));
 
     if (unlikely(!dev || dev->fd_rdma <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -1288,7 +1289,7 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
     ret = rdma.token.rdma.msg_id;
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -1300,7 +1301,7 @@ axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
     axiom_ioctl_rdma_t rdma;
     int ret;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_RDMA_READ));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_RDMA_READ));
 
     if (unlikely(!dev || dev->fd_rdma <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -1352,7 +1353,7 @@ axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
     ret = rdma.token.rdma.msg_id;
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -1361,7 +1362,7 @@ axiom_rdma_check(axiom_dev_t *dev, axiom_token_t *token)
 {
     int ret;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_RDMA_CHECK));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_RDMA_CHECK));
     if (unlikely(!dev || dev->fd_rdma <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
         ret = AXIOM_RET_ERROR;
@@ -1380,7 +1381,7 @@ axiom_rdma_check(axiom_dev_t *dev, axiom_token_t *token)
     }
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
@@ -1389,7 +1390,7 @@ axiom_rdma_wait(axiom_dev_t *dev, axiom_token_t *token)
 {
     int ret;
 
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_RDMA_WAIT));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_RDMA_WAIT));
 
     if (unlikely(!dev || dev->fd_rdma <= 0)) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -1404,7 +1405,7 @@ axiom_rdma_wait(axiom_dev_t *dev, axiom_token_t *token)
     }
 
 end:
-    AXIOM_EXTRAE(Extrae_event(axiom_extrae_api_nic, AX_EXTRAE_API_END));
+    AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
 }
 
