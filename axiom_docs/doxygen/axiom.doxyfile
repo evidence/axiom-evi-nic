@@ -44,14 +44,13 @@ PROJECT_NUMBER         = v0.10
 # for a project that appears at the top of each page and should give viewer a
 # quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          = 
+PROJECT_BRIEF          =  "This document contains the AXIOM Software stack documentation. This describes the AXIOM drivers, User-space APIs and applications"
 
 # With the PROJECT_LOGO tag one can specify a logo or an icon that is included
 # in the documentation. The maximum height of the logo should not exceed 55
 # pixels and the maximum width should not exceed 200 pixels. Doxygen will copy
 # the logo to the output directory.
 
-#PROJECT_LOGO           = /home/stefano/works/axiom/repos/private/axiom-evi/axiom-evi-nic/axiom_docs/doxygen/logo_AXIOM_200.png
 PROJECT_LOGO           = ./logo_AXIOM_200.png
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute) path
@@ -787,6 +786,7 @@ INPUT                  = ../../include \
                          ../../../axiom-evi-apps \
                          ../../../axiom-allocator \
                          ../../../axiom-evi-allocator-lib \
+                         ../../../axiom-evi-allocator-drv \
                          ../../axiom_switch \
                          ../../axiom_user_library \
                          ../../axiom_netdev_driver
@@ -834,7 +834,6 @@ FILE_PATTERNS          = *.c \
                          *.hpp \
                          *.h++ \
                          *.cs \
-                         *.d \
                          *.php \
                          *.php4 \
                          *.php5 \
