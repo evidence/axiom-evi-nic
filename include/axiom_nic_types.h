@@ -1,7 +1,7 @@
 /*!
  * \file axiom_nic_types.h
  *
- * \version     v0.10
+ * \version     v0.11
  * \date        2016-06-22
  *
  * This file contains the AXIOM types, return values and flags

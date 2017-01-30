@@ -1,7 +1,7 @@
 /*!
  * \file axiom_switch.h
  *
- * \version     v0.10
+ * \version     v0.11
  * \date        2016-05-03
  *
  * This file contains some macro for Axiom Switch application
