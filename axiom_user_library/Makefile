@@ -73,6 +73,7 @@ install: all
 			ln -sf $${LIB}.$(MAJOR).$(MINOR) $${DESTDIR}$(PREFIX)/lib/$${LIB}.$(MAJOR) ;\
 			ln -sf $${LIB}.$(MAJOR) $${DESTDIR}$(PREFIX)/lib/$${LIB} ;\
 		done ;\
+		mkdir -p $${DESTDIR}$(PREFIX)/lib/instrumentation ;\
 		for LIB in $(LIBS_INSTR); do \
 			LIB_RENAME=$$(echo $$LIB | sed -e 's/_instr\.so/\.so/g') ;\
 			cp $${LIB}.$(VERSION) $${DESTDIR}$(PREFIX)/lib/instrumentation/$${LIB_RENAME}.$(VERSION) ;\
