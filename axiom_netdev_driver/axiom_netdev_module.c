@@ -614,7 +614,7 @@ static long axiomnet_rdma_wait(struct file *filep, axiom_token_t *token)
 #endif
         /* put the process in the wait_queue to wait the ack */
         if (wait_event_interruptible(rdma_status->wait_queue,
-                    rdma_status->msg_id_counter == token->rdma.value)) {
+                    rdma_status->msg_id_counter != token->rdma.value)) {
             return -ERESTARTSYS;
         }
     }
