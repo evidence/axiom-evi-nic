@@ -507,6 +507,7 @@ inline static int axiomnet_rdma_tx(struct file *filep,
     } else {
         if (filep->f_flags & O_NONBLOCK) {
             rdma_status->ack_waiting = false;
+            rdma_status->queue_slot = queue_slot;
         } else {
             rdma_status->ack_waiting = true;
         }
@@ -655,8 +656,8 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
             struct axiomnet_rdma_queue *rdma_queue = rx_ring->tx_rdma_queue;
 
             if (unlikely(rdma_status->header.tx.dst != rdma_hdr.rx.src)) {
-                EPRINTF("Message discarded - unexpected ACK received from"
-                        " %u [expected from %u]", rdma_hdr.rx.src,
+                EPRINTF("Message (id = %u) discarded - unexpected ACK received "
+                        "from %u [expected from %u]", msg_id, rdma_hdr.rx.src,
                         rdma_status->header.tx.dst);
                 continue;
             }
@@ -706,8 +707,6 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
             rdma_status->msg_id_counter++;
             if (rdma_status->ack_waiting) {
                 rdma_status->ack_received = true;
-                /* wake up waitinig process */
-                wake_up(&(rdma_status->wait_queue));
             } else {
                 struct axiomnet_rdma_tx_hwring *tx_ring =
                     &rx_ring->drvdata->rdma_tx_ring;
@@ -728,6 +727,8 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                 spin_unlock_irqrestore(&rdma_queue->queue_lock, flags);
 
             }
+            /* wake up waitinig process */
+            wake_up(&(rdma_status->wait_queue));
         } else { /* LONG message */
             axiom_long_msg_t *long_msg;
             eviq_pnt_t queue_slot = EVIQ_NONE;
