@@ -39,7 +39,7 @@ axiom_user_test: $(OBJS_USERTEST) libaxiom_user_api.so.$(VERSION)
 PREFIX:=/usr
 
 install: all
-	for DESTDIR in $(SYSROOT_DIR); do \
+	for DESTDIR in $(SYSROOT_INST_DIR); do \
 		mkdir -p $${DESTDIR}$(PREFIX)/include/axiom ;\
 		cp $(AXIOM_NIC_INCLUDE)/*.h \
 			$${DESTDIR}$(PREFIX)/include/axiom ;\
@@ -63,7 +63,7 @@ install: all
 			axiom_user_api.pc.in \
 			> $${DESTDIR}$(PREFIX)/lib/pkgconfig/axiom_user_api.pc ;\
 	done ;\
-	for DESTDIR in $(TARGET_DIR); do \
+	for DESTDIR in $(TARGET_INST_DIR); do \
 		mkdir -p $${DESTDIR}$(PREFIX)/bin ;\
 		cp $(APPS) $${DESTDIR}$(PREFIX)/bin/ ;\
 		mkdir -p $${DESTDIR}$(PREFIX)/lib ;\

@@ -13,7 +13,7 @@ default::
 	$(MAKE) $(CROSS_COMPILE) -C $(KERNELDIR) M=$(PWD) modules
 
 install: default
-	$(MAKE) $(CROSS_COMPILE) -C $(KERNELDIR) M=$(PWD) INSTALL_MOD_PATH=$(TARGET_DIR) modules_install
+	$(MAKE) $(CROSS_COMPILE) -C $(KERNELDIR) M=$(PWD) INSTALL_MOD_PATH=$(TARGET_INST_DIR) modules_install
 
 clean distclean:
 	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c .tmp_versions
