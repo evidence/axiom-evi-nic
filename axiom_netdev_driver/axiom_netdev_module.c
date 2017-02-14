@@ -439,7 +439,7 @@ inline static int axiomnet_rdma_tx_avail(struct axiomnet_rdma_tx_hwring *tx_ring
 
 inline static int axiomnet_rdma_tx(struct file *filep,
         axiom_rdma_hdr_t *header, axiom_token_t *token,
-        axiom_callback_t *callback)
+        axiom_callback_t *callback, uint32_t user_flags)
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
@@ -505,7 +505,8 @@ inline static int axiomnet_rdma_tx(struct file *filep,
         rdma_status->queue_slot = queue_slot;
         rdma_status->callback = *callback;
     } else {
-        if (filep->f_flags & O_NONBLOCK) {
+        /* if it is async call, avoid to wait the ack */
+        if (user_flags & AXIOCTL_RDMA_FLAGS_ASYNC) {
             rdma_status->ack_waiting = false;
             rdma_status->queue_slot = queue_slot;
         } else {
@@ -891,7 +892,7 @@ inline static int axiomnet_long_send(struct file *filep,
     cb.func = axiomnet_long_callback;
     cb.data = (void *)(uintptr_t)queue_slot;
 
-    ret = axiomnet_rdma_tx(filep, &(long_msg->header), NULL, &cb);
+    ret = axiomnet_rdma_tx(filep, &(long_msg->header), NULL, &cb, 0);
     if (ret < 0) {
         EPRINTF("axiomnet_rdma_tx error");
         goto err;
@@ -2114,7 +2115,7 @@ static long axiomnet_ioctl_rdma(struct file *filep, unsigned int cmd,
                 buf_rdma.header.tx.src_addr, buf_rdma.header.tx.dst_addr);
 
         ret = axiomnet_rdma_tx(filep, &(buf_rdma.header), &(buf_rdma.token),
-                NULL);
+                NULL, buf_rdma.flags);
         if (ret < 0)
             return ret;
 

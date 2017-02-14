@@ -273,18 +273,21 @@ axiom_update_flags(axiom_dev_t *dev, axiom_flags_t update_flags)
 {
     axiom_err_t ret = 0;
 
-    /* no-blocking flag updated */
-    if (update_flags & AXIOM_FLAG_NOBLOCK) {
-        int set = 0;
+    /* check if flags are set or not */
 
-        if (dev->flags & AXIOM_FLAG_NOBLOCK) {
-            set = 1;
-        }
+    if (update_flags & AXIOM_FLAG_NOBLOCK_RAW) {
+        ret |= axiom_fcntl(dev->fd_raw, O_NONBLOCK,
+                dev->flags & AXIOM_FLAG_NOBLOCK_RAW);
+    }
 
-        ret |= axiom_fcntl(dev->fd_generic, O_NONBLOCK, set);
-        ret |= axiom_fcntl(dev->fd_raw, O_NONBLOCK, set);
-        ret |= axiom_fcntl(dev->fd_long, O_NONBLOCK, set);
-        ret |= axiom_fcntl(dev->fd_rdma, O_NONBLOCK, set);
+    if (update_flags & AXIOM_FLAG_NOBLOCK_LONG) {
+        ret |= axiom_fcntl(dev->fd_raw, O_NONBLOCK,
+                dev->flags & AXIOM_FLAG_NOBLOCK_LONG);
+    }
+
+    if (update_flags & AXIOM_FLAG_NOBLOCK_RDMA) {
+        ret |= axiom_fcntl(dev->fd_raw, O_NONBLOCK,
+                dev->flags & AXIOM_FLAG_NOBLOCK_RDMA);
     }
 
     return AXIOM_RET_OK;
@@ -451,7 +454,7 @@ axiom_recv(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
         goto end;
     }
 
-    if (dev->flags & AXIOM_FLAG_NOBLOCK)
+    if (dev->flags & (AXIOM_FLAG_NOBLOCK_RAW | AXIOM_FLAG_NOBLOCK_LONG))
         timeout = 0;
 
     fds_ready = poll(dev->recv_fds, AXIOM_NUM_RECV_FDS, timeout);
@@ -512,7 +515,7 @@ axiom_recv_iov(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
         goto end;
     }
 
-    if (dev->flags & AXIOM_FLAG_NOBLOCK)
+    if (dev->flags & (AXIOM_FLAG_NOBLOCK_RAW | AXIOM_FLAG_NOBLOCK_LONG))
         timeout = 0;
 
     fds_ready = poll(dev->recv_fds, AXIOM_NUM_RECV_FDS, timeout);
@@ -1227,10 +1230,10 @@ axiom_rdma_munmap(axiom_dev_t *dev)
     return AXIOM_RET_OK;
 }
 
-axiom_err_t
-axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
+static axiom_err_t
+axiom_rdma_write_internal(axiom_dev_t *dev, axiom_node_id_t remote_id,
         size_t payload_size, void *local_src_addr, void *remote_dst_addr,
-        axiom_token_t *token)
+        axiom_token_t *token, uint32_t flags)
 {
     axiom_ioctl_rdma_t rdma;
     int ret;
@@ -1267,7 +1270,7 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
     rdma.app_id = dev->appid;
     rdma.src_addr = local_src_addr;
     rdma.dst_addr = remote_dst_addr;
-
+    rdma.flags = flags;
 
     ret = ioctl(dev->fd_rdma, AXNET_RDMA_WRITE, &rdma);
     if (unlikely(ret < 0)) {
@@ -1294,9 +1297,27 @@ end:
 }
 
 axiom_err_t
-axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
-        size_t payload_size, void *remote_src_addr, void *local_dst_addr,
+axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
+        size_t payload_size, void *local_src_addr, void *remote_dst_addr,
         axiom_token_t *token)
+{
+    return axiom_rdma_write_internal(dev, remote_id, payload_size,
+            local_src_addr, remote_dst_addr, token, 0);
+}
+
+axiom_err_t
+axiom_rdma_write_async(axiom_dev_t *dev, axiom_node_id_t remote_id,
+        size_t payload_size, void *local_src_addr, void *remote_dst_addr,
+        axiom_token_t *token)
+{
+    return axiom_rdma_write_internal(dev, remote_id, payload_size,
+            local_src_addr, remote_dst_addr, token, AXIOCTL_RDMA_FLAGS_ASYNC);
+}
+
+static axiom_err_t
+axiom_rdma_read_internal(axiom_dev_t *dev, axiom_node_id_t remote_id,
+        size_t payload_size, void *remote_src_addr, void *local_dst_addr,
+        axiom_token_t *token, uint32_t flags)
 {
     axiom_ioctl_rdma_t rdma;
     int ret;
@@ -1331,7 +1352,7 @@ axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
     rdma.app_id = dev->appid;
     rdma.src_addr = remote_src_addr;
     rdma.dst_addr = local_dst_addr;
-
+    rdma.flags = flags;
 
     ret = ioctl(dev->fd_rdma, AXNET_RDMA_READ, &rdma);
     if (unlikely(ret < 0)) {
@@ -1355,6 +1376,24 @@ axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
 end:
     AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
     return ret;
+}
+
+axiom_err_t
+axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
+        size_t payload_size, void *remote_src_addr, void *local_dst_addr,
+        axiom_token_t *token)
+{
+    return axiom_rdma_read_internal(dev, remote_id, payload_size,
+            remote_src_addr, local_dst_addr, token, 0);
+}
+
+axiom_err_t
+axiom_rdma_read_async(axiom_dev_t *dev, axiom_node_id_t remote_id,
+        size_t payload_size, void *remote_src_addr, void *local_dst_addr,
+        axiom_token_t *token)
+{
+    return axiom_rdma_read_internal(dev, remote_id, payload_size,
+            remote_src_addr, local_dst_addr, token, AXIOCTL_RDMA_FLAGS_ASYNC);
 }
 
 axiom_err_t

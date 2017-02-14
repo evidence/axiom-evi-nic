@@ -397,6 +397,8 @@ axiom_recv_long_avail(axiom_dev_t *dev);
 
 /*!
  * \brief This function writes data to a remote node memory.
+ *        It is a synchronous operations, and returns only when the operation
+ *        is finished.
  *
  * \param dev             The axiom device private data pointer
  * \param remote_id       The remote node id where data will be stored
@@ -416,7 +418,31 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
         axiom_token_t *token);
 
 /*!
+ * \brief This function writes data to a remote node memory.
+ *        It is an asynchronous operations. The token can be used to check or
+ *        wait the completion of the operation.
+ *
+ * \param dev             The axiom device private data pointer
+ * \param remote_id       The remote node id where data will be stored
+ * \param payload_size    size of data to be transfer (must be multiple of 8)
+ * \param local_src_addr  local address inside the RDMA zone where data
+ *                        will be read
+ * \param remote_dst_addr remote address inside the RDMA zone where data
+ *                        will be stored
+ * \param token           token that can be used to check the status of the RDMA
+ *                        (it can be NULL)
+ *
+ * \return Returns a unique positive message id on success, an error otherwise.
+ */
+axiom_err_t
+axiom_rdma_write_async(axiom_dev_t *dev, axiom_node_id_t remote_id,
+        size_t payload_size, void *local_src_addr, void *remote_dst_addr,
+        axiom_token_t *token);
+
+/*!
  * \brief This function reads data from a remote node memory.
+ *        It is a synchronous operations, and returns only when the operation
+ *        is finished.
  *
  * \param dev             The axiom device private data pointer
  * \param remote_id       The remote node id where data will be read
@@ -432,6 +458,28 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
  */
 axiom_err_t
 axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
+        size_t payload_size, void *remote_src_addr, void *local_dst_addr,
+        axiom_token_t *token);
+
+/*!
+ * \brief This function reads data from a remote node memory.
+ *        It is an asynchronous operations. The token can be used to check or
+ *        wait the completion of the operation.
+ *
+ * \param dev             The axiom device private data pointer
+ * \param remote_id       The remote node id where data will be read
+ * \param payload_size    size of data to be transfer (must be multiple of 8)
+ * \param remote_src_addr remote address inside the RDMA zone where data
+ *                        will be read
+ * \param local_dst_addr  local address inside the RDMA zone where data
+ *                        will be stored
+ * \param token           token that can be used to check the status of the RDMA
+ *                        (it can be NULL)
+ *
+ * \return Returns a unique positive message id on success, an error otherwise.
+ */
+axiom_err_t
+axiom_rdma_read_async(axiom_dev_t *dev, axiom_node_id_t remote_id,
         size_t payload_size, void *remote_src_addr, void *local_dst_addr,
         axiom_token_t *token);
 

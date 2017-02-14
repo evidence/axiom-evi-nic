@@ -76,10 +76,16 @@ typedef union axiom_token   axiom_token_t;
 #define AXIOM_RET_IS_OK(_ret)           ((_ret) >= AXIOM_RET_OK)
 
 /******************************* Axiom flags **********************************/
-/*! \brief Use no blocking I/O for send/read API */
-#define AXIOM_FLAG_NOBLOCK              0x00000001
+/*! \brief Use no blocking I/O for send/recv RAW API */
+#define AXIOM_FLAG_NOBLOCK_RAW          0x00000001
+/*! \brief Use no blocking I/O for send/recv LONG API */
+#define AXIOM_FLAG_NOBLOCK_LONG         0x00000002
+/*! \brief Use no blocking I/O for write/read RDMA API */
+#define AXIOM_FLAG_NOBLOCK_RDMA         0x00000004
+/*! \brief Use no blocking I/O for send/write recv/read API */
+#define AXIOM_FLAG_NOBLOCK              0x00000007
 /*! \brief Avoid flush of RX port queue after the axiom_bind() API */
-#define AXIOM_FLAG_NOFLUSH              0x00000002
+#define AXIOM_FLAG_NOFLUSH              0x00000008
 
 /*********************** struct/union definitions *****************************/
 

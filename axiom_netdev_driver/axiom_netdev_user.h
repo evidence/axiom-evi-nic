@@ -51,6 +51,8 @@ typedef struct axiom_ioctl_rdma {
     axiom_token_t token;        /*!< \brief message token */
     void *src_addr;             /*!< \brief source virtual address */
     void *dst_addr;             /*!< \brief destination virtual address */
+    uint32_t flags;             /*!< \brief asynchronous flag */
+#define AXIOCTL_RDMA_FLAGS_ASYNC        0x0000001
     int app_id;                 /*!< \brief application ID */
 } axiom_ioctl_rdma_t;
 
