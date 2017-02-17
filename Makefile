@@ -9,7 +9,7 @@ libs: axiom_user_library
 	$(MAKE) -C axiom_user_library install
 
 install clean distclean:
-	for DIR in $(APPS_DIR); do $(MAKE) -C $$DIR $@; done
+	for DIR in $(APPS_DIR); do { $(MAKE) -C $$DIR $@ || exit 1; }; done
 
 $(APPS_DIR):
 	$(MAKE) -C $@
