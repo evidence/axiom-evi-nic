@@ -12,6 +12,8 @@
 #ifndef AXIOM_NIC_TYPES_h
 #define AXIOM_NIC_TYPES_h
 
+#include <stdint.h>
+
 /**
  * \defgroup AXIOM_NIC
  *
