@@ -489,6 +489,7 @@ inline static int axiomnet_rdma_tx(struct file *filep,
     /* setup token to check the rdma status */
     if (token) {
         token->rdma.msg_id = rdma_status->msg_id;
+        token->rdma.status = AXIOM_TOKEN_PENDING;
         token->rdma.value = rdma_status->msg_id_counter;
     }
 
@@ -569,45 +570,104 @@ err_nolock:
     return ret;
 }
 
-static long axiomnet_rdma_check(struct file *filep, axiom_token_t *token)
+static long axiomnet_rdma_check(struct file *filep,
+        axiom_ioctl_token_t *token_ioctl)
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
     struct axiomnet_rdma_queue *rdma_queue = &tx_ring->rdma_queue;
-    axiom_msg_id_t msg_id = token->rdma.msg_id;
-    axiom_rdma_status_t *rdma_status;
+    axiom_token_t *tokens;
+    long ret = 0, acked;
+    int i;
 
-    if (msg_id >= AXIOMNET_RDMA_QUEUE_FREE_LEN) {
-        return -EINVAL;
+    tokens = vmalloc(sizeof(*tokens) * token_ioctl->count);
+    if (tokens == NULL) {
+        return -ENOMEM;
     }
 
-    rdma_status = &(rdma_queue->queue_desc[msg_id]);
-
-    if (rdma_status->msg_id_counter == token->rdma.value) {
-        return -EAGAIN;
+    ret = copy_from_user(tokens, token_ioctl->tokens,
+            sizeof(*tokens) * token_ioctl->count);
+    if (ret) {
+        ret = -EFAULT;
+        goto free_tokens;
     }
 
-    return 0;
+    acked = 0;
+    for (i = 0; i < token_ioctl->count; i++) {
+        axiom_msg_id_t msg_id = tokens[i].rdma.msg_id;
+        axiom_rdma_status_t *rdma_status;
+
+        if (tokens[i].rdma.status != AXIOM_TOKEN_PENDING) {
+            if (tokens[i].rdma.status == AXIOM_TOKEN_ACKED) {
+                acked++;
+            }
+            continue;
+        }
+
+        if (msg_id >= AXIOMNET_RDMA_QUEUE_FREE_LEN) {
+            tokens[i].rdma.status = AXIOM_TOKEN_INVALID;
+            continue;
+        }
+
+        rdma_status = &(rdma_queue->queue_desc[msg_id]);
+
+        if (rdma_status->msg_id_counter != tokens[i].rdma.value) {
+            tokens[i].rdma.status = AXIOM_TOKEN_ACKED;
+            acked++;
+        }
+    }
+
+    ret = copy_to_user(token_ioctl->tokens, tokens,
+            sizeof(*tokens) * token_ioctl->count);
+    if (ret) {
+        ret = -EFAULT;
+        goto free_tokens;
+    }
+
+    ret = acked;
+
+free_tokens:
+    vfree(tokens);
+    return ret;
 }
 
-static long axiomnet_rdma_wait(struct file *filep, axiom_token_t *token)
+static long axiomnet_rdma_wait(struct file *filep,
+        axiom_ioctl_token_t *token_ioctl)
 {
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_rdma_tx_hwring *tx_ring = &drvdata->rdma_tx_ring;
     struct axiomnet_rdma_queue *rdma_queue = &tx_ring->rdma_queue;
-    axiom_msg_id_t msg_id = token->rdma.msg_id;
+    axiom_token_t token;
+    axiom_msg_id_t msg_id;
     axiom_rdma_status_t *rdma_status;
+    long ret;
 
-    if (msg_id >= AXIOMNET_RDMA_QUEUE_FREE_LEN) {
+    if (token_ioctl->count != 1) {
+        EPRINTF("Expected only 1 token [token count: %d]", token_ioctl->count);
         return -EINVAL;
     }
 
+    ret = copy_from_user(&token, token_ioctl->tokens, sizeof(token));
+    if (ret) {
+        return -EFAULT;
+    }
+
+    if (token.rdma.status != AXIOM_TOKEN_PENDING) {
+        return 0;
+    }
+
+    msg_id = token.rdma.msg_id;
     rdma_status = &(rdma_queue->queue_desc[msg_id]);
 
+    if (msg_id >= AXIOMNET_RDMA_QUEUE_FREE_LEN) {
+        EPRINTF("invalid message ID: %d", msg_id);
+        return -EINVAL;
+    }
+
     /* wait the reply */
-    while (rdma_status->msg_id_counter == token->rdma.value) {
+    while (rdma_status->msg_id_counter == token.rdma.value) {
 #if 0
         /* no blocking write */
         if (filep->f_flags & O_NONBLOCK) {
@@ -616,9 +676,16 @@ static long axiomnet_rdma_wait(struct file *filep, axiom_token_t *token)
 #endif
         /* put the process in the wait_queue to wait the ack */
         if (wait_event_interruptible(rdma_status->wait_queue,
-                    rdma_status->msg_id_counter != token->rdma.value)) {
+                    rdma_status->msg_id_counter != token.rdma.value)) {
             return -ERESTARTSYS;
         }
+    }
+
+    token.rdma.status = AXIOM_TOKEN_ACKED;
+
+    ret = copy_to_user(token_ioctl->tokens, &token, sizeof(token));
+    if (ret) {
+        return -EFAULT;
     }
 
     return 0;
@@ -2070,7 +2137,7 @@ static long axiomnet_ioctl_rdma(struct file *filep, unsigned int cmd,
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     void __user* argp = (void __user*)arg;
     axiom_ioctl_rdma_t buf_rdma;
-    axiom_token_t buf_token;
+    axiom_ioctl_token_t buf_token;
     uint64_t buf_uint64;
     unsigned long buf_ulong;
     long ret = 0, err;

@@ -56,6 +56,11 @@ typedef struct axiom_ioctl_rdma {
     int app_id;                 /*!< \brief application ID */
 } axiom_ioctl_rdma_t;
 
+/*! \brief AXIOM ioctl check/wait parameters */
+typedef struct axiom_ioctl_token {
+    axiom_token_t *tokens;      /*!< \brief array of tokens */
+    int count;                  /*!< \brief number of tokens */
+} axiom_ioctl_token_t;
 
 /* ioctl defines */
 
@@ -116,9 +121,9 @@ typedef struct axiom_ioctl_rdma {
 /*! \brief AXIOM IOCTL to recv a long message with iovec */
 #define AXNET_RECV_LONG_IOV      _IOWR(AXNET_MAGIC, 126, axiom_ioctl_long_iov_t)
 /*! \brief AXIOM IOCTL to check the status of RDMA */
-#define AXNET_RDMA_CHECK         _IOWR(AXNET_MAGIC, 127, axiom_token_t)
+#define AXNET_RDMA_CHECK         _IOWR(AXNET_MAGIC, 127, axiom_ioctl_token_t)
 /*! \brief AXIOM IOCTL to wait a completion of RDMA */
-#define AXNET_RDMA_WAIT          _IOWR(AXNET_MAGIC, 128, axiom_token_t)
+#define AXNET_RDMA_WAIT          _IOWR(AXNET_MAGIC, 128, axiom_ioctl_token_t)
 
 #define AXNET_DEBUG_INFO        _IO(AXNET_MAGIC, 200)
 

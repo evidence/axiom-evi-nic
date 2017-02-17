@@ -87,17 +87,64 @@ typedef union axiom_token   axiom_token_t;
 /*! \brief Avoid flush of RX port queue after the axiom_bind() API */
 #define AXIOM_FLAG_NOFLUSH              0x00000008
 
-/*********************** struct/union definitions *****************************/
+/*************************** Axiom token status  *******************************/
+/*! \brief AXIOM token invalid status */
+#define AXIOM_TOKEN_INVALID             0
+/*! \brief AXIOM token pending status */
+#define AXIOM_TOKEN_PENDING             1
+/*! \brief AXIOM token acked status */
+#define AXIOM_TOKEN_ACKED               2
 
+/*********************** struct/union definitions *****************************/
 /*! \brief AXIOM token definition */
 union axiom_token {
     uint64_t raw;
     struct {
-        uint64_t msg_id : 8;
-        uint64_t padding : 24;
-        uint64_t value : 32;
+        uint64_t msg_id : 8;    /*!< \brief message ID */
+        uint64_t status : 8;    /*!< \brief token status */
+        uint64_t padding : 16;
+        uint64_t value : 32;    /*!< \brief token value */
     } rdma;
 };
+
+/*!
+ * \brief Invalidate a given token
+ *
+ * \param _tkn          AXIOM token to invalidate
+ */
+#define AXIOM_TOKEN_INVALIDATE(_tkn)    \
+    ((_tkn)->rdma.status = AXIOM_TOKEN_INVALID)
+
+/*!
+ * \brief Check if token is valid
+ *
+ * \param _tkn          AXIOM token to check
+ *
+ * \return Returns true if tokend is valid, false otherwise.
+ */
+#define AXIOM_TOKEN_IS_VALID(_tkn)      \
+    ((_tkn)->rdma.status != AXIOM_TOKEN_INVALID)
+
+/*!
+ * \brief Check if token is pending
+ *
+ * \param _tkn          AXIOM token to check
+ *
+ * \return Returns true if tokend is pending, false otherwise.
+ */
+#define AXIOM_TOKEN_IS_PENDING(_tkn)    \
+    ((_tkn)->rdma.status == AXIOM_TOKEN_PENDING)
+
+/*!
+ * \brief Check if token is acked
+ *
+ * \param _tkn          AXIOM token to check
+ *
+ * \return Returns true if tokend is acked, false otherwise.
+ */
+#define AXIOM_TOKEN_IS_ACKED(_tkn)    \
+    ((_tkn)->rdma.status == AXIOM_TOKEN_ACKED)
+
 
 /** \} */
 

@@ -1397,8 +1397,9 @@ axiom_rdma_read_async(axiom_dev_t *dev, axiom_node_id_t remote_id,
 }
 
 axiom_err_t
-axiom_rdma_check(axiom_dev_t *dev, axiom_token_t *token)
+axiom_rdma_check(axiom_dev_t *dev, axiom_token_t *tokens, int tokencnt)
 {
+    axiom_ioctl_token_t token_ioctl;
     int ret;
 
     AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_RDMA_CHECK));
@@ -1408,13 +1409,11 @@ axiom_rdma_check(axiom_dev_t *dev, axiom_token_t *token)
         goto end;
     }
 
-    ret = ioctl(dev->fd_rdma, AXNET_RDMA_CHECK, token);
-    if (unlikely(ret < 0)) {
-        if (errno == EAGAIN) {
-            ret = AXIOM_RET_NOTAVAIL;
-            goto end;
-        }
+    token_ioctl.tokens = tokens;
+    token_ioctl.count = tokencnt;
 
+    ret = ioctl(dev->fd_rdma, AXNET_RDMA_CHECK, &token_ioctl);
+    if (unlikely(ret < 0)) {
         EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         ret = AXIOM_RET_ERROR;
     }
@@ -1427,6 +1426,7 @@ end:
 axiom_err_t
 axiom_rdma_wait(axiom_dev_t *dev, axiom_token_t *token)
 {
+    axiom_ioctl_token_t token_ioctl;
     int ret;
 
     AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_RDMA_WAIT));
@@ -1437,8 +1437,16 @@ axiom_rdma_wait(axiom_dev_t *dev, axiom_token_t *token)
         goto end;
     }
 
-    ret = ioctl(dev->fd_rdma, AXNET_RDMA_WAIT, token);
+    token_ioctl.tokens = token;
+    token_ioctl.count = 1;
+
+    ret = ioctl(dev->fd_rdma, AXNET_RDMA_WAIT, &token_ioctl);
     if (unlikely(ret < 0)) {
+        if (errno == EAGAIN) {
+            ret = AXIOM_RET_NOTAVAIL;
+            goto end;
+        }
+
         EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
         ret = AXIOM_RET_ERROR;
     }
