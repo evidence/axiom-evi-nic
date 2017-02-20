@@ -18,9 +18,9 @@
  * \{
  */
 
+#include <stdint.h>
 #include "axiom_nic_types.h"
 #include <sys/uio.h>
-#include <stdint.h>
 
 /*! \brief unique application ID */
 #define AXIOM_ENV_ALLOC_APPID           "AXIOM_ALLOC_APPID"
