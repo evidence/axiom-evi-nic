@@ -1297,7 +1297,7 @@ end:
 }
 
 axiom_err_t
-axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
+axiom_rdma_write_sync(axiom_dev_t *dev, axiom_node_id_t remote_id,
         size_t payload_size, void *local_src_addr, void *remote_dst_addr,
         axiom_token_t *token)
 {
@@ -1306,7 +1306,7 @@ axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
 }
 
 axiom_err_t
-axiom_rdma_write_async(axiom_dev_t *dev, axiom_node_id_t remote_id,
+axiom_rdma_write(axiom_dev_t *dev, axiom_node_id_t remote_id,
         size_t payload_size, void *local_src_addr, void *remote_dst_addr,
         axiom_token_t *token)
 {
@@ -1379,7 +1379,7 @@ end:
 }
 
 axiom_err_t
-axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
+axiom_rdma_read_sync(axiom_dev_t *dev, axiom_node_id_t remote_id,
         size_t payload_size, void *remote_src_addr, void *local_dst_addr,
         axiom_token_t *token)
 {
@@ -1388,7 +1388,7 @@ axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
 }
 
 axiom_err_t
-axiom_rdma_read_async(axiom_dev_t *dev, axiom_node_id_t remote_id,
+axiom_rdma_read(axiom_dev_t *dev, axiom_node_id_t remote_id,
         size_t payload_size, void *remote_src_addr, void *local_dst_addr,
         axiom_token_t *token)
 {
