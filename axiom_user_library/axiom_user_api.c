@@ -281,12 +281,12 @@ axiom_update_flags(axiom_dev_t *dev, axiom_flags_t update_flags)
     }
 
     if (update_flags & AXIOM_FLAG_NOBLOCK_LONG) {
-        ret |= axiom_fcntl(dev->fd_raw, O_NONBLOCK,
+        ret |= axiom_fcntl(dev->fd_long, O_NONBLOCK,
                 dev->flags & AXIOM_FLAG_NOBLOCK_LONG);
     }
 
     if (update_flags & AXIOM_FLAG_NOBLOCK_RDMA) {
-        ret |= axiom_fcntl(dev->fd_raw, O_NONBLOCK,
+        ret |= axiom_fcntl(dev->fd_rdma, O_NONBLOCK,
                 dev->flags & AXIOM_FLAG_NOBLOCK_RDMA);
     }
 
