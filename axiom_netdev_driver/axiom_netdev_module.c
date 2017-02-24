@@ -533,12 +533,6 @@ inline static int axiomnet_rdma_tx(struct file *filep,
     while (rdma_status->ack_received == false) {
         mutex_unlock(&tx_ring->rdma_port.mutex);
 
-        /* no blocking write */
-        if (filep->f_flags & O_NONBLOCK) {
-            ret = -EAGAIN;
-            goto err_nolock;
-        }
-
         /* put the process in the wait_queue to wait the ack */
         if (wait_event_interruptible(rdma_status->wait_queue,
                     rdma_status->ack_received != false)) {
