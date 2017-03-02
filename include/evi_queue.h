@@ -46,7 +46,7 @@ typedef struct evi_queue {
  *
  * \param q             EVI queue status pointer
  */
-static void
+inline static void
 eviq_release(evi_queue_t *q)
 {
     if (q->next)
@@ -68,7 +68,7 @@ eviq_release(evi_queue_t *q)
  *
  * \return 0 on success, otherwise -1
  */
-static int
+inline static int
 eviq_init(evi_queue_t *q, int queues, int free_elems)
 {
     int i;

@@ -24,6 +24,7 @@
 #include <linux/delay.h>
 #include <linux/poll.h>
 #include <linux/uio.h>
+#include <linux/slab.h>
 
 #include "evi_queue.h"
 
