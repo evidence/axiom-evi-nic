@@ -9,35 +9,7 @@
  * Copyright (C) 2016, Evidence Srl
  * Terms of use are as specified in COPYING
  */
-#include <asm/uaccess.h>
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/kthread.h>
-#include <linux/init.h>
-#include <linux/device.h>
-#include <linux/dma-mapping.h>
-#include <linux/of.h>
-#include <linux/of_device.h>
-#include <linux/slab.h>
-#include <linux/irq.h>
-#include <linux/ioctl.h>
-#include <linux/interrupt.h>
-#include <linux/fs.h>
-#include <linux/mm.h>
-#include <linux/cdev.h>
-#include <linux/device.h>
-#include <linux/types.h>
-#include <linux/sched.h>
-#include <linux/delay.h>
-#include <linux/poll.h>
-#include <linux/uio.h>
-
-#include "evi_queue.h"
-
-#include "axiom_nic_packets.h"
-#include "axiom_netdev_module.h"
-#include "axiom_netdev_user.h"
-#include "axiom_mem_dev.h"
+#include "axiom_netdev.h"
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Evidence SRL");
@@ -60,16 +32,8 @@ static void axiomnet_destroy_chrdev(struct axiomnet_drvdata *drvdata,
 
 /************************ AxiomNet Device Driver ******************************/
 
-/* Match table for of_platform binding */
-static const struct of_device_id axiomnet_of_match[] = {
-    { .compatible = AXIOMREG_COMPATIBLE, },
-    {},
-};
-
-static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
+void axiomnet_irqhandler(struct axiomnet_drvdata *drvdata)
 {
-    struct axiomnet_drvdata *drvdata = dev_id;
-    irqreturn_t serviced = IRQ_NONE;
     uint32_t irq_pending;
 
     DPRINTF("start");
@@ -92,10 +56,8 @@ static irqreturn_t axiomnet_irqhandler(int irq, void *dev_id)
     }
 
     axiom_hw_ack_irq(drvdata->dev_api, irq_pending);
-    serviced = IRQ_HANDLED;
-    DPRINTF("end");
 
-    return serviced;
+    DPRINTF("end");
 }
 
 /****************************** RAW functions *********************************/
@@ -1459,56 +1421,23 @@ err:
     return ret;
 }
 
-static int axiomnet_probe(struct platform_device *pdev)
+int axiomnet_probe(struct axiomnet_drvdata *drvdata,
+    axiom_dev_t *dev_api)
 {
-    struct axiomnet_drvdata *drvdata;
     int err = 0;
 
     DPRINTF("start");
 
-    /* allocate our structure and fill it out */
-    drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
-    if (drvdata == NULL)
-        return -ENOMEM;
+    memset(drvdata, 0, sizeof(*drvdata));
 
+    drvdata->dev_api = dev_api;
     mutex_init(&drvdata->lock);
-    drvdata->dev = &pdev->dev;
-    platform_set_drvdata(pdev, drvdata);
-
-    /* map device registers */
-    drvdata->regs_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-    drvdata->vregs = devm_ioremap_resource(&pdev->dev, drvdata->regs_res);
-    if (IS_ERR(drvdata->vregs)) {
-        dev_err(&pdev->dev, "could not map Axiom Network regs.\n");
-        err = PTR_ERR(drvdata->vregs);
-        goto free_local;
-    }
-
-    /* allocate axiom api */
-    drvdata->dev_api = axiom_hw_dev_alloc(drvdata->vregs);
-    if (drvdata->dev_api == NULL) {
-        dev_err(&pdev->dev, "could not alloc axiom API\n");
-        err = -ENOMEM;
-        goto free_local;
-    }
-
-    axiom_hw_disable_irq(drvdata->dev_api);
-
-    /* setup IRQ */
-    drvdata->irq = platform_get_irq(pdev, 0);
-    err = request_irq(drvdata->irq, axiomnet_irqhandler, IRQF_SHARED,
-            pdev->name, drvdata);
-    if (err) {
-        dev_err(&pdev->dev, "could not get irq(%d) - %d\n", drvdata->irq, err);
-        err = -EIO;
-        goto free_hw_dev;
-    }
 
     /* TODO: check version */
     err = axiom_hw_check_version(drvdata->dev_api);
     if (err) {
-        dev_err(&pdev->dev, "check version failed\n");
-        goto free_irq;
+        EPRINTF("check version failed\n");
+        return err;
     }
 
     if (verbose > 1) {
@@ -1521,35 +1450,35 @@ static int axiomnet_probe(struct platform_device *pdev)
     /* alloc char device */
     err = axiomnet_alloc_chrdev(drvdata, &chrdev);
     if (err) {
-        dev_err(&pdev->dev, "could not alloc char dev\n");
-        goto free_irq;
+        EPRINTF("could not alloc char dev\n");
+        return err;
     }
 
     /* init RAW TX ring */
     err = axiomnet_raw_tx_hwring_init(drvdata, &drvdata->raw_tx_ring);
     if (err) {
-        dev_err(&pdev->dev, "could not init raw TX ring\n");
+        EPRINTF("could not init raw TX ring\n");
         goto free_cdev;
     }
 
     /* init RDMA TX ring */
     err = axiomnet_rdma_tx_hwring_init(drvdata, &drvdata->rdma_tx_ring);
     if (err) {
-        dev_err(&pdev->dev, "could not init RDMA TX ring\n");
+        EPRINTF("could not init RDMA TX ring\n");
         goto free_cdev;
     }
 
     /* init RAW RX ring */
     err = axiomnet_raw_rx_hwring_init(drvdata, &drvdata->raw_rx_ring);
     if (err) {
-        dev_err(&pdev->dev, "could not init raw RX ring\n");
+        EPRINTF("could not init raw RX ring\n");
         goto free_tx_ring;
     }
 
     /* init RDMA RX ring */
     err = axiomnet_rdma_rx_hwring_init(drvdata, &drvdata->rdma_rx_ring);
     if (err) {
-        dev_err(&pdev->dev, "could not init RDMA RX ring\n");
+        EPRINTF("could not init RDMA RX ring\n");
         goto free_rx_ring;
     }
 
@@ -1557,7 +1486,7 @@ static int axiomnet_probe(struct platform_device *pdev)
     err = axiom_kthread_init(&drvdata->kthread_raw, axiomnet_raw_rx_worker,
             axiomnet_raw_rx_work_todo, &drvdata->raw_rx_ring, "RAW kthread");
     if (err) {
-        dev_err(&pdev->dev, "could not init kthread\n");
+        EPRINTF("could not init kthread\n");
         goto free_rdma_rx_ring;
     }
 
@@ -1565,20 +1494,19 @@ static int axiomnet_probe(struct platform_device *pdev)
     err = axiom_kthread_init(&drvdata->kthread_rdma, axiomnet_rdma_rx_worker,
             axiomnet_rdma_rx_work_todo, &drvdata->rdma_rx_ring, "RDMA kthread");
     if (err) {
-        dev_err(&pdev->dev, "could not init kthread\n");
+        EPRINTF("could not init kthread\n");
         goto free_raw_kthread;
     }
 
     /* init RDMA */
     err = axiomnet_rdma_init(drvdata);
     if (err) {
-        dev_err(&pdev->dev, "could not init RDMA zone\n");
+        EPRINTF("could not init RDMA zone\n");
         goto free_rdma_kthread;
     }
 
     axiom_hw_enable_irq(drvdata->dev_api);
 
-    IPRINTF(1, "AXIOM NIC driver loaded");
     DPRINTF("end");
 
     return 0;
@@ -1594,19 +1522,13 @@ free_tx_ring:
     axiomnet_rdma_tx_hwring_release(drvdata, &drvdata->rdma_tx_ring);
 free_cdev:
     axiomnet_destroy_chrdev(drvdata, &chrdev);
-free_irq:
-    free_irq(drvdata->irq, drvdata);
-free_hw_dev:
-    axiom_hw_dev_free(drvdata->dev_api);
-free_local:
-    kfree(drvdata);
+
     DPRINTF("error: %d", err);
     return err;
 }
 
-static int axiomnet_remove(struct platform_device *pdev)
+int axiomnet_remove(struct axiomnet_drvdata *drvdata)
 {
-    struct axiomnet_drvdata *drvdata = platform_get_drvdata(pdev);
     DPRINTF("start");
 
     axiom_hw_disable_irq(drvdata->dev_api);
@@ -1621,23 +1543,9 @@ static int axiomnet_remove(struct platform_device *pdev)
     axiomnet_rdma_tx_hwring_release(drvdata, &drvdata->rdma_tx_ring);
 
     axiomnet_destroy_chrdev(drvdata, &chrdev);
-    free_irq(drvdata->irq, drvdata);
-    axiom_hw_dev_free(drvdata->dev_api);
-    kfree(drvdata);
-
-    IPRINTF(1, "AXIOM NIC driver unloaded");
     DPRINTF("end");
     return 0;
 }
-
-static struct platform_driver axiomnet_driver = {
-    .probe = axiomnet_probe,
-    .remove = axiomnet_remove,
-    .driver = {
-        .name = "axiom_net",
-        .of_match_table = axiomnet_of_match,
-    },
-};
 
 /****************************** Ports Handling  *******************************/
 
@@ -2619,40 +2527,21 @@ static void axiomnet_cleanup_chrdev(struct axiomnet_chrdev *chrdev)
 /********************** AxiomNet Module [un]init *****************************/
 
 /* Entry point for loading the module */
-static int __init axiomnet_init(void)
+int axiomnet_init(void)
 {
-    int err;
+    int err = 0;
     DPRINTF("start");
 
     err = axiomnet_init_chrdev(&chrdev);
-    if (err) {
-        goto err;
-    }
-
-    err = platform_driver_register(&axiomnet_driver);
-    if (err) {
-        goto free_chrdev;
-    }
 
     DPRINTF("end");
-    return 0;
-
-free_chrdev:
-    axiomnet_cleanup_chrdev(&chrdev);
-err:
-    pr_err("unable to init axiomnet module [error %d]\n", err);
-    DPRINTF("error: %d", err);
     return err;
 }
 
 /* Entry point for unloading the module */
-static void __exit axiomnet_cleanup(void)
+void axiomnet_cleanup(void)
 {
     DPRINTF("start");
-    platform_driver_unregister(&axiomnet_driver);
     axiomnet_cleanup_chrdev(&chrdev);
     DPRINTF("end");
 }
-
-module_init(axiomnet_init);
-module_exit(axiomnet_cleanup);

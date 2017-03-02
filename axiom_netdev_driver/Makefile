@@ -4,7 +4,13 @@ PWD := $(shell pwd)
 include $(MKFILE_DIR)/../common.mk
 
 obj-m := axiom_netdev.o
-axiom_netdev-objs := axiom_kernel_api.o axiom_netdev_module.o axiom_kthread.o
+axiom_netdev-objs := axiom_kernel_api.o axiom_netdev_common.o axiom_kthread.o
+ifeq ($(X86), 1)
+axiom_netdev-objs += axiom_netdev_x86.o
+else
+axiom_netdev-objs += axiom_netdev_arm.o
+endif
+
 
 ccflags-y += -Wall $(DFLAGS) -I${AXIOM_NIC_INCLUDE}
 ccflags-y += $(AXIOM_KERNEL_CFLAGS)

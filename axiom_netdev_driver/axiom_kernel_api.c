@@ -21,11 +21,6 @@
 
 #include "axiom_kernel_api.h"
 
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Evidence SRL");
-MODULE_DESCRIPTION("Axiom Network Device Driver");
-MODULE_VERSION("v0.13");
-
 extern int verbose;
 
 /*! \brief AXIOM HW device status */
