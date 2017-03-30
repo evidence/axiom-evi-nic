@@ -7,6 +7,7 @@
 \usepackage{graphicx}
 \usepackage{tabularx}
 \usepackage{environ}
+\usepackage{textcomp}
 \usepackage[colorlinks,linkcolor=blue]{hyperref}
 
 \NewEnviron{regdescription}
@@ -37,10 +38,10 @@
 	        \hline \textbf{Field Name} & \textbf{Bit(s)} & \textbf{Type} &
 	        \textbf{Init Val} & \textbf{Description} \\
 	 	\BODY
-	\hline 
+	\hline
 	\end{tabularx}}
 
-\newcommand{\versionapi}{v0.11}
+\newcommand{\versionapi}{v0.11-b}
 
 % Title Page
 \title{Axiom NIC Datasheet}
@@ -81,8 +82,6 @@
 	Register\\
 	\hline \nameref{reg:pndirq} & 0x00000064 & 32 & rw & Pending Interrupt
 	Register\\
-	\hline \nameref{reg:avlirq} & 0x00000068 & 32 & rw & Available threshold
-	Interrupt Register\\
         \hline \textbf{\nameref{mod:routing}} & & & & \\
                                               & & & & \\
         \hline \nameref{reg:routing_base} & 0x00000100+n & 8 & rw & Routing
@@ -230,14 +229,11 @@
 	Access Type		\> rw\\
 	Init Value		\> 0x00000000\\
 	Description		\> Control register. Used to enable local
-	                           transmission ACKs\\
-	                        \> and/or the PHY loopback mode configuration.\\
+	                           transmission ACKs.\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 31:1 & rw & 0x0 & Reserved. Writes are ignored, read
+	\hline reserved & 31:0 & rw & 0x0 & Reserved. Writes are ignored, read
 	data is zero.\\
-	\hline LOOPBACK & 0 & rw & 0x0 & When set to 1b, all the interfaces are
-	in loopback mode.\\
 \end{regdetails}
 
 
@@ -293,7 +289,13 @@
 \section{Interrupt Registers} \label{mod:interrupt}
 \begin{regdescription}
 	Module Name 	\> Interrupt Registers\\
-	Description 	\> Registers used to handle interrupts\\
+	Description 	\> Registers used to handle interrupts.\\
+	                \> If the interrupts are enabled, they are generated in these cases:\\
+	                \> - RX queues. Interrupt generated when the queue is empty and new\\
+	                \>      descriptor is enqueued by the HW. [transition empty,
+	                not empty]\\
+	                \> - TX queues. Interrupt generated when the queue is full and a descriptor\\
+	                \>      is dequeued by the HW. [transition full, not full]\\
 \end{regdescription}
 
 \subsection{Register summary}
@@ -302,8 +304,6 @@
 	Interrupt Register\\
 	\hline \nameref{reg:pndirq} & 0x00000064 & 32 & rw & 0x0 & Pending
 	Interrupt Register\\
-	\hline \nameref{reg:avlirq} & 0x00000068 & 32 & rw & 0x0 & Available
-	threshold Interrupt Register\\
 \end{regsummary}
 
 \subsubsection{MSKIRQ} \label{reg:mskirq}
@@ -368,27 +368,6 @@
                interrupt is acknowledged.\\
 \end{regdetails}
 
-\subsubsection{AVLIRQ} \label{reg:avlirq}
-\begin{regdescription}
-	Name			\> AVLIRQ\\
-	Relative Address	\> 0x00000068\\
-	Width			\> 32 bits\\
-	Access Type		\> rw\\
-	Init Value		\> 0x00000000\\
-	Description		\> Available threshold Interrupt Register.\\
-	                        \> Used to set a threshold to generate an IRQ.
-	                           For each queue, you can specify \\
-	                        \> a threashold X. When available slots change
-	                           from X to X+1, an interrupt \\
-	                        \> is generated.\\
-\end{regdescription}
-\begin{regdetails}
-	\hline RDMA\_RX & 31:24 & rw & 0x0 & Available threshold for RDMA RX queue.\\
-	\hline RDMA\_TX & 23:16 & rw & 0x0 & Available threshold for RDMA TX queue.\\
-	\hline RAW\_RX & 15:8 & rw & 0x0 & Available threshold for RAW RX queue.\\
-	\hline RAW\_TX & 7:0 & rw & 0x0 & Available threshold for RAW TX queue.\\
-\end{regdetails}
-
 
 \section{Routing Registers} \label{mod:routing}
 \begin{regdescription}
@@ -417,16 +396,8 @@
 	                        node id.\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 7:4 & rw & 0x0 & Reserved. Writes are ignored, read
-	data is zero.\\
-        \hline ENABLED\_IF\_3 & 3 & rw & 0x0 & When set to 1b, the node n (array
-        index) is reachable through the interface 3.\\
-        \hline ENABLED\_IF\_2 & 2 & rw & 0x0 & When set to 1b, the node n (array
-        index) is reachable through the interface 2.\\
-        \hline ENABLED\_IF\_1 & 1 & rw & 0x0 & When set to 1b, the node n (array
-        index) is reachable through the interface 1.\\
-        \hline ENABLED\_IF\_0 & 0 & rw & 0x0 & When set to 1b, the node n (array
-        index) is reachable through the interface 0.\\
+	\hline ENABLED\_IF & 7:0 & rw & 0x0 & ID of the interface to reach the
+	node n (array index).\\
 \end{regdetails}
 
 
@@ -475,7 +446,7 @@
 	\hline reserved & 31:1 & ro & 0x0 & Reserved. Writes are ignored, read
 	data is zero.\\
 	\hline QSTATUS\_AVAIL & 0 & ro & 0x0 & When set to 1b, in the RAW TX
-	queue there are descriptors available\\
+	queue there is space available for new descriptors from the SW.\\
 \end{regdetails}
 
 \subsubsection{RAW\_TX\_DESC} \label{reg:raw_tx_desc}
@@ -526,7 +497,7 @@
 	\hline reserved & 31:1 & wo & 0x0 & Reserved. Writes are ignored, read
 	data is zero.\\
 	\hline QSTATUS\_AVAIL & 0 & ro & 0x0 & When set to 1b, in the RAW RX
-	queue there are descriptors available\\
+	queue there are descriptors available to be read from the SW.\\
 \end{regdetails}
 
 \subsubsection{RAW\_RX\_DESC} \label{reg:raw_rx_desc}
@@ -573,8 +544,8 @@
 \begin{regdetails}
 	\hline reserved & 31:1 & ro & 0x0 & Reserved. Writes are ignored, read
 	data is zero.\\
-	\hline QSTATUS\_AVAIL & 0 & ro & 0x0 & When set to 1b, in the RDMA RX
-	queue there are descriptors available\\
+	\hline QSTATUS\_AVAIL & 0 & ro & 0x0 & When set to 1b, in the RDMA TX
+	queue there is space available for new descriptors from the SW.\\
 \end{regdetails}
 
 \subsubsection{RDMA\_TX\_DESC} \label{reg:rdma_tx_desc}
@@ -621,7 +592,7 @@
 	\hline reserved & 31:1 & wo & 0x0 & Reserved. Writes are ignored, read
 	data is zero.\\
 	\hline QSTATUS\_AVAIL & 0 & ro & 0x0 & When set to 1b, in the RDMA RX
-	queue there are descriptors available\\
+	queue there are descriptors available to be read from the SW.\\
 \end{regdetails}
 
 \subsubsection{RDMA\_RX\_DESC} \label{reg:rdma_rx_desc}
@@ -648,8 +619,10 @@
 	\hline SOURCE & 15:8 & ro & 0x0 & Sender node id\\
 	\hline S & 7 & ro & 0x0 & S bit. When set to 1b, this message is an ACK
 	of message previously sent by this node\\
-	\hline ERROR & 6 & ro & 0x0 & Error bit. When set to 1b, there is an
-	error. The first byte of payload contains the error cause\\
+	\hline ERROR & 6 & ro & 0x0 & Error bit. When set to 1b, the ACK
+	contains an error from the receive. The first byte of payload will
+	contain the error cause. One of the possible cause can be that the
+	receiver can not have LONG buffers to store incoming messagge.\\
 	\hline PORT & 5:3 & ro & 0x0 & RDMA port.\\
         \hline TYPE & 2:0 & ro & 0x0 & RDMA types.\\
                     & & & & (RAW\_DATA = 0, RAW\_NEIGHBOUR = 1, LONG\_DATA =
@@ -670,10 +643,11 @@
 	                        \> for receiving the LONG messages.\\
 \end{regdescription}
 \begin{regdetails}
-	\hline USED\_MSG\_ID & 63:48 & rw & 0x0 & The HW put the MSG\_ID of
-	message that uses this buffer. When the software read it, must write
-	0xFFFF to signal to the HW that this buffer is now free\\
+	\hline FLAGS & 63:56 & rw & 0x0 & When the software read this buffer, it
+	must write 1b to signal to the HW that this buffer is now free.\\
+	\hline MSG\_ID & 55:48 & rw & 0x0 & The HW must put the MSG\_ID of
+	message that uses this buffer.\\
 	\hline SIZE & 47:32 & rw & 0x0 & Size of buffer \\
-	\hline ADRESS & 31:0 & rw & 0x0 & Address of buffer \\
+	\hline ADDRESS & 31:0 & rw & 0x0 & Address of buffer \\
 \end{regdetails}
 \end{document}
