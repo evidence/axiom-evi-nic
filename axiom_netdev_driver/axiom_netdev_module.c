@@ -1062,7 +1062,7 @@ free_enqueue:
     spin_unlock_irqrestore(&long_queue->queue_lock, flags);
 
     if (long_buf_lut) {
-        /* free the buffer for the HW */
+        /* free the buffer for the HW, copying the initialization structure */
         axiom_hw_set_long_buf(drvdata->dev_api, long_buf_lut->buf_id,
                 &long_buf_lut->long_buf_hw);
     }
@@ -1118,7 +1118,7 @@ static long axiomnet_long_flush(struct axiomnet_priv *priv) {
 
         eviq_free_push(&long_queue->evi_queue, queue_slot);
 
-        /* free the buffer for the HW */
+        /* free the buffer for the HW, copying the initialization structure */
         axiom_hw_set_long_buf(drvdata->dev_api, long_buf_lut->buf_id,
                 &long_buf_lut->long_buf_hw);
 
@@ -1433,7 +1433,8 @@ static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
         long_buf_lut->long_buf_hw.field.address = drvdata->rdma_size +
             (i * AXIOM_LONG_PAYLOAD_MAX_SIZE);
         long_buf_lut->long_buf_hw.field.size = AXIOM_LONG_PAYLOAD_MAX_SIZE;
-        long_buf_lut->long_buf_hw.field.used_msg_id = AXIOMREG_LONG_BUF_FREE;
+        long_buf_lut->long_buf_hw.field.msg_id = 0xFF;
+        long_buf_lut->long_buf_hw.field.flags = AXIOMREG_LONG_BUF_FREE;
 
         /* set buf in the HW */
         axiom_hw_set_long_buf(drvdata->dev_api, i, &long_buf_lut->long_buf_hw);

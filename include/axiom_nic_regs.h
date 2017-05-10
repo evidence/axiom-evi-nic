@@ -235,11 +235,11 @@ typedef union axiomreg_qstatus {
 typedef union axiomreg_long_buf {
     uint64_t raw;
     struct {
-        uint32_t address;           /*!< \brief Address of buffer */
-        uint16_t size;              /*!< \brief Size of buffer */
-        uint16_t used_msg_id;       /*!< \brief OxFFFF if it is not used,
-                                      otherwise it contains the message id */
-#define AXIOMREG_LONG_BUF_FREE              0xFFFF
+        uint32_t address;   /*!< \brief Address of buffer */
+        uint16_t size;      /*!< \brief Size of buffer */
+        uint8_t msg_id;     /*!< \brief ID of message that uses this buffer */
+        uint8_t flags;
+#define AXIOMREG_LONG_BUF_FREE              0x01
     } field;
 } axiomreg_long_buf_t;
 
