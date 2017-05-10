@@ -188,12 +188,9 @@ typedef union axiomreg_ifinfo {
 typedef union axiomreg_control {
     uint32_t raw;
     struct {
-        uint32_t reserved : 31;     /*!< \brief Reserved field */
-        uint32_t loopback : 1;      /*!< \brief Interface in loopback mode */
+        uint32_t reserved : 32;     /*!< \brief Reserved field */
     } field;
 } axiomreg_control_t;
-/*! \brief Interface in loopback mode */
-#define AXIOMREG_CONTROL_LOOPBACK               0x00000001
 
 
 /*!
