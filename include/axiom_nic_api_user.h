@@ -613,7 +613,8 @@ void setRoutingTable(axiom_node_id_t dst_node, uint32_t* nodeRoutingTable);
  *
  * \param dev           The axiom device private data pointer
  * \param node_id       Remote connected node id
- * \param enabled_mask  bit mask interface
+ * \param enabled_mask  bit mask interface (actual implementation support only 1
+ *                      node)
  *
  * \return Returns AXIOM_RET_OK on success, an error otherwise.
  */
@@ -639,7 +640,8 @@ uint32_t* getRoutingTable(axiomnode_id_t dst_node);
  *
  * \param dev           The axiom device private data pointer
  * \param node_id       Remote connected node id
- * \param enabled_mask  bit mask interface
+ * \param enabled_mask  bit mask interface (actual implementation support only 1
+ *                      node)
  *
  * \return Returns AXIOM_RET_OK on success, an error otherwise.
  */

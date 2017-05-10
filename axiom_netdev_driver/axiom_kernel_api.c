@@ -286,7 +286,11 @@ axiom_err_t
 axiom_hw_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
         uint8_t enabled_mask)
 {
-    iowrite8(enabled_mask, dev->vregs + AXIOMREG_IO_ROUTING_BASE + node_id);
+    /* Find first bit set, return as a number. */
+    uint8_t enabled_if = ffs(enabled_mask);
+
+    /* the register contains only one interface ID */
+    iowrite8(enabled_if, dev->vregs + AXIOMREG_IO_ROUTING_BASE + node_id);
 
     return 0;
 }
@@ -295,7 +299,12 @@ axiom_err_t
 axiom_hw_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
         uint8_t *enabled_mask)
 {
-    *enabled_mask = ioread8(dev->vregs + AXIOMREG_IO_ROUTING_BASE + node_id);
+    uint8_t enabled_if;
+
+    /* the register contains only one interface ID */
+    enabled_if = ioread8(dev->vregs + AXIOMREG_IO_ROUTING_BASE + node_id);
+
+    *enabled_mask = (1 << enabled_if);
 
     return 0;
 }
