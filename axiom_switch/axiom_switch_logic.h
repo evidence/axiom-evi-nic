@@ -1,7 +1,7 @@
 /*!
  * \file axiom_switch_logic.h
  *
- * \version     v0.11
+ * \version     v0.12
  * \date        2016-05-03
  *
  * This file contains API to implements the logic in the Axiom Switch

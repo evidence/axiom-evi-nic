@@ -1,7 +1,7 @@
 /*!
  * \file axiom_nic_limits.h
  *
- * \version     v0.11
+ * \version     v0.12
  * \date        2016-04-08
  *
  * This file contains the AXIOM limits

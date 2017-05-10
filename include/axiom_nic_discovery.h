@@ -1,7 +1,7 @@
 /*!
  * \file axiom_nic_discovery.h
  *
- * \version     v0.11
+ * \version     v0.12
  * \date        2016-03-08
  *
  * This file contains the AXIOM NIC API for the discovery phase

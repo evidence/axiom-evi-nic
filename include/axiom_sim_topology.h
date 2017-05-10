@@ -1,7 +1,7 @@
 /*!
  * \file axiom_sim_topology.h
  *
- * \version     v0.11
+ * \version     v0.12
  * \date        2016-03-25
  *
  * This file contains the AXIOM NIC topology structure and functions. It is

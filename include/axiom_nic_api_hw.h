@@ -1,7 +1,7 @@
 /*!
  * \file axiom_nic_api_hw.h
  *
- * \version     v0.11
+ * \version     v0.12
  * \date        2016-03-14
  *
  * This file contains the AXIOM NIC HARDWARE API
