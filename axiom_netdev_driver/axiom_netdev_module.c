@@ -49,15 +49,6 @@ int verbose = 0;
 module_param(verbose, int, 0644);
 MODULE_PARM_DESC(debug, "versbose level (0=none,...,16=all)");
 
-static uint8_t irq_avail_raw_tx = 0;
-module_param(irq_avail_raw_tx, byte, 0644);
-static uint8_t irq_avail_raw_rx = 0;
-module_param(irq_avail_raw_rx, byte, 0644);
-static uint8_t irq_avail_rdma_tx = 0;
-module_param(irq_avail_rdma_tx, byte, 0644);
-static uint8_t irq_avail_rdma_rx = 0;
-module_param(irq_avail_rdma_rx, byte, 0644);
-
 struct axiomnet_chrdev chrdev;
 
 static int axiomnet_alloc_chrdev(struct axiomnet_drvdata *drvdata,
@@ -1511,8 +1502,6 @@ static int axiomnet_probe(struct platform_device *pdev)
         err = -EIO;
         goto free_hw_dev;
     }
-    axiom_hw_set_irq_avail(drvdata->dev_api, irq_avail_raw_tx, irq_avail_raw_rx,
-            irq_avail_rdma_tx, irq_avail_rdma_rx);
 
     /* TODO: check version */
     err = axiom_hw_check_version(drvdata->dev_api);

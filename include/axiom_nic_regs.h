@@ -93,8 +93,6 @@
 #define AXIOMREG_IO_MSKIRQ                      0x00000060
 /*! \brief PNDIRQ register - 32 bit r/w */
 #define AXIOMREG_IO_PNDIRQ                      0x00000064
-/*! \brief AVLIRQ register - 32 bit r/w */
-#define AXIOMREG_IO_AVLIRQ                      0x00000068
 
 
 /* Routing table registers */
@@ -216,18 +214,6 @@ typedef union axiomreg_interrupt {
 #define AXIOMREG_IRQ_RDMA_RX                    0x00000008
 /*! \brief ALL interrupts */
 #define AXIOMREG_IRQ_ALL                        0xFFFFFFFF
-/*!
-    * \brief AXIOM register: AVLIRQ bit field
- */
-typedef union axiomreg_availirq {
-    uint32_t raw;
-    struct {
-        uint32_t rdma_rx : 8;       /*!< \brief RDMA RX avail threashold IRQ */
-        uint32_t rdma_tx : 8;       /*!< \brief RDMA TX avail threashold IRQ */
-        uint32_t raw_rx : 8;        /*!< \brief RAW RX avail threashold IRQ */
-        uint32_t raw_tx : 8;        /*!< \brief RAW TX avail threashold IRQ */
-    } field;
-} axiomreg_availirq_t;
 
 /*!
     * \brief AXIOM register: QSTATUS bit field
