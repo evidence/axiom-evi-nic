@@ -397,7 +397,8 @@
 \end{regdescription}
 \begin{regdetails}
 	\hline ENABLED\_IF & 7:0 & rw & 0x0 & ID of the interface to reach the
-	node n (array index).\\
+	node n (array index). If the node is not reachable, the SW must write
+	0xFF in this register.\\
 \end{regdetails}
 
 

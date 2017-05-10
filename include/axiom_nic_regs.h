@@ -215,8 +215,11 @@ typedef union axiomreg_interrupt {
 /*! \brief ALL interrupts */
 #define AXIOMREG_IRQ_ALL                        0xFFFFFFFF
 
+/*! \brief AXIOM ROUTING NULL interface */
+#define AXIOMREG_ROUTING_NULL_IF                0xFF
+
 /*!
-    * \brief AXIOM register: QSTATUS bit field
+ * \brief AXIOM register: QSTATUS bit field
  */
 typedef union axiomreg_qstatus {
     uint32_t raw;
