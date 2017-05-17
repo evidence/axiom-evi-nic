@@ -23,5 +23,5 @@ Name: axiom_user_api
 Description: axiom user api description
 Version: @VERSION@
 
-Cflags: -I${includedir}/axiom
+Cflags: -I${includedir}/axiom -I${includedir}
 Libs: -L${libdir} -laxiom_user_api 
