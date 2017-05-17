@@ -8,20 +8,20 @@ Homepage: <insert the upstream URL, if relevant>
 #Vcs-Git: git://anonscm.debian.org/collab-maint/axiom-apps.git
 #Vcs-Browser: http://anonscm.debian.org/?p=collab-maint/axiom-apps.git;a=summary
 
-Package: linux-module-axiom-netdev
+Package: axiom-evi-nic-modules
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: <insert up to 60 chars description>
- <insert long description, indented with spaces>
+Description: axiom nic kernel module
+ axiom nic kernel module
 
 Package: libaxiom-user
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: <insert up to 60 chars description>
- <insert long description, indented with spaces>
+Description: axiom user library
+ axiom user library
 
 Package: libaxiom-user-dev
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: <insert up to 60 chars description>
- <insert long description, indented with spaces>
+Description: axiom user library - development files
+ axiom user library - development files

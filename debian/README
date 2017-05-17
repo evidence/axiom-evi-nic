@@ -1,6 +1,15 @@
-The Debian Package axiom-apps
-----------------------------
+                   AXIOM NIC driver, library and docs
+===============================================================================
 
-Comments regarding the Package
+This repository contains the following folder:
 
- -- Massimiliano <massy@unknown>  Tue, 07 Feb 2017 09:48:11 +0100
+ * axiom_docs
+    + contains the NIC documentation (datasheet, doxygen, flow-charts, pseudo-code)
+ * axiom_netdev_driver
+    + contains the Linux device driver for the Axiom NIC
+ * axiom_user_library
+    + contains the user-space library to use the Axiom NIC
+ * include
+    + contains the commom headers for Axiom NIC user/kernel code
+ * axiom_switch
+    + contains an application used with QEMU to emulate the network topology

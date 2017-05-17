@@ -28,24 +28,52 @@ binary-arch: make-changelog
 	dh_testroot
 	dh_prep
 	dh_installdirs
-	make SYSROOT_INST_DIR=$(DEBIAN_DIR)/tmp TARGET_INST_DIR=$(DEBIAN_DIR)/tmp install
-	rm -f $(DEBIAN_DIR)/tmp/lib/modules/4.4.0/modules.*
+
+	$(MAKE) SYSROOT_INST_DIR=$(DEBIAN_DIR)/tmp TARGET_INST_DIR=$(DEBIAN_DIR)/tmp install
+	rm -f $(DEBIAN_DIR)/tmp/lib/modules/*/modules.*
+
 	dh_install --fail-missing
 	dh_installdocs
 	dh_installchangelogs
+	dh_installexamples
+	dh_installman
+	dh_installcatalogs
+	dh_installcron
+	dh_installdebconf
+	dh_installemacsen
+	dh_installifupdown
+	dh_installinfo
+	dh_installinit
+	dh_installmenu
+	dh_installmime
+	dh_installmodules
+	dh_installlogcheck
+	dh_installlogrotate
+	dh_installpam
+	dh_installppp
+	dh_installudev
+	dh_installwm
+	dh_installgsettings
+
+	dh_bugfiles
+	dh_ucf
 	dh_lintian
+	dh_gconf
+	dh_icons
+	dh_perl
+	dh_usrlocal
+
 	dh_link
+	dh_installxfonts
 	dh_compress
 	dh_fixperms
+
 #	dh_strip
-#	dh_makeshlibs
-#	dh_shlibdeps
+	PATH=$(LINARO)/host/usr/bin:$(PATH) dh_makeshlibs
+	dh_shlibdeps  --sysroot=$(ROOTFS)
 	dh_installdeb
 	dh_gencontrol
 	dh_md5sums
-	for PKG in $(shell cat $(DEBIAN_DIR)/control| grep "^Package" | sed -e 's/Package: //'); do \
-	  sed -i -e 's/amd64/arm64/' $(DEBIAN_DIR)/$${PKG}/DEBIAN/control ;\
-	done
 	dh_builddeb
 
 binary-indep:
