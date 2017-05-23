@@ -9,7 +9,7 @@ axiom_netdev-objs := axiom_kernel_api.o axiom_netdev_module.o axiom_kthread.o
 ccflags-y += -Wall $(DFLAGS) -I${AXIOM_NIC_INCLUDE}
 ccflags-y += $(AXIOM_KERNEL_CFLAGS)
 
-ifeq ($(P),1)
+ifeq ($(P)$(E),10)
 CC:=$(PETALINUX)/tools/linux-i386/aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc
 endif
 

@@ -1,6 +1,9 @@
 
 ifeq ($(P),1)
 APPS_DIR := axiom_user_library axiom_netdev_driver
+ifeq ($(E),1)
+APPS_DIR += axiom_switch
+endif
 else
 APPS_DIR := axiom_user_library axiom_netdev_driver axiom_switch
 endif

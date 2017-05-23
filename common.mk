@@ -56,17 +56,19 @@ ifdef CCARCH
 # defined CCARCH
 
 ifeq ($(P),1)
-# defined P=1
-
     CCPREFIX := ${HOST_DIR}/usr/bin/$(CCARCH)-linux-gnu-
+else
+    CCPREFIX := ${HOST_DIR}/usr/bin/$(CCARCH)-linux-
+endif
+
+ifeq ($(P)$(E),10)
+# defined P=1 and E=0
     KERNELDIR := $(AXIOMBSP)/build/linux/kernel/link-to-kernel-build
     CROSS_COMPILE := ARCH=arm64 CROSS_COMPILE=$(PETALINUX)/tools/linux-i386/aarch64-linux-gnu/bin/aarch64-linux-gnu-
     AXIOM_KERNEL_CFLAGS := -I$(realpath $(SYSROOT_DIR)/usr/include/linux)
 
 else
-# not defined P=1
-
-    CCPREFIX := ${HOST_DIR}/usr/bin/$(CCARCH)-linux-
+# not defined P=1 and E=0
     KERNELDIR := ${OUTPUT_DIR}/build/linux-custom
 ifeq ($(CCARCH), aarch64)
     CROSS_COMPILE := ARCH=arm64 CROSS_COMPILE=$(CCPREFIX)

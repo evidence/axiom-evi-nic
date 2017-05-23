@@ -12,6 +12,14 @@ DEBIAN_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 #DEB_TARGET_GNU_TYPE=aarch64-linux-gnu
 #DEB_TARGET_MULTIARCH=aarch64-linux-gnu
 
+ifeq ($(P)$(E),10)
+KERNELDIR := $(AXIOMBSP)/build/linux/kernel/link-to-kernel-build
+else
+KERNELDIR := $(OUTPUT_DIR)/build/linux-custom
+endif
+
+KVERSION := $(shell cat $(KERNELDIR)/include/config/kernel.release)
+
 .PHONY: build build-arch build-indep binary binary-arch binary-indep clean
 
 build: build-arch build-indep
@@ -72,7 +80,10 @@ binary-arch: make-changelog
 	PATH=$(LINARO)/host/usr/bin:$(PATH) dh_makeshlibs
 	dh_shlibdeps  --sysroot=$(ROOTFS)
 	dh_installdeb
-	dh_gencontrol
+	dh_gencontrol -plibaxiom-user -plibaxiom-user-dev
+	dh_gencontrol -paxiom-evi-nic-modules -- -DPackage=axiom-evi-nic-modules-$(KVERSION)
+	mv $(DEBIAN_DIR)/axiom-evi-nic-modules/usr/share/doc/axiom-evi-nic-modules \
+		$(DEBIAN_DIR)/axiom-evi-nic-modules/usr/share/doc/axiom-evi-nic-modules-$(KVERSION)
 	dh_md5sums
 	dh_builddeb
 
