@@ -53,21 +53,35 @@ AXIOM_NIC_DRIVER := $(COMMKFILE_DIR)/axiom_netdev_driver
 AXIOM_KERNEL_CFLAGS := -I$(realpath $(SYSROOT_DIR)/usr/include/linux)
 
 ifdef CCARCH
-    KERNELDIR := ${OUTPUT_DIR}/build/linux-custom
+# defined CCARCH
+
 ifeq ($(P),1)
+# defined P=1
+
     CCPREFIX := ${HOST_DIR}/usr/bin/$(CCARCH)-linux-gnu-
+    KERNELDIR := $(AXIOMBSP)/build/linux/kernel/link-to-kernel-build
+    CROSS_COMPILE := ARCH=arm64 CROSS_COMPILE=$(PETALINUX)/tools/linux-i386/aarch64-linux-gnu/bin/aarch64-linux-gnu-
+    AXIOM_KERNEL_CFLAGS := -I$(realpath $(SYSROOT_DIR)/usr/include/linux)
+
 else
+# not defined P=1
+
     CCPREFIX := ${HOST_DIR}/usr/bin/$(CCARCH)-linux-
-endif
+    KERNELDIR := ${OUTPUT_DIR}/build/linux-custom
 ifeq ($(CCARCH), aarch64)
     CROSS_COMPILE := ARCH=arm64 CROSS_COMPILE=$(CCPREFIX)
 else
     CROSS_COMPILE := ARCH=$(CCARCH) CROSS_COMPILE=$(CCPREFIX)
 endif
+endif
+
 else
+# undefined CCARCH
+
     KERNELDIR := /lib/modules/$(shell uname -r)/build
     CCPREFIX :=
     CROSS_COMPILE :=
+
 endif
 
 CC := ${CCPREFIX}gcc
