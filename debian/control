@@ -10,7 +10,7 @@ Homepage: <insert the upstream URL, if relevant>
 
 Package: axiom-evi-nic-modules
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, linux-modules-${kversion}
 Description: axiom nic kernel module
  axiom nic kernel module
 

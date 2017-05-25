@@ -77,6 +77,7 @@ binary-arch: make-changelog
 	dh_fixperms
 
 #	dh_strip
+	echo "kversion=$(KVERSION)" >>$(DEBIAN_DIR)/axiom-evi-nic-modules.substvars
 	PATH=$(LINARO)/host/usr/bin:$(PATH) dh_makeshlibs
 	dh_shlibdeps  --sysroot=$(ROOTFS)
 	dh_installdeb
