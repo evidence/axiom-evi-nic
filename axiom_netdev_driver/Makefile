@@ -6,7 +6,7 @@ include $(MKFILE_DIR)/../common.mk
 obj-m := axiom_netdev.o
 axiom_netdev-objs := axiom_kernel_api.o axiom_netdev_common.o axiom_kthread.o
 ifeq ($(ARCH), arm64)
-axiom_netdev-objs += axiom_netdev_arm.o
+axiom_netdev-objs += axiom_netdev_arm64.o
 else
 axiom_netdev-objs += axiom_netdev_x86.o
 endif
