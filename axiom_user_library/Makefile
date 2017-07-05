@@ -38,7 +38,7 @@ libaxiom_user_api.so.$(VERSION): $(OBJS_USERAPI)
 
 ifneq ($(DISABLE_INSTR),1)
 libaxiom_user_api_instr.so.$(VERSION): $(OBJS_USERAPI_INSTR)
-	$(CC) $(SYSROOTFLAGS) -shared -Wl,-soname,libaxiom_user_api.so.$(MAJOR) -o $@ $^ $(LDLIBS)
+	$(CC) $(SYSROOTFLAGS) -shared -Wl,-soname,libaxiom_user_api.so.$(MAJOR) -o $@ $^ $(LDLIBS_INSTR)
 
 %_instr.o: %.c %.d
 	$(CC) $(SYSROOTFLAGS) $(DEPFLAGS) $(CPPFLAGS) $(CFLAGS_INSTR) -c -o $@ $<
