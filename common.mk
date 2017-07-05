@@ -21,7 +21,7 @@ VERSION := $(MAJOR).$(MINOR).$(SUBLEVEL)
 
 COMMKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 OUTPUT_DIR := ${COMMKFILE_DIR}/../output
-ifeq ($(P),1)
+ifeq ($(FS),seco)
 TARGET_DIR := $(realpath ${ROOTFS})
 SYSROOT_DIR := $(realpath ${ROOTFS})
 HOST_DIR := $(realpath ${LINARO}/host)
@@ -37,7 +37,7 @@ TARGET_INST_DIR ?= $(TARGET_DIR)
 # fakeroot
 
 FAKEROOT :=
-ifeq ($(P),1)
+ifeq ($(FS),seco)
 ifndef FAKEROOTKEY
 FAKEROOT := fakeroot -i $(ROOTFS).faked -s $(ROOTFS).faked
 endif
@@ -55,20 +55,18 @@ AXIOM_KERNEL_CFLAGS := -I$(realpath $(SYSROOT_DIR)/usr/include/linux)
 ifdef CCARCH
 # defined CCARCH
 
-ifeq ($(P),1)
+ifeq ($(KERN),seco)
     CCPREFIX := ${HOST_DIR}/usr/bin/$(CCARCH)-linux-gnu-
 else
     CCPREFIX := ${HOST_DIR}/usr/bin/$(CCARCH)-linux-
 endif
 
-ifeq ($(P)$(E),10)
-# defined P=1 and E=0
+ifeq ($(KERN),seco)
     KERNELDIR := $(AXIOMBSP)/build/linux/kernel/link-to-kernel-build
     CROSS_COMPILE := ARCH=arm64 CROSS_COMPILE=$(PETALINUX)/tools/linux-i386/aarch64-linux-gnu/bin/aarch64-linux-gnu-
     AXIOM_KERNEL_CFLAGS := -I$(realpath $(SYSROOT_DIR)/usr/include/linux)
 
 else
-# not defined P=1 and E=0
     KERNELDIR := ${OUTPUT_DIR}/build/linux-custom
 ifeq ($(CCARCH), aarch64)
     CROSS_COMPILE := ARCH=arm64 CROSS_COMPILE=$(CCPREFIX)
