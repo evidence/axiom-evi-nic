@@ -26,7 +26,11 @@ endif
 
 .PHONY: all clean install distclean
 
+ifeq ($(DISABLE_INSTR),1)
+all: $(APPS) $(foreach lib,$(LIBS),$(lib).$(VERSION))
+else
 all: $(APPS) $(foreach lib,$(LIBS),$(lib).$(VERSION)) $(foreach lib,$(LIBS_INSTR),$(lib).$(VERSION))
+endif
 
 -include $(DEPS_USERTEST) $(DEPS_USERAPI)
 
