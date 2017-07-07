@@ -4,9 +4,13 @@ PWD := $(shell pwd)
 include $(MKFILE_DIR)/../common.mk
 
 obj-m := axiom_netdev.o
-axiom_netdev-objs := axiom_kernel_api.o axiom_netdev_common.o axiom_kthread.o
+axiom_netdev-objs := axiom_netdev_common.o axiom_kthread.o
 ifeq ($(ARCH), arm64)
-axiom_netdev-objs += axiom_netdev_arm64.o
+ifeq ($(P)$(E),10)
+axiom_netdev-objs += axiom_netdev_arm64.o axiom_kernel_api_arm64.o
+else
+axiom_netdev-objs += axiom_netdev_qemuarm64.o axiom_kernel_api_qemuarm64.o
+endif
 else
 axiom_netdev-objs += axiom_netdev_x86.o
 endif

@@ -19,7 +19,7 @@ MODULE_VERSION("v0.13");
 /*! \brief verbose module parameter */
 int verbose = 0;
 module_param(verbose, int, 0644);
-MODULE_PARM_DESC(debug, "versbose level (0=none,...,16=all)");
+MODULE_PARM_DESC(verbose, "versbose level (0=none,...,16=all)");
 
 struct axiomnet_chrdev chrdev;
 

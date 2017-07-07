@@ -39,6 +39,7 @@
 /*! \brief size of IFINFO registers array elements */
 #define AXIOMREG_SIZE_IFINFO                    1
 /*! \brief size of ROUTING registers array elements */
+/* TODO: update to 4 byte */
 #define AXIOMREG_SIZE_ROUTING                   1
 /*! \brief size of LONG_BUF registers array elements */
 #define AXIOMREG_SIZE_LONG_BUF                  8

@@ -31,12 +31,12 @@ typedef struct axiom_dev {
 
 
 axiom_dev_t *
-axiom_hw_dev_alloc(void *vregs)
+axiom_hw_dev_alloc(axiom_dev_regs_t *regs)
 {
     axiom_dev_t *dev;
 
     dev = vmalloc(sizeof(*dev));
-    dev->vregs = vregs;
+    dev->vregs = regs->vregs;
     dev->next_raw_id = 0;
 
     return dev;

@@ -98,7 +98,7 @@ typedef union axiom_raw_hdr {
 
 /*! \brief AXIOM RAW payload type */
 typedef struct axiom_raw_payload {
-    uint8_t raw[AXIOM_RAW_PAYLOAD_MAX_SIZE];
+    uint8_t raw[AXIOM_RAW_PAYLOAD_MAX_SIZE + AXIOM_RAW_PADDING];
 } __attribute__((packed)) axiom_raw_payload_t;
 
 /*!
@@ -142,7 +142,7 @@ typedef struct axiom_rdma_rx_hdr {
 typedef union axiom_rdma_hdr {
     axiom_rdma_tx_hdr_t tx;
     axiom_rdma_rx_hdr_t rx;
-    uint8_t raw[AXIOM_RDMA_HEADER_SIZE];
+    uint8_t raw[AXIOM_RDMA_HEADER_SIZE + AXIOM_RDMA_PADDING];
 } __attribute__((packed)) axiom_rdma_hdr_t;
 
 /*!
