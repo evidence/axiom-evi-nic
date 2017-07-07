@@ -287,7 +287,7 @@ axiom_hw_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
         enabled_if = AXIOMREG_ROUTING_NULL_IF;
     else
         /* Find first bit set, return as a number. */
-        enabled_if = ffs(enabled_mask);
+        enabled_if = ffs(enabled_mask) - 1;
 
     /* the register contains only one interface ID */
     iowrite8(enabled_if, dev->vregs + AXIOMREG_IO_ROUTING_BASE + node_id);

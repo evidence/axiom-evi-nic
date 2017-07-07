@@ -6,7 +6,7 @@ include $(MKFILE_DIR)/../common.mk
 obj-m := axiom_netdev.o
 axiom_netdev-objs := axiom_netdev_common.o axiom_kthread.o
 ifeq ($(ARCH), arm64)
-ifeq ($(P)$(E),10)
+ifeq ($(KERN),seco)
 axiom_netdev-objs += axiom_netdev_arm64.o axiom_kernel_api_arm64.o
 else
 axiom_netdev-objs += axiom_netdev_qemuarm64.o axiom_kernel_api_qemuarm64.o
@@ -18,10 +18,6 @@ endif
 
 ccflags-y += -Wall $(DFLAGS) -I${AXIOM_NIC_INCLUDE}
 ccflags-y += $(AXIOM_KERNEL_CFLAGS)
-
-ifeq ($(P)$(E),10)
-CC:=$(PETALINUX)/tools/linux-i386/aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc
-endif
 
 default::
 	$(MAKE) $(CROSS_COMPILE) -C $(KERNELDIR) M=$(PWD) modules
