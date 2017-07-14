@@ -190,10 +190,22 @@ axi_fifo_tx_vacancy(axi_fifo_t *fifo)
     return ioread32(fifo->base_addr + XLLF_TDFV_OFFSET);
 }
 
+static inline void
+axi_fifo_tx_setlen(axi_fifo_t *fifo, uint32_t bytes)
+{
+    iowrite32(bytes, fifo->base_addr + XLLF_TLF_OFFSET);
+}
+
 static inline uint32_t
 axi_fifo_rx_occupancy(axi_fifo_t *fifo)
 {
     return ioread32(fifo->base_addr + XLLF_RDFO_OFFSET);
+}
+
+static inline uint32_t
+axi_fifo_rx_getlen(axi_fifo_t *fifo)
+{
+    return ioread32(fifo->base_addr + XLLF_RLF_OFFSET);
 }
 
 static inline void

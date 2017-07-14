@@ -85,7 +85,7 @@ inline static int axiomnet_raw_send(struct file *filep,
     struct axiomnet_priv *priv = filep->private_data;
     struct axiomnet_drvdata *drvdata = priv->drvdata;
     struct axiomnet_raw_tx_hwring *tx_ring = &drvdata->raw_tx_ring;
-    axiom_raw_payload_t raw_payload;
+    axiom_raw_msg_t raw_msg;
     int ret, i, offset;
 
     DPRINTF("start");
@@ -122,7 +122,7 @@ inline static int axiomnet_raw_send(struct file *filep,
             goto err;
         }
 
-        ret = copy_from_user((uint8_t *)(&(raw_payload)) + offset,
+        ret = copy_from_user((uint8_t *)(&(raw_msg.payload)) + offset,
                 iov[i].iov_base, copied);
         if (unlikely(ret)) {
             ret = -EFAULT;
@@ -132,12 +132,14 @@ inline static int axiomnet_raw_send(struct file *filep,
         offset += copied;
     }
 
+    memcpy(&(raw_msg.header), header, sizeof(raw_msg.header));
+
     /* reset error and s bit */
-    header->tx.port_type.field.error = 0;
-    header->tx.port_type.field.s = 0;
+    raw_msg.header.tx.port_type.field.error = 0;
+    raw_msg.header.tx.port_type.field.s = 0;
 
     /* copy packet into the ring */
-    ret = axiom_hw_raw_tx(tx_ring->drvdata->dev_api, header, &(raw_payload));
+    ret = axiom_hw_raw_tx(tx_ring->drvdata->dev_api, &(raw_msg));
     if (unlikely(ret < 0)) {
         ret = -EFAULT;
     }
@@ -188,10 +190,9 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_raw_rx_hwring *rx_ring)
             break;
         }
 
-        raw_msg = &sw_queue->queue_desc[queue_slot];
+        raw_msg = &(sw_queue->queue_desc[queue_slot]);
 
-        axiom_hw_raw_rx(rx_ring->drvdata->dev_api, &(raw_msg->header),
-                &(raw_msg->payload));
+        axiom_hw_raw_rx(rx_ring->drvdata->dev_api, raw_msg);
         port = raw_msg->header.rx.port_type.field.port;
 
         /* check valid port */
@@ -275,7 +276,7 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
     }
     DPRINTF("queue remove - queue_slot: %d port: %d", queue_slot, port);
 
-    raw_msg = &sw_queue->queue_desc[queue_slot];
+    raw_msg = &(sw_queue->queue_desc[queue_slot]);
 
     if (unlikely(header->rx.payload_size < raw_msg->header.rx.payload_size)) {
         EPRINTF("payload received too big - payload: available %d - received %d",
@@ -443,18 +444,17 @@ inline static int axiomnet_rdma_tx(struct file *filep,
     header->tx.port_type.field.s = 0;
 
     rdma_status->ack_received = false;
+    rdma_status->queue_slot = queue_slot;
     rdma_status->retries = 0;
     memcpy(&rdma_status->header, header, sizeof(*header));
 
     if (callback) {
         rdma_status->ack_waiting = false;
-        rdma_status->queue_slot = queue_slot;
         rdma_status->callback = *callback;
     } else {
         /* if it is async call, avoid to wait the ack */
         if (user_flags & AXIOCTL_RDMA_FLAGS_ASYNC) {
             rdma_status->ack_waiting = false;
-            rdma_status->queue_slot = queue_slot;
         } else {
             rdma_status->ack_waiting = true;
         }
@@ -481,6 +481,7 @@ inline static int axiomnet_rdma_tx(struct file *filep,
         /* put the process in the wait_queue to wait the ack */
         if (wait_event_interruptible(rdma_status->wait_queue,
                     rdma_status->ack_received != false)) {
+            rdma_status->ack_waiting = false;
             ret = -ERESTARTSYS;
             goto err_nolock;
         }
@@ -494,13 +495,13 @@ inline static int axiomnet_rdma_tx(struct file *filep,
 err:
     mutex_unlock(&tx_ring->rdma_port.mutex);
 
-err_nolock:
     spin_lock_irqsave(&rdma_queue->queue_lock, flags);
     eviq_free_push(&rdma_queue->evi_queue, queue_slot);
     /* send a notification to other thread */
     wake_up(&(tx_ring->rdma_port.wait_queue));
     spin_unlock_irqrestore(&rdma_queue->queue_lock, flags);
 
+err_nolock:
     DPRINTF("end");
 
     return ret;
@@ -677,6 +678,12 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
 
                 mutex_lock(&tx_ring->rdma_port.mutex);
 
+                /*
+                 * sleep time depends of the number of retries, with lock
+                 * acquired to slow down the senders
+                 */
+                msleep(rdma_status->retries);
+
                 while (!axiom_hw_rdma_tx_avail(drvdata->dev_api)) {
                     /* XXX or wait_event_interruptible? */
                     IPRINTF(1, "sleep 1 msec");
@@ -758,7 +765,7 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                 continue;
             }
 
-            long_msg = &long_queue->queue_desc[queue_slot];
+            long_msg = &(long_queue->queue_desc[queue_slot]);
 
             /* copy the header in the queue */
             memcpy(&long_msg->header, &rdma_hdr, sizeof(rdma_hdr));
@@ -967,7 +974,7 @@ inline static ssize_t axiomnet_long_recv(struct file *filep,
     }
     DPRINTF("queue remove - queue_slot: %d port: %d", queue_slot, port);
 
-    long_msg = &long_queue->queue_desc[queue_slot];
+    long_msg = &(long_queue->queue_desc[queue_slot]);
 
     /* find the long buffer where the payload is stored */
     long_buf_lut = axiomnet_long_rdma2buf(drvdata, long_msg->header.rx.dst_addr);
@@ -1055,7 +1062,7 @@ static long axiomnet_long_flush(struct axiomnet_priv *priv) {
             goto err;
         }
 
-        long_msg = &long_queue->queue_desc[queue_slot];
+        long_msg = &(long_queue->queue_desc[queue_slot]);
 
         /* find the long buffer where the payload is stored */
         long_buf_lut = axiomnet_long_rdma2buf(drvdata, long_msg->header.rx.dst_addr);

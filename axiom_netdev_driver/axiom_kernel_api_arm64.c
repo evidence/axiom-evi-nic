@@ -69,7 +69,10 @@ axiom_hw_pending_irq(axiom_dev_t *dev)
 void
 axiom_hw_ack_irq(axiom_dev_t *dev, uint32_t ack_irq)
 {
+    /* set bit to reset */
     axi_gpio_write32(&dev->regs.axi.pndirq, ack_irq);
+    /* clear all bits */
+    axi_gpio_write32(&dev->regs.axi.pndirq, 0x0);
 }
 
 axiom_err_t
@@ -85,29 +88,40 @@ axiom_hw_check_version(axiom_dev_t *dev)
 }
 
 axiom_msg_id_t
-axiom_hw_raw_tx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
-        axiom_raw_payload_t *payload)
+axiom_hw_raw_tx(axiom_dev_t *dev, axiom_raw_msg_t *msg)
 {
     int i, payload_size;
+    uint32_t total_size = 0;
 
-    header->tx.port_type.field.s = 0;
-    header->tx.msg_id = dev->next_raw_id++;
-    payload_size = header->tx.payload_size;
+    msg->header.tx.port_type.field.s = 0;
+    msg->header.tx.msg_id = dev->next_raw_id++;
+    payload_size = msg->header.tx.payload_size;
 
-    /* write header + 4 byte of payload */
-    axi_fifo_write64(&dev->regs.axi.fifo_raw_tx,
-            ((uint64_t) header->raw32 << 32) |
-            *((uint32_t *)&(payload->raw[0])));
-
-    /* write payload (first 4 byte written with the header) */
-    for (i = 4; i < payload_size && i < sizeof(axiom_raw_payload_t); i += 8) {
-        axi_fifo_write64(&dev->regs.axi.fifo_raw_tx,
-                *((uint64_t *)&(payload->raw[i])));
+    /* wait untill we have space for header and payload */
+    while (axiom_hw_raw_tx_avail(dev) < sizeof(msg->header) + payload_size) {
+        schedule();
     }
 
-    DPRINTF("header: %x", header->raw32);
+    /* write header + 3 byte of payload */
+    axi_fifo_write64(&dev->regs.axi.fifo_raw_tx, *((uint64_t *) &msg->header));
+    total_size += 8;
 
-    return header->tx.msg_id;
+    /* write payload (first 3 byte written with the header) */
+    for (i = 3; i < payload_size && i < sizeof(axiom_raw_payload_t); i += 8) {
+        axi_fifo_write64(&dev->regs.axi.fifo_raw_tx,
+                *((uint64_t *)&(msg->payload.raw[i])));
+        total_size += 8;
+    }
+
+    /* write the total length */
+    axi_fifo_tx_setlen(&dev->regs.axi.fifo_raw_tx, total_size);
+
+#if 0
+    IPRINTF(1, "total_size: %u - header(+3byte payload): 0x%llx",
+            total_size, *((uint64_t *)&msg->header));
+#endif
+
+    return msg->header.tx.msg_id;
 }
 
 axiom_queue_len_t
@@ -117,25 +131,32 @@ axiom_hw_raw_tx_avail(axiom_dev_t *dev)
 }
 
 axiom_msg_id_t
-axiom_hw_raw_rx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
-        axiom_raw_payload_t *payload)
+axiom_hw_raw_rx(axiom_dev_t *dev, axiom_raw_msg_t *msg)
 {
-    int i, payload_size;
-    uint64_t raw;
+    uint32_t total_size;
+    int i;
 
-    /* read header */
-    raw = axi_fifo_read64(&dev->regs.axi.fifo_raw_rx);
-    header->raw32 = ((uint32_t *)&(raw))[0];
-    *((uint32_t *)&(payload->raw[0])) = ((uint32_t *)&(raw))[1];
+    /* *getlen() returns the size of the first packet in the FIFO */
+    total_size = axi_fifo_rx_getlen(&dev->regs.axi.fifo_raw_rx);
+
+    /* read header and 3 bytes of payload*/
+    *((uint64_t *)&msg->header) = axi_fifo_read64(&dev->regs.axi.fifo_raw_rx);
+    total_size -=8;
 
     /* read payload */
-    payload_size = header->rx.payload_size;
-    for (i = 4; i < payload_size && i < sizeof(axiom_raw_payload_t); i += 8) {
-        *((uint64_t *)&(payload->raw[i])) =
+    i = 3;
+    while (total_size > 0) {
+        *((uint64_t *)&(msg->payload.raw[i])) =
             axi_fifo_read64(&dev->regs.axi.fifo_raw_rx);
+        total_size -= 8;
+        i += 8;
     }
 
-    return header->rx.msg_id;
+#if 0
+    IPRINTF(1, "header(+3byte payload): 0x%llx", *((uint64_t *)&msg->header));
+#endif
+
+    return msg->header.rx.msg_id;
 }
 
 axiom_queue_len_t
@@ -148,11 +169,21 @@ axiom_msg_id_t
 axiom_hw_rdma_tx(axiom_dev_t *dev, axiom_rdma_hdr_t *header)
 {
     uint64_t *raw = ((uint64_t *)header);
+    uint32_t total_size = 16;
 
     header->tx.port_type.field.s = 0;
 
+    /* wait untill we have space for the RDMA descriptor */
+    while (axiom_hw_rdma_tx_avail(dev) < total_size) {
+        schedule();
+    };
+
+    /* write the RDMA descriptor */
     axi_fifo_write64(&dev->regs.axi.fifo_rdma_tx, raw[0]);
     axi_fifo_write64(&dev->regs.axi.fifo_rdma_tx, raw[1]);
+
+    /* write the total length */
+    axi_fifo_tx_setlen(&dev->regs.axi.fifo_rdma_tx, total_size);
 
     return header->tx.msg_id;
 }
@@ -167,9 +198,37 @@ axiom_msg_id_t
 axiom_hw_rdma_rx(axiom_dev_t *dev, axiom_rdma_hdr_t *header)
 {
     uint64_t *raw = ((uint64_t *)header);
+    uint32_t total_size;
 
+    /* *getlen() returns the size of the first packet in the FIFO */
+    total_size = axi_fifo_rx_getlen(&dev->regs.axi.fifo_rdma_rx);
+
+    /* read first 8-bit word of the RDMA descriptor */
     raw[0] = axi_fifo_read64(&dev->regs.axi.fifo_rdma_rx);
-    raw[1] = axi_fifo_read64(&dev->regs.axi.fifo_rdma_rx);
+    /* read second 8-bit word of the RDMA descriptor (receiver)*/
+    if (total_size > 8)
+        raw[1] = axi_fifo_read64(&dev->regs.axi.fifo_rdma_rx);
+    else
+        raw[1] = 0x0;
+
+    if (header->rx.port_type.field.s == 0 && total_size != 16) {
+        EPRINTF("BBBBBBB - S: %u - size %u", header->rx.port_type.field.s,
+                total_size);
+        EPRINTF("occpuancy: %u - hdr[0]: 0x%llx hdr[1]: 0x%llx",
+                axiom_hw_rdma_rx_avail(dev), raw[0], raw[1]);
+    }
+
+    if (header->rx.port_type.field.s == 1 && total_size != 8) {
+        EPRINTF("BBBBBBB - S: %u - size %u", header->rx.port_type.field.s,
+                total_size);
+        EPRINTF("occpuancy: %u - hdr[0]: 0x%llx hdr[1]: 0x%llx",
+                axiom_hw_rdma_rx_avail(dev), raw[0], raw[1]);
+    }
+
+#if 0
+    IPRINTF(1, "total_size: %u - hdr[0]: 0x%llx hdr[1]: 0x%llx",
+            total_size, raw[0], raw[1]);
+#endif
 
     return header->rx.msg_id;
 }
@@ -183,7 +242,7 @@ axiom_hw_rdma_rx_avail(axiom_dev_t *dev)
 uint32_t
 axiom_hw_read_ni_status(axiom_dev_t *dev)
 {
-    uint32_t ret;
+    uint32_t ret = 0x0;
 
     //TODO: ret = ioread32(dev->regs.vregs + AXIOMREG_IO_STATUS);
 
@@ -199,7 +258,7 @@ axiom_hw_set_ni_control(axiom_dev_t *dev, uint32_t reg_mask)
 uint32_t
 axiom_hw_read_ni_control(axiom_dev_t *dev)
 {
-    uint32_t ret;
+    uint32_t ret = 0x0;
 
     //TODO: ret = ioread32(dev->regs.vregs + AXIOMREG_IO_CONTROL);
 
@@ -249,7 +308,11 @@ axiom_hw_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
         /* Find first bit set, return as a number. */
         enabled_if = ffs(enabled_mask) - 1;
 
-    /* the registers contains only one interface ID */
+    /*
+     * the registers contains only one interface ID
+     * IF 0 = loopback
+     * IF 1-4 = out interfaces
+     */
     /* TODO: set AXIOMREG_SIZE_ROUTING to 4 */
     axi_bram_write32(&dev->regs.axi.rt_phy, node_id * 4, enabled_if);
     axi_bram_write32(&dev->regs.axi.rt_rx, node_id * 4, enabled_if);
@@ -266,7 +329,6 @@ axiom_hw_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
     uint32_t enabled_if;
 
     /* the register contains only one interface ID */
-    /* XXX: check if it works */
     enabled_if = axi_bram_read32(&dev->regs.axi.rt_phy, node_id * 4);
 
     if (enabled_if == AXIOMREG_ROUTING_NULL_IF)
@@ -311,45 +373,48 @@ axiom_hw_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
 void
 axiom_print_status_reg(axiom_dev_t *dev)
 {
-    printk("axiom --- STATUS REGISTERS start ---\n");
+    printk(KERN_ERR "axiom --- STATUS REGISTERS start ---\n");
 
-    printk("axiom - version: 0x%08x\n",
+    printk(KERN_ERR "axiom - version: 0x%08x\n",
             axi_gpio_read32(&dev->regs.axi.version));
 
-    //TODO: printk("axiom - status: 0x%08x\n", axi_gpio_read32(&dev->regs.axi.status));
+#if 0
+    printk(KERN_ERR "axiom - status: 0x%08x\n",
+            axi_gpio_read32(&dev->regs.axi.status));
+#endif
 
-    printk("axiom - ifnumber: 0x%08x\n",
+    printk(KERN_ERR "axiom - ifnumber: 0x%08x\n",
             axi_gpio_read32(&dev->regs.axi.ifnumber));
 
-    printk("axiom - ifinfo[0]: 0x%02x\n",
+    printk(KERN_ERR "axiom - ifinfo[0]: 0x%02x\n",
             axi_gpio_read32(&dev->regs.axi.ifinfobase0));
-    printk("axiom - ifinfo[1]: 0x%02x\n",
+    printk(KERN_ERR "axiom - ifinfo[1]: 0x%02x\n",
             axi_gpio_read32(&dev->regs.axi.ifinfobase1));
 #if 0
     /* TODO */
-    printk("axiom - ifinfo[2]: 0x%02x\n",
+    printk(KERN_ERR "axiom - ifinfo[2]: 0x%02x\n",
             axi_gpio_read32(&dev->regs.axi.ifinfobase2));
-    printk("axiom - ifinfo[3]: 0x%02x\n",
+    printk(KERN_ERR "axiom - ifinfo[3]: 0x%02x\n",
             axi_gpio_read32(&dev->regs.axi.ifinfobase3));
 #endif
 
-    printk("axiom --- STATUS REGISTERS end ---\n");
+    printk(KERN_ERR "axiom --- STATUS REGISTERS end ---\n");
 }
 
 void
 axiom_print_control_reg(axiom_dev_t *dev)
 {
 
-    printk("axiom --- CONTROL REGISTERS start ---\n");
+    printk(KERN_ERR "axiom --- CONTROL REGISTERS start ---\n");
 
 #if 0
     /* TODO */
-    printk("axiom - control: 0x%08x\n",
+    printk(KERN_ERR "axiom - control: 0x%08x\n",
             axi_gpio_read32(&dev->regs.axi.control));
 #endif
-    printk("axiom - nodeid: 0x%08x\n", axi_gpio_read32(&dev->regs.axi.nodeid));
+    printk(KERN_ERR "axiom - nodeid: 0x%08x\n", axi_gpio_read32(&dev->regs.axi.nodeid));
 
-    printk("axiom --- CONTROL REGISTERS end ---\n");
+    printk(KERN_ERR "axiom --- CONTROL REGISTERS end ---\n");
 }
 
 static int
@@ -372,15 +437,15 @@ axiom_print_routing_reg(axiom_dev_t *dev)
     int i;
     uint8_t buf8;
 
-    printk("axiom --- ROUTING REGISTERS start ---\n");
+    printk(KERN_ERR "axiom --- ROUTING REGISTERS start ---\n");
 
     for (i = 0; i < 256; i++) {
         axiom_hw_get_routing(dev, i, &buf8);
         axiom_printbinary(bufS, buf8, 8);
-        printk("axiom - routing[%d]: %s\n", i, bufS);
+        printk(KERN_ERR "axiom - routing[%d]: %s\n", i, bufS);
     }
 
-    printk("axiom --- ROUTING REGISTERS end ---\n");
+    printk(KERN_ERR "axiom --- ROUTING REGISTERS end ---\n");
 }
 
 void
@@ -388,19 +453,19 @@ axiom_print_queue_reg(axiom_dev_t *dev)
 {
     uint32_t buf32;
 
-    printk("axiom --- QUEUE REGISTERS start ---\n");
+    printk(KERN_ERR "axiom --- QUEUE REGISTERS start ---\n");
 
     buf32 = axi_fifo_tx_vacancy(&dev->regs.axi.fifo_raw_tx);
-    printk("axiom - raw_tx_vacancy: 0x%08x\n", buf32);
+    printk(KERN_ERR "axiom - raw_tx_vacancy: 0x%08x\n", buf32);
 
     buf32 = axi_fifo_rx_occupancy(&dev->regs.axi.fifo_raw_rx);
-    printk("axiom - raw_rx_occupancy: 0x%08x\n", buf32);
+    printk(KERN_ERR "axiom - raw_rx_occupancy: 0x%08x\n", buf32);
 
     buf32 = axi_fifo_tx_vacancy(&dev->regs.axi.fifo_rdma_tx);
-    printk("axiom - rdma_tx_vacancy: 0x%08x\n", buf32);
+    printk(KERN_ERR "axiom - rdma_tx_vacancy: 0x%08x\n", buf32);
 
     buf32 = axi_fifo_rx_occupancy(&dev->regs.axi.fifo_rdma_rx);
-    printk("axiom - rdma_rx_occupancy: 0x%08x\n", buf32);
+    printk(KERN_ERR "axiom - rdma_rx_occupancy: 0x%08x\n", buf32);
 
-    printk("axiom --- QUEUE REGISTERS end ---\n");
+    printk(KERN_ERR "axiom --- QUEUE REGISTERS end ---\n");
 }

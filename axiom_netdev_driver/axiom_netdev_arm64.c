@@ -43,7 +43,17 @@ static irqreturn_t axiomnet_arm_irq(int irq, void *dev_id)
     struct axiomnet_armdata *armdata = dev_id;
     irqreturn_t serviced = IRQ_NONE;
 
+    IPRINTF(1, "IRQ arrived!");
+    IPRINTF(1, "before PNDIRQ: 0x%x", axiom_hw_pending_irq(armdata->dev_api));
+#if 0
+    IPRINTF(1, "RAW RX occupancy %u", axi_fifo_rx_occupancy(&armdata->regs.axi.fifo_raw_rx));
+    IPRINTF(1, "RDMA RX occupancy %u", axi_fifo_rx_occupancy(&armdata->regs.axi.fifo_rdma_rx));
+    IPRINTF(1, "before PNDIRQ: 0x%x", axiom_hw_pending_irq(armdata->dev_api));
+#endif
+
     axiomnet_irqhandler(&armdata->drvdata);
+
+    IPRINTF(1, "after PNDIRQ: 0x%x", axiom_hw_pending_irq(armdata->dev_api));
 
     serviced = IRQ_HANDLED;
 
@@ -272,6 +282,8 @@ static int axiomnet_axi_init(struct axiomnet_armdata *armdata)
 
     /* init AURORA and router */
     axi_gpio_write32(&armdata->regs.axi.rtctrl, 0xFF);
+    axi_gpio_write32(&armdata->regs.axi.aur_ctrl0, 0x20);
+    axi_gpio_write32(&armdata->regs.axi.aur_ctrl1, 0x20);
     axi_gpio_write32(&armdata->regs.axi.aur_ctrl0, 0x0);
     axi_gpio_write32(&armdata->regs.axi.aur_ctrl1, 0x0);
 
@@ -322,7 +334,7 @@ static int axiomnet_arm_probe(struct platform_device *pdev)
         goto free_hw_dev;
     }
 
-    DPRINTF("IRQ mapped - irq: %d", armdata->irq);
+    IPRINTF(1, "IRQ mapped - irq: %d", armdata->irq);
 
     /* probe AXIOM common driver */
     err = axiomnet_probe(&armdata->drvdata, armdata->dev_api);

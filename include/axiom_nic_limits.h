@@ -30,9 +30,9 @@
 #define AXIOM_MSG_ID_MAX                        256
 
 /*! \brief Header size in the raw message */
-#define AXIOM_RAW_HEADER_SIZE                   4
+#define AXIOM_RAW_HEADER_SIZE                   5
 /*! \brief Padding (bytes) in the raw message */
-#define AXIOM_RAW_PADDING                       4
+#define AXIOM_RAW_PADDING                       3
 /*! \brief Max payload size in the raw message */
 #define AXIOM_RAW_PAYLOAD_MAX_SIZE              128
 
@@ -41,7 +41,8 @@
 /*! \brief Padding (bytes) in the rdma message */
 #define AXIOM_RDMA_PADDING                      3
 /*! \brief Max payload size (bytes) in the rdma message */
-#define AXIOM_RDMA_PAYLOAD_MAX_SIZE             524280
+//#define AXIOM_RDMA_PAYLOAD_MAX_SIZE             524280
+#define AXIOM_RDMA_PAYLOAD_MAX_SIZE             65535
 /*! \brief Payload size field in the RDMA message is referred to 8-bytes
  *         granularity
  */

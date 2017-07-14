@@ -32,22 +32,22 @@
 
 /*************************** AXIOM packet TYPES *******************************/
 
-/*! \brief Axiom type RAW DATA (contains RAW data) */
-#define AXIOM_TYPE_RAW_DATA             0
-/*! \brief Axiom type RAW NEIGHBOUR (contains RAW data to neighbour) */
-#define AXIOM_TYPE_RAW_NEIGHBOUR        1
-/*! \brief Axiom type LONG DATA (contains LONG data) */
-#define AXIOM_TYPE_LONG_DATA            2
-/*! \brief Axiom type RDMA WRITE (contains RDMA write) */
-#define AXIOM_TYPE_RDMA_WRITE           3
-/*! \brief Axiom type RDMA READ (contains RDMA read) */
-#define AXIOM_TYPE_RDMA_READ            4
-/*! \brief Axiom type RDMA RESPONSE (contains RDMA response) */
-#define AXIOM_TYPE_RDMA_RESPONSE        5
-/*! \brief Axiom type INIT (contains an INIT - HW reserved) */
-#define AXIOM_TYPE_INIT                 6
 /*! \brief Axiom type ACK (contains an ACK - HW reserved) */
-#define AXIOM_TYPE_ACK                  7
+#define AXIOM_TYPE_ACK                  0x0
+/*! \brief Axiom type INIT (contains an INIT - HW reserved) */
+#define AXIOM_TYPE_INIT                 0x1
+/*! \brief Axiom type RAW NEIGHBOUR (contains RAW data to neighbour) */
+#define AXIOM_TYPE_RAW_NEIGHBOUR        0x2
+/*! \brief Axiom type RAW DATA (contains RAW data) */
+#define AXIOM_TYPE_RAW_DATA             0x3
+/*! \brief Axiom type LONG DATA (contains LONG data) */
+#define AXIOM_TYPE_LONG_DATA            0x4
+/*! \brief Axiom type RDMA WRITE (contains RDMA write) */
+#define AXIOM_TYPE_RDMA_WRITE           0x5
+/*! \brief Axiom type RDMA READ (contains RDMA read) */
+#define AXIOM_TYPE_RDMA_READ            0x6
+/*! \brief Axiom type RDMA RESPONSE (contains RDMA response) */
+#define AXIOM_TYPE_RDMA_RESPONSE        0x7
 
 
 /*!
@@ -56,10 +56,10 @@
 typedef union axiom_port_type {
     uint8_t raw;
     struct {
-        uint8_t s : 1;
-        uint8_t error : 1;
-        uint8_t port : 3;
         uint8_t type : 3;
+        uint8_t port : 3;
+        uint8_t error : 1;
+        uint8_t s : 1;
     } field;
 } __attribute__((packed)) axiom_port_type_t;
 
@@ -73,6 +73,7 @@ typedef struct axiom_raw_tx_hdr {
     uint8_t dst;	        /*!< \brief destination (for tx) identificator*/
     uint8_t msg_id;             /*!< \brief message unique id */
     uint8_t payload_size;       /*!< \brief size of payload */
+    uint8_t padding;            /*!< \brief padding unused */
 } __attribute__((packed)) axiom_raw_tx_hdr_t;
 
 /*!
@@ -83,6 +84,7 @@ typedef struct axiom_raw_rx_hdr {
     uint8_t src;	        /*!< \brief source (for rx) identificator */
     uint8_t msg_id;             /*!< \brief message unique id */
     uint8_t payload_size;       /*!< \brief size of payload */
+    uint8_t padding;            /*!< \brief padding unused */
 } __attribute__((packed)) axiom_raw_rx_hdr_t;
 
 
@@ -93,7 +95,6 @@ typedef union axiom_raw_hdr {
     axiom_raw_tx_hdr_t tx;
     axiom_raw_rx_hdr_t rx;
     uint8_t raw[AXIOM_RAW_HEADER_SIZE];
-    uint32_t raw32;
 } __attribute__((packed)) axiom_raw_hdr_t;
 
 /*! \brief AXIOM RAW payload type */
@@ -102,7 +103,7 @@ typedef struct axiom_raw_payload {
 } __attribute__((packed)) axiom_raw_payload_t;
 
 /*!
- * \brief RAW messages with payload embedded
+ * \brief RAW messages with embedded payload
  */
 typedef struct axiom_raw_msg {
     axiom_raw_hdr_t header;             /*!< \brief message header */
@@ -122,6 +123,7 @@ typedef struct axiom_rdma_tx_hdr {
     uint16_t payload_size;      /*!< \brief size of payload */
     uint32_t src_addr;          /*!< \brief source address of payload */
     uint32_t dst_addr;          /*!< \brief destination address of payload */
+    uint8_t padding[3];         /*!< \brief padding unused */
 } __attribute__((packed)) axiom_rdma_tx_hdr_t;
 
 /*!
@@ -132,8 +134,8 @@ typedef struct axiom_rdma_rx_hdr {
     uint8_t src;	        /*!< \brief source (for rx) identificator */
     uint8_t msg_id;             /*!< \brief message unique id */
     uint16_t payload_size;      /*!< \brief size of payload */
-    uint32_t src_addr;          /*!< \brief source address of payload */
     uint32_t dst_addr;          /*!< \brief destination address of payload */
+    uint8_t padding[7];         /*!< \brief padding unused */
 } __attribute__((packed)) axiom_rdma_rx_hdr_t;
 
 /*!
