@@ -90,8 +90,11 @@ inline static int axiomnet_raw_send(struct file *filep,
 
     DPRINTF("start");
 
-    if (mutex_lock_interruptible(&tx_ring->port.mutex))
-        return -ERESTARTSYS;
+    if (unlikely(header->tx.payload_size > sizeof(raw_msg.payload))) {
+        return -EFBIG;
+    }
+
+    mutex_lock(&tx_ring->port.mutex);
 
     while (axiomnet_raw_tx_avail(tx_ring) == 0) { /* no space to write */
         mutex_unlock(&tx_ring->port.mutex);
@@ -105,13 +108,7 @@ inline static int axiomnet_raw_send(struct file *filep,
                     axiomnet_raw_tx_avail(tx_ring) != 0))
             return -ERESTARTSYS;
 
-        if (mutex_lock_interruptible(&tx_ring->port.mutex))
-            return -ERESTARTSYS;
-    }
-
-    if (unlikely(header->tx.payload_size > sizeof(raw_payload))) {
-        ret = -EFBIG;
-        goto err;
+        mutex_lock(&tx_ring->port.mutex);
     }
 
     offset = 0;
@@ -247,8 +244,7 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
     }
 
     /* we have one mutex per port */
-    if (mutex_lock_interruptible(&rx_ring->ports[port].mutex))
-        return -ERESTARTSYS;
+    mutex_lock(&rx_ring->ports[port].mutex);
 
     while (axiomnet_raw_rx_avail(rx_ring, port) == 0) { /* nothing to read */
         mutex_unlock(&rx_ring->ports[port].mutex);
@@ -262,8 +258,7 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
                     axiomnet_raw_rx_avail(rx_ring, port) != 0))
             return -ERESTARTSYS;
 
-        if (mutex_lock_interruptible(&rx_ring->ports[port].mutex))
-            return -ERESTARTSYS;
+        mutex_lock(&rx_ring->ports[port].mutex);
     }
 
     /* copy packet from the ring */
@@ -335,8 +330,7 @@ static long axiomnet_raw_flush(struct axiomnet_priv *priv) {
         return -EFAULT;
     }
 
-    if (mutex_lock_interruptible(&rx_ring->ports[port].mutex))
-        return -ERESTARTSYS;
+    mutex_lock(&rx_ring->ports[port].mutex);
 
     /* take the lock to avoid enqueue during the flush */
     spin_lock_irqsave(&sw_queue->queue_lock, flags);
@@ -405,8 +399,7 @@ inline static int axiomnet_rdma_tx(struct file *filep,
 
     DPRINTF("start");
 
-    if (mutex_lock_interruptible(&tx_ring->rdma_port.mutex))
-        return -ERESTARTSYS;
+    mutex_lock(&tx_ring->rdma_port.mutex);
 
     /* check slot available in the HW ring */
     while (axiomnet_rdma_tx_avail(tx_ring) == 0) { /* no space to write */
@@ -421,8 +414,7 @@ inline static int axiomnet_rdma_tx(struct file *filep,
                     axiomnet_rdma_tx_avail(tx_ring) != 0))
             return -ERESTARTSYS;
 
-        if (mutex_lock_interruptible(&tx_ring->rdma_port.mutex))
-            return -ERESTARTSYS;
+        mutex_lock(&tx_ring->rdma_port.mutex);
     }
 
     spin_lock_irqsave(&rdma_queue->queue_lock, flags);
@@ -493,10 +485,7 @@ inline static int axiomnet_rdma_tx(struct file *filep,
             goto err_nolock;
         }
 
-        if (mutex_lock_interruptible(&tx_ring->rdma_port.mutex)) {
-            ret = -ERESTARTSYS;
-            goto err_nolock;
-        }
+        mutex_lock(&tx_ring->rdma_port.mutex);
     }
 
     rdma_status->ack_received = false;
@@ -832,8 +821,7 @@ inline static int axiomnet_long_send(struct file *filep,
     unsigned long flags;
     int ret, i, offset;
 
-    if (mutex_lock_interruptible(&tx_ring->long_port.mutex))
-        return -ERESTARTSYS;
+    mutex_lock(&tx_ring->long_port.mutex);
 
     /* check slot available in the SW queue */
     while (axiomnet_long_tx_avail(tx_ring) == 0) { /* no space to write */
@@ -848,8 +836,7 @@ inline static int axiomnet_long_send(struct file *filep,
                     axiomnet_long_tx_avail(tx_ring) != 0))
             return -ERESTARTSYS;
 
-        if (mutex_lock_interruptible(&tx_ring->long_port.mutex))
-            return -ERESTARTSYS;
+        mutex_lock(&tx_ring->long_port.mutex);
     }
 
     spin_lock_irqsave(&long_queue->queue_lock, flags);
@@ -948,8 +935,7 @@ inline static ssize_t axiomnet_long_recv(struct file *filep,
     }
 
     /* we have one mutex per port */
-    if (mutex_lock_interruptible(&rx_ring->long_ports[port].mutex))
-        return -ERESTARTSYS;
+    mutex_lock(&rx_ring->long_ports[port].mutex);
 
     while (axiomnet_long_rx_avail(rx_ring, port) == 0) { /* nothing to read */
         mutex_unlock(&rx_ring->long_ports[port].mutex);
@@ -963,8 +949,7 @@ inline static ssize_t axiomnet_long_recv(struct file *filep,
                     axiomnet_long_rx_avail(rx_ring, port) != 0))
             return -ERESTARTSYS;
 
-        if (mutex_lock_interruptible(&rx_ring->long_ports[port].mutex))
-            return -ERESTARTSYS;
+        mutex_lock(&rx_ring->long_ports[port].mutex);
     }
 
     /* copy packet from the ring */
@@ -1050,8 +1035,7 @@ static long axiomnet_long_flush(struct axiomnet_priv *priv) {
         return -EFAULT;
     }
 
-    if (mutex_lock_interruptible(&rx_ring->long_ports[port].mutex))
-        return -ERESTARTSYS;
+    mutex_lock(&rx_ring->long_ports[port].mutex);
 
     /* take the lock to avoid enqueue during the flush */
     spin_lock_irqsave(&long_queue->queue_lock, flags);
