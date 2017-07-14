@@ -121,7 +121,7 @@ struct axiomnet_raw_queue {
 struct axiomnet_long_queue {
     spinlock_t queue_lock;              /*!< \brief queue lock */
     evi_queue_t evi_queue;              /*!< \brief queue manager */
-    axiom_long_msg_t *queue_desc;        /*!< \brief queue elements */
+    axiom_long_msg_t *queue_desc;       /*!< \brief queue elements */
 };
 
 /*! \brief Structure to handle an AXIOM software RDMA queue */
@@ -155,9 +155,9 @@ struct axiomnet_raw_tx_hwring {
 
 /*! \brief Structure to handle an AXIOM hardware RDMA TX ring */
 struct axiomnet_rdma_tx_hwring {
-    struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM driver data */
-    struct axiomnet_rdma_queue rdma_queue;/*!< \brief AXIOM software RDMA queue */
-    struct axiomnet_long_queue long_queue; /*!< \brief AXIOM software LONG queue */
+    struct axiomnet_drvdata *drvdata;     /*!< \brief AXIOM driver data */
+    struct axiomnet_rdma_queue rdma_queue;/*!< \brief AXIOM SW RDMA queue */
+    struct axiomnet_long_queue long_queue;/*!< \brief AXIOM SW LONG queue */
     /*!< \brief port of this ring to handle RDMA TX messages */
     struct axiomnet_sw_port rdma_port;
     /*!< \brief port of this ring to handle LONG TX messages */
@@ -241,6 +241,7 @@ struct axiomnet_priv {
     struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM device driver data */
     int bind_port;                      /*!< \biref Port bound to the process */
     axiomnet_fdtype_t type;             /*!< \brief Type of file descriptor */
+    int rdma_debug;                     /*!< \brief RDMA debug enabled */
 };
 
 #endif /* AXIOM_NETDEV_H */

@@ -2044,25 +2044,30 @@ static long axiomnet_ioctl_rdma(struct file *filep, unsigned int cmd,
         if (ret)
             return -EFAULT;
 
-        ret = axiom_mem_dev_virt2off(buf_rdma.app_id,
-                (unsigned long)(buf_rdma.src_addr),
-                buf_rdma.header.tx.payload_size << AXIOM_RDMA_PAYLOAD_SIZE_ORDER,
-                &buf_ulong);
-        if (ret) {
-            EPRINTF("axiom_mem_dev_virt2off - ret %ld", ret);
-            return -EFAULT;
-        }
-        buf_rdma.header.tx.src_addr = buf_ulong;
+        if (likely(priv->rdma_debug == 0)) {
+            ret = axiom_mem_dev_virt2off(buf_rdma.app_id,
+                    (unsigned long)(buf_rdma.src_addr),
+                    buf_rdma.header.tx.payload_size,
+                    &buf_ulong);
+            if (ret) {
+                EPRINTF("axiom_mem_dev_virt2off - ret %ld", ret);
+                return -EFAULT;
+            }
+            buf_rdma.header.tx.src_addr = buf_ulong;
 
-        ret = axiom_mem_dev_virt2off(buf_rdma.app_id,
-                (unsigned long)(buf_rdma.dst_addr),
-                buf_rdma.header.tx.payload_size << AXIOM_RDMA_PAYLOAD_SIZE_ORDER,
-                &buf_ulong);
-        if (ret) {
-            EPRINTF("axiom_mem_dev_virt2off - ret %ld", ret);
-            return -EFAULT;
+            ret = axiom_mem_dev_virt2off(buf_rdma.app_id,
+                    (unsigned long)(buf_rdma.dst_addr),
+                    buf_rdma.header.tx.payload_size,
+                    &buf_ulong);
+            if (ret) {
+                EPRINTF("axiom_mem_dev_virt2off - ret %ld", ret);
+                return -EFAULT;
+            }
+            buf_rdma.header.tx.dst_addr = buf_ulong;
+        } else { /* if RDMA debug is enabled, we can't use the allocator API */
+            buf_rdma.header.tx.src_addr = (unsigned long)(buf_rdma.src_addr);
+            buf_rdma.header.tx.dst_addr = (unsigned long)(buf_rdma.dst_addr);
         }
-        buf_rdma.header.tx.dst_addr = buf_ulong;
 
         IPRINTF(verbose, "RDMA - src_offset: %d dst_offset: %d",
                 buf_rdma.header.tx.src_addr, buf_rdma.header.tx.dst_addr);
@@ -2175,6 +2180,7 @@ static long axiomnet_ioctl_generic(struct file *filep, unsigned int cmd,
     return ret;
 }
 
+/* TO BE REMOVED: we use it only for debug to map all RDMA region */
 static int axiomnet_mmap(struct file *filep, struct vm_area_struct *vma)
 {
     struct axiomnet_priv *priv = filep->private_data;
@@ -2198,6 +2204,9 @@ static int axiomnet_mmap(struct file *filep, struct vm_area_struct *vma)
     if (err) {
         goto err;
     }
+
+    /* RDMA debug enabled */
+    priv->rdma_debug = 1;
 
     mutex_unlock(&drvdata->lock);
 
@@ -2291,6 +2300,7 @@ static int axiomnet_open_rdma(struct inode *inode, struct file *filep)
 
     priv = filep->private_data;
     priv->type = AXNET_FDTYPE_RDMA;
+    priv->rdma_debug = 0;
 
     return 0;
 }
