@@ -742,7 +742,10 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
 
             if (unlikely(rdma_hdr.rx.port_type.field.type !=
                         AXIOM_TYPE_LONG_DATA)) {
-                EPRINTF("Message discarded - unexpected RDMA desc received");
+                EPRINTF("Message discarded - unexpected RDMA received - "
+                        "hdr[0]: 0x%llx hdr[1]: 0x%llx",
+                        *((uint64_t *)&rdma_hdr),
+                        *(((uint64_t *)&rdma_hdr) + 1));
                 continue;
             }
 
@@ -1639,15 +1642,19 @@ void axiomnet_debug_raw(struct axiomnet_drvdata *drvdata)
     struct axiomnet_raw_rx_hwring *rx_ring = &drvdata->raw_rx_ring;
     int i;
 
-    printk("---- AXIOM DEBUG RAW ----\n");
-    printk("  tx-avail [HW]: %u\n", axiom_hw_raw_tx_avail(drvdata->dev_api));
-    printk("  tx-avail [SW]: %u\n\n", axiomnet_raw_tx_avail(tx_ring));
+    printk(KERN_ERR "---- AXIOM DEBUG RAW ----\n");
+    printk(KERN_ERR "  tx-avail [HW]: %u\n",
+            axiom_hw_raw_tx_avail(drvdata->dev_api));
+    printk(KERN_ERR "  tx-avail [SW]: %u\n\n",
+            axiomnet_raw_tx_avail(tx_ring));
 
-    printk("  rx-avail [HW]: %u\n", axiom_hw_raw_rx_avail(drvdata->dev_api));
-    printk("  rx-avail [SW] free_slot: %u\n",
+    printk(KERN_ERR "  rx-avail [HW]: %u\n",
+            axiom_hw_raw_rx_avail(drvdata->dev_api));
+    printk(KERN_ERR "  rx-avail [SW] free_slot: %u\n",
             eviq_free_avail(&rx_ring->sw_queue.evi_queue));
     for (i = 0; i < AXIOM_PORT_MAX; i++) {
-        printk("  rx-avail[%d] [SW]: %d\n", i, axiomnet_raw_rx_avail(rx_ring, i));
+        printk(KERN_ERR "  rx-avail[%d] [SW]: %d\n", i,
+                axiomnet_raw_rx_avail(rx_ring, i));
     }
 
 }
@@ -1659,13 +1666,15 @@ void axiomnet_debug_long(struct axiomnet_drvdata *drvdata)
     struct axiomnet_long_queue *long_queue = &rx_ring->long_queue;
     int i;
 
-    printk("---- AXIOM DEBUG LONG ----\n");
-    printk("  tx-avail [SW]: %d\n\n", axiomnet_long_tx_avail(tx_ring));
+    printk(KERN_ERR "---- AXIOM DEBUG LONG ----\n");
+    printk(KERN_ERR "  tx-avail [SW]: %d\n\n",
+            axiomnet_long_tx_avail(tx_ring));
 
-    printk("  rx-avail [SW] free_slot: %u\n",
+    printk(KERN_ERR "  rx-avail [SW] free_slot: %u\n",
             eviq_free_avail(&long_queue->evi_queue));
     for (i = 0; i < AXIOM_PORT_MAX; i++) {
-        printk("  rx-avail[%d] [SW]: %d\n", i, axiomnet_long_rx_avail(rx_ring, i));
+        printk(KERN_ERR "  rx-avail[%d] [SW]: %d\n", i,
+                axiomnet_long_rx_avail(rx_ring, i));
     }
 
 }
@@ -1676,21 +1685,22 @@ void axiomnet_debug_rdma(struct axiomnet_drvdata *drvdata)
     struct axiomnet_rdma_rx_hwring *rx_ring = &drvdata->rdma_rx_ring;
     int i;
 
-    printk("---- AXIOM DEBUG RDMA ----\n");
-    printk("  tx-avail [HW]: %u\n", axiom_hw_rdma_tx_avail(drvdata->dev_api));
-    printk("  tx-avail [SW]: %d\n\n", axiomnet_rdma_tx_avail(tx_ring));
+    printk(KERN_ERR "---- AXIOM DEBUG RDMA ----\n");
+    printk(KERN_ERR "  tx-avail [HW]: %u\n",
+            axiom_hw_rdma_tx_avail(drvdata->dev_api));
+    printk(KERN_ERR "  tx-avail [SW]: %d\n\n",
+            axiomnet_rdma_tx_avail(tx_ring));
 
-    printk("  rx-avail [HW]: %u\n\n", axiom_hw_rdma_rx_avail(drvdata->dev_api));
+    printk(KERN_ERR "  rx-avail [HW]: %u\n\n",
+            axiom_hw_rdma_rx_avail(drvdata->dev_api));
 
     for (i = 0; i < AXIOMNET_RDMA_QUEUE_FREE_LEN; i++) {
         axiom_rdma_status_t *rdma_status =
             &(rx_ring->tx_rdma_queue->queue_desc[i]);
-        printk("  rdma_status[%d] - ack_wait: 0x%x ack_recv: 0x%x "
+        printk(KERN_ERR "  rdma_status[%d] - ack_wait: 0x%x ack_recv: 0x%x "
                 "rid: 0x%x\n", i, rdma_status->ack_waiting,
                 rdma_status->ack_received, rdma_status->header.tx.dst);
     }
-
-
 }
 
 
@@ -1699,11 +1709,11 @@ int axiomnet_debug_info(struct axiomnet_drvdata *drvdata)
     if (!drvdata)
         return -EINVAL;
 
-    printk("\n---- AXIOM NIC DEBUG ----\n\n");
+    printk(KERN_ERR "\n---- AXIOM NIC DEBUG ----\n\n");
     axiom_print_status_reg(drvdata->dev_api);
     axiom_print_control_reg(drvdata->dev_api);
 
-    printk("\n---- AXIOM DRIVER DEBUG ----\n\n");
+    printk(KERN_ERR "\n---- AXIOM DRIVER DEBUG ----\n\n");
     axiomnet_debug_raw(drvdata);
     axiomnet_debug_long(drvdata);
     axiomnet_debug_rdma(drvdata);
