@@ -20,7 +20,7 @@ LDLIBS_INSTR := -lnanostrace
 CFLAGS_INSTR := $(CFLAGS) -DAXIOM_EXTRAE_SUPPORT
 
 SYSROOTFLAGS :=
-ifeq ($(P),1)
+ifeq ($(FS),seco)
 SYSROOTFLAGS := --sysroot=$(ROOTFS)
 endif
 
