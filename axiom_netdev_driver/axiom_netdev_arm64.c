@@ -43,17 +43,17 @@ static irqreturn_t axiomnet_arm_irq(int irq, void *dev_id)
     struct axiomnet_armdata *armdata = dev_id;
     irqreturn_t serviced = IRQ_NONE;
 
+#if 0
     IPRINTF(1, "IRQ arrived!");
     IPRINTF(1, "before PNDIRQ: 0x%x", axiom_hw_pending_irq(armdata->dev_api));
-#if 0
     IPRINTF(1, "RAW RX occupancy %u", axi_fifo_rx_occupancy(&armdata->regs.axi.fifo_raw_rx));
     IPRINTF(1, "RDMA RX occupancy %u", axi_fifo_rx_occupancy(&armdata->regs.axi.fifo_rdma_rx));
     IPRINTF(1, "before PNDIRQ: 0x%x", axiom_hw_pending_irq(armdata->dev_api));
+    IPRINTF(1, "after PNDIRQ: 0x%x", axiom_hw_pending_irq(armdata->dev_api));
 #endif
 
     axiomnet_irqhandler(&armdata->drvdata);
 
-    IPRINTF(1, "after PNDIRQ: 0x%x", axiom_hw_pending_irq(armdata->dev_api));
 
     serviced = IRQ_HANDLED;
 

@@ -682,7 +682,7 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                  * sleep time depends of the number of retries, with lock
                  * acquired to slow down the senders
                  */
-                msleep(rdma_status->retries);
+                //msleep(1);
 
                 while (!axiom_hw_rdma_tx_avail(drvdata->dev_api)) {
                     /* XXX or wait_event_interruptible? */
