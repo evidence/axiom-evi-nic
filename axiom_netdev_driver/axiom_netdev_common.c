@@ -2206,8 +2206,10 @@ static int axiomnet_mmap(struct file *filep, struct vm_area_struct *vma)
         goto err;
     }
 
-    err = remap_pfn_range(vma, vma->vm_start,
-            drvdata->rdma_paddr >> PAGE_SHIFT, size, vma->vm_page_prot);
+    vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+    err = io_remap_pfn_range(vma, vma->vm_start,
+            (drvdata->rdma_paddr >> PAGE_SHIFT) + vma->vm_pgoff, size,
+            vma->vm_page_prot);
     if (err) {
         goto err;
     }
