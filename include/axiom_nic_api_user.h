@@ -500,12 +500,13 @@ axiom_rdma_check(axiom_dev_t *dev, axiom_token_t *tokens, int tokencnt);
  * \brief This function waits a completion of the RDMA.
  *
  * \param dev             the axiom device private data pointer
- * \param token           token that can be used to check the status of the RDMA
+ * \param tokens          array of tokens used to check the status of the RDMA
+ * \param tokencnt        number of tokens
  *
  * \return returns a unique positive message id on success or a generic error.
  */
 axiom_err_t
-axiom_rdma_wait(axiom_dev_t *dev, axiom_token_t *token);
+axiom_rdma_wait(axiom_dev_t *dev, axiom_token_t *tokens, int tokencnt);
 
 /*!
  * \brief This function map in the userspace process the RDMA zone
