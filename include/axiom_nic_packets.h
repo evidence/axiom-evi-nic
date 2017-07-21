@@ -46,7 +46,7 @@
 #define AXIOM_TYPE_RDMA_WRITE           0x5
 /*! \brief Axiom type RDMA READ (contains RDMA read) */
 #define AXIOM_TYPE_RDMA_READ            0x6
-/*! \brief Axiom type RDMA RESPONSE (contains RDMA response) */
+/*! \brief Axiom type RDMA RESPONSE (contains RDMA response - HW reserved) */
 #define AXIOM_TYPE_RDMA_RESPONSE        0x7
 
 
