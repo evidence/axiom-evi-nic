@@ -747,6 +747,15 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
             unsigned long flags;
             int port;
 
+            if (rdma_hdr.rx.port_type.field.type == AXIOM_TYPE_RDMA_WRITE) {
+                /*
+                 * Actual FORTH implementation, put a descriptor on the
+                 * receiver during the RDMA WRITE.
+                 * For now we discard it.
+                 */
+                continue;
+            }
+
             if (unlikely(rdma_hdr.rx.port_type.field.type !=
                         AXIOM_TYPE_LONG_DATA)) {
                 EPRINTF("Message discarded - unexpected RDMA received - "
