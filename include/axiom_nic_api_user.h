@@ -617,6 +617,12 @@ void setRoutingTable(axiom_node_id_t dst_node, uint32_t* nodeRoutingTable);
  * \param enabled_mask  bit mask interface (actual implementation support only 1
  *                      node)
  *
+ *                      bit position:        4   3   2   1   0
+ *                      bit mask = (....... IF4 IF3 IF2 IF1 IF0)
+ *
+ *                      IF0 = loopback interface
+ *                      IF1...IF4 = physical interfaces
+ *
  * \return Returns AXIOM_RET_OK on success, an error otherwise.
  */
 axiom_err_t
@@ -643,6 +649,12 @@ uint32_t* getRoutingTable(axiomnode_id_t dst_node);
  * \param node_id       Remote connected node id
  * \param enabled_mask  bit mask interface (actual implementation support only 1
  *                      node)
+ *
+ *                      bit position:        4   3   2   1   0
+ *                      bit mask = (....... IF4 IF3 IF2 IF1 IF0)
+ *
+ *                      IF0 = loopback interface
+ *                      IF1...IF4 = physical interfaces
  *
  * \return Returns AXIOM_RET_OK on success, an error otherwise.
  */

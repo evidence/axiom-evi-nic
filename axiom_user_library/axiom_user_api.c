@@ -1636,9 +1636,9 @@ axiom_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
 int
 axiom_get_num_nodes(axiom_dev_t *dev)
 {
-    axiom_err_t err;
+    axiom_node_id_t i, node_id;
     uint8_t enabled_mask;
-    int i;
+    axiom_err_t err;
     /* init to 1, because the local node is not set in the routing table */
     int num_nodes = 1;
 
@@ -1647,13 +1647,24 @@ axiom_get_num_nodes(axiom_dev_t *dev)
         return AXIOM_RET_ERROR;
     }
 
+    /* get local id */
+    node_id = axiom_get_node_id(dev);
+
     for (i = 0; i < AXIOM_NODES_MAX; i++) {
+
+        /* we already count local node */
+        if (i == node_id)
+            continue;
+
         err = axiom_get_routing(dev, i, &enabled_mask);
         if (err)
             break;
 
-        /* count node i, if it is reachable through some interface */
-        if (enabled_mask)
+        /*
+         * count node i, if it is reachable through physical interfaces
+         * discard nodes reachable through the loopback interface (IF0)
+         */
+        if (enabled_mask == 0x0 || enabled_mask == 0x1)
             num_nodes++;
     }
 
