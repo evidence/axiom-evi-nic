@@ -203,32 +203,20 @@ axiom_hw_rdma_rx(axiom_dev_t *dev, axiom_rdma_hdr_t *header)
     /* *getlen() returns the size of the first packet in the FIFO */
     total_size = axi_fifo_rx_getlen(&dev->regs.axi.fifo_rdma_rx);
 
-    /* read first 8-bit word of the RDMA descriptor */
+    /* read 2 8-bit word of the RDMA descriptor */
     raw[0] = axi_fifo_read64(&dev->regs.axi.fifo_rdma_rx);
-    /* read second 8-bit word of the RDMA descriptor (receiver)*/
-    if (total_size > 8)
-        raw[1] = axi_fifo_read64(&dev->regs.axi.fifo_rdma_rx);
-    else
-        raw[1] = 0x0;
+    raw[1] = axi_fifo_read64(&dev->regs.axi.fifo_rdma_rx);
 
-    if (header->rx.port_type.field.s == 0 && total_size != 16) {
-        EPRINTF("BBBBBBB - S: %u - size %u", header->rx.port_type.field.s,
-                total_size);
+    /* XXX: debug only! To be removed */
+    if (total_size != 16) {
+        EPRINTF("WRONG RDMA HEADER - S: %u - size %u",
+                header->rx.port_type.field.s, total_size);
         EPRINTF("occpuancy: %u - hdr[0]: 0x%llx hdr[1]: 0x%llx",
                 axiom_hw_rdma_rx_avail(dev), raw[0], raw[1]);
     }
 
-    if (header->rx.port_type.field.s == 1 && total_size != 8) {
-        EPRINTF("BBBBBBB - S: %u - size %u", header->rx.port_type.field.s,
-                total_size);
-        EPRINTF("occpuancy: %u - hdr[0]: 0x%llx hdr[1]: 0x%llx",
-                axiom_hw_rdma_rx_avail(dev), raw[0], raw[1]);
-    }
-
-#if 0
-    IPRINTF(1, "total_size: %u - hdr[0]: 0x%llx hdr[1]: 0x%llx",
+    DPRINTF("total_size: %u - hdr[0]: 0x%llx hdr[1]: 0x%llx",
             total_size, raw[0], raw[1]);
-#endif
 
     return header->rx.msg_id;
 }
