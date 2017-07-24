@@ -1664,7 +1664,7 @@ axiom_get_num_nodes(axiom_dev_t *dev)
          * count node i, if it is reachable through physical interfaces
          * discard nodes reachable through the loopback interface (IF0)
          */
-        if (enabled_mask == 0x0 || enabled_mask == 0x1)
+        if (enabled_mask != 0x0 && enabled_mask != 0x1)
             num_nodes++;
     }
 
