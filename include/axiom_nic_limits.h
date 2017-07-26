@@ -49,7 +49,7 @@
 #define AXIOM_RDMA_PAYLOAD_SIZE_ORDER           3
 
 /*! \brief Max payload size in the long message */
-#define AXIOM_LONG_PAYLOAD_MAX_SIZE             4096
+#define AXIOM_LONG_PAYLOAD_MAX_SIZE             65528
 
 /*! \brief  Max memory segment size */
 #define AXIOM_MAX_SEGMENT_SIZE                  (2L*1024*1024*1204)

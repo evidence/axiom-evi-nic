@@ -1372,6 +1372,8 @@ static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
 
     if (drvdata->long_size > mem_nic_size) {
         ret = -EFAULT;
+        EPRINTF("No space available to allocate LONG buffers. \
+                [avail: %ld required: %ld", mem_nic_size, drvdata->long_size);
         goto err;
     }
 
