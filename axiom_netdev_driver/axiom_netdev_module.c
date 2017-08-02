@@ -31,6 +31,7 @@
 #include <linux/delay.h>
 #include <linux/poll.h>
 #include <linux/uio.h>
+#include <linux/vmalloc.h>
 
 #include "evi_queue.h"
 
