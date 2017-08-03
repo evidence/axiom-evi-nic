@@ -53,7 +53,7 @@ axiom_user_test: $(OBJS_USERTEST) libaxiom_user_api.so.$(VERSION)
 PREFIX:=/usr
 
 install: all
-ifneq ($(FS),seco)
+ifeq ($(FS),br)
 	for DESTDIR in $(SYSROOT_INST_DIR); do \
 		mkdir -p $${DESTDIR}$(PREFIX)/include/axiom ;\
 		cp $(AXIOM_NIC_INCLUDE)/*.h \
@@ -79,7 +79,11 @@ ifneq ($(FS),seco)
 			> $${DESTDIR}$(PREFIX)/lib/pkgconfig/axiom_user_api.pc ;\
 	done
 endif
+ifeq ($(FS),x86)
+	sudo $(MAKE) PREFIX=/usr/local TARGET_INST_DIR=/ real_install
+else
 	$(FAKEROOT) $(MAKE) real_install
+endif
 
 .PHONY: real_install
 real_install:

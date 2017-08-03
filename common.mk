@@ -3,7 +3,11 @@
 # default architecture
 #
 
+ifeq ($(FS),x86)
+undefine CCARCH
+else
 CCARCH := aarch64
+endif
 
 #
 # version numbers
@@ -26,9 +30,15 @@ TARGET_DIR := $(realpath ${ROOTFS})
 SYSROOT_DIR := $(realpath ${ROOTFS})
 HOST_DIR := $(realpath ${LINARO}/host)
 else
+ifeq ($(FS),x86)
+TARGET_DIR := /
+SYSROOT_DIR := /
+HOST_DIR := /
+else
 TARGET_DIR := $(realpath ${OUTPUT_DIR}/target)
 SYSROOT_DIR := $(realpath ${OUTPUT_DIR}/staging)
 HOST_DIR := $(realpath ${OUTPUT_DIR}/host)
+endif
 endif
 
 SYSROOT_INST_DIR ?= $(SYSROOT_DIR)
@@ -78,7 +88,13 @@ endif
 else
 # undefined CCARCH
 
-    KERNELDIR := /lib/modules/$(shell uname -r)/build
+ifeq ($(FS),x86)
+    KERNELVER :=  4.4.0-21-generic
+else
+    KERNELVER :=  $(shell uname -r)
+endif
+
+    KERNELDIR := /lib/modules/$(KERNELVER)/build
     CCPREFIX :=
     CROSS_COMPILE :=
 
