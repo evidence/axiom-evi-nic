@@ -21,6 +21,11 @@ int verbose = 0;
 module_param(verbose, int, 0644);
 MODULE_PARM_DESC(verbose, "versbose level (0=none,...,16=all)");
 
+/*! \brief delay module parameter */
+int retry_udelay = 200;
+module_param(retry_udelay, int, 0644);
+MODULE_PARM_DESC(retry_udelay, "usec to sleep when retry to TX a long packet");
+
 struct axiomnet_chrdev chrdev;
 
 static int axiomnet_alloc_chrdev(struct axiomnet_drvdata *drvdata,
@@ -706,10 +711,9 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                 mutex_lock(&tx_ring->rdma_port.mutex);
 
                 /*
-                 * sleep time depends of the number of retries, with lock
-                 * acquired to slow down the senders
+                 * sleep with lock acquired, to slow down the senders
                  */
-                //msleep(1);
+                usleep_range(retry_udelay, retry_udelay + 10);
 
                 while (!axiom_hw_rdma_tx_avail(drvdata->dev_api)) {
                     /* XXX or wait_event_interruptible? */
