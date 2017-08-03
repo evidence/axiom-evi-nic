@@ -41,19 +41,25 @@ void axiomnet_irqhandler(struct axiomnet_drvdata *drvdata)
 
     if (irq_pending & AXIOMREG_IRQ_RAW_RX) {
         axiom_kthread_wakeup(&drvdata->kthread_raw);
+        drvdata->stats.irq_raw_rx++;
     }
 
     if (irq_pending & AXIOMREG_IRQ_RAW_TX) {
         wake_up(&(drvdata->raw_tx_ring.port.wait_queue));
+        drvdata->stats.irq_raw_tx++;
     }
 
     if (irq_pending & AXIOMREG_IRQ_RDMA_RX) {
         axiom_kthread_wakeup(&drvdata->kthread_rdma);
+        drvdata->stats.irq_rdma_rx++;
     }
 
     if (irq_pending & AXIOMREG_IRQ_RDMA_TX) {
         wake_up(&(drvdata->rdma_tx_ring.rdma_port.wait_queue));
+        drvdata->stats.irq_rdma_tx++;
     }
+
+    drvdata->stats.irq++;
 
     axiom_hw_ack_irq(drvdata->dev_api, irq_pending);
 
@@ -97,6 +103,7 @@ inline static int axiomnet_raw_send(struct file *filep,
     mutex_lock(&tx_ring->port.mutex);
 
     while (axiomnet_raw_tx_avail(tx_ring) == 0) { /* no space to write */
+        drvdata->stats.wait_raw_tx++;
         mutex_unlock(&tx_ring->port.mutex);
 
         /* no blocking write */
@@ -141,8 +148,13 @@ inline static int axiomnet_raw_send(struct file *filep,
     /* copy packet into the ring */
     ret = axiom_hw_raw_tx(tx_ring->drvdata->dev_api, &(raw_msg));
     if (unlikely(ret < 0)) {
+        drvdata->stats.err_raw_tx++;
         ret = -EFAULT;
+        goto err;
     }
+
+    drvdata->stats.pkt_raw_tx++;
+    drvdata->stats.bytes_raw_tx += header->tx.payload_size;
 
 err:
     mutex_unlock(&tx_ring->port.mutex);
@@ -170,6 +182,7 @@ inline static bool axiomnet_raw_rx_work_todo(void *data)
 inline static void axiom_raw_rx_dequeue(struct axiomnet_raw_rx_hwring *rx_ring)
 {
     struct axiomnet_raw_queue *sw_queue = &rx_ring->sw_queue;
+    struct axiomnet_drvdata *drvdata = rx_ring->drvdata;
     unsigned long flags;
     uint32_t received = 0;
     int port;
@@ -192,12 +205,14 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_raw_rx_hwring *rx_ring)
 
         raw_msg = &(sw_queue->queue_desc[queue_slot]);
 
-        axiom_hw_raw_rx(rx_ring->drvdata->dev_api, raw_msg);
+        axiom_hw_raw_rx(drvdata->dev_api, raw_msg);
         port = raw_msg->header.rx.port_type.field.port;
 
         /* check valid port */
         if (unlikely(port < 0 || port >= AXIOM_PORT_MAX)) {
             EPRINTF("message discarded - wrong port %d", port);
+
+            drvdata->stats.err_raw_rx++;
 
             spin_lock_irqsave(&sw_queue->queue_lock, flags);
             eviq_free_push(&sw_queue->evi_queue, queue_slot);
@@ -214,6 +229,9 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_raw_rx_hwring *rx_ring)
                 queue_slot, port);
 
         received++;
+
+        drvdata->stats.pkt_raw_rx++;
+        drvdata->stats.bytes_raw_rx += raw_msg->header.tx.payload_size;
     }
 
     DPRINTF("received: %d", received);
@@ -248,6 +266,7 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
     mutex_lock(&rx_ring->ports[port].mutex);
 
     while (axiomnet_raw_rx_avail(rx_ring, port) == 0) { /* nothing to read */
+        drvdata->stats.wait_raw_rx++;
         mutex_unlock(&rx_ring->ports[port].mutex);
 
         /* no blocking write */
@@ -404,6 +423,7 @@ inline static int axiomnet_rdma_tx(struct file *filep,
 
     /* check slot available in the HW ring */
     while (axiomnet_rdma_tx_avail(tx_ring) == 0) { /* no space to write */
+        drvdata->stats.wait_rdma_tx++;
         mutex_unlock(&tx_ring->rdma_port.mutex);
 
         /* no blocking write */
@@ -464,9 +484,13 @@ inline static int axiomnet_rdma_tx(struct file *filep,
     /* copy packet into the ring */
     ret = axiom_hw_rdma_tx(drvdata->dev_api, header);
     if (unlikely(ret != header->tx.msg_id)) {
+        drvdata->stats.err_rdma_tx++;
         ret = -EFAULT;
         goto err;
     }
+
+    drvdata->stats.pkt_rdma_tx++;
+    drvdata->stats.bytes_rdma_tx += header->tx.payload_size;
 
     /* if we don't need to wait, unlock the mutex and return */
     if (!rdma_status->ack_waiting) {
@@ -476,6 +500,7 @@ inline static int axiomnet_rdma_tx(struct file *filep,
 
     /* wait the reply */
     while (rdma_status->ack_received == false) {
+        drvdata->stats.wait_rdma_rx++;
         mutex_unlock(&tx_ring->rdma_port.mutex);
 
         /* put the process in the wait_queue to wait the ack */
@@ -605,6 +630,7 @@ static long axiomnet_rdma_wait(struct file *filep,
 
     /* wait the reply */
     while (rdma_status->msg_id_counter == token.rdma.value) {
+        drvdata->stats.wait_rdma_rx++;
 #if 0
         /* no blocking write */
         if (filep->f_flags & O_NONBLOCK) {
@@ -647,6 +673,7 @@ inline static bool axiomnet_rdma_rx_work_todo(void *data)
 
 inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring)
 {
+    struct axiomnet_drvdata *drvdata = rx_ring->drvdata;
     axiom_rdma_hdr_t rdma_hdr;
     axiom_msg_id_t msg_id;
 
@@ -664,14 +691,14 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                 EPRINTF("Message (id = %u) discarded - unexpected ACK received "
                         "from %u [expected from %u]", msg_id, rdma_hdr.rx.src,
                         rdma_status->header.tx.dst);
+
+                drvdata->stats.err_rdma_rx++;
                 continue;
             }
 
             /* retry to send packet if there is an error on remote node */
             if (rdma_hdr.rx.port_type.field.error == 1 &&
                     rdma_status->retries < AXIOMNET_MAX_RDMA_RETRY) {
-
-                struct axiomnet_drvdata *drvdata = rx_ring->drvdata;
                 struct axiomnet_rdma_tx_hwring *tx_ring =
                     &drvdata->rdma_tx_ring;
                 int ret;
@@ -695,6 +722,7 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                 mutex_unlock(&tx_ring->rdma_port.mutex);
 
                 rdma_status->retries++;
+                drvdata->stats.retries_rdma++;
                 /*
                  * if all is ok, continue to next packet, otherwise free all
                  * resources
@@ -710,6 +738,8 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                         rdma_status->header.tx.msg_id,
                         rdma_status->header.tx.dst,
                         rdma_status->header.tx.port_type.field.port);
+
+                drvdata->stats.discarded_rdma++;
             }
 
             /* if there is some process to wait, wakeup it, otherwise free the
@@ -740,6 +770,10 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
             }
             /* wake up waitinig process */
             wake_up(&(rdma_status->wait_queue));
+
+            drvdata->stats.pkt_rdma_rx++;
+            drvdata->stats.bytes_rdma_rx += rdma_hdr.rx.payload_size;
+
         } else { /* LONG message */
             axiom_long_msg_t *long_msg;
             eviq_pnt_t queue_slot = EVIQ_NONE;
@@ -748,6 +782,8 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
             int port;
 
             if (rdma_hdr.rx.port_type.field.type == AXIOM_TYPE_RDMA_WRITE) {
+                drvdata->stats.pkt_rdma_rx++;
+                drvdata->stats.bytes_rdma_rx += rdma_hdr.rx.payload_size;
                 /*
                  * Actual FORTH implementation, put a descriptor on the
                  * receiver during the RDMA WRITE.
@@ -762,6 +798,8 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
                         "hdr[0]: 0x%llx hdr[1]: 0x%llx",
                         *((uint64_t *)&rdma_hdr),
                         *(((uint64_t *)&rdma_hdr) + 1));
+
+                drvdata->stats.err_rdma_rx++;
                 continue;
             }
 
@@ -771,6 +809,8 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
 
             if (unlikely(queue_slot == EVIQ_NONE)) {
                 EPRINTF("Message discarded - LONG SW queue empty");
+
+                drvdata->stats.err_long_rx++;
                 continue;
             }
 
@@ -784,6 +824,8 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
             /* check valid port */
             if (unlikely(port < 0 || port >= AXIOM_PORT_MAX)) {
                 EPRINTF("Message discarded - wrong port %d", port);
+
+                drvdata->stats.err_long_rx++;
 
                 spin_lock_irqsave(&long_queue->queue_lock, flags);
                 eviq_free_push(&long_queue->evi_queue, queue_slot);
@@ -799,6 +841,10 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
 
             DPRINTF("queue insert - queue_slot: %d port: %d",
                     queue_slot, port);
+
+            drvdata->stats.pkt_long_rx++;
+            drvdata->stats.bytes_long_rx += long_msg->header.rx.payload_size;
+
         }
     }
 
@@ -844,6 +890,7 @@ inline static int axiomnet_long_send(struct file *filep,
 
     /* check slot available in the SW queue */
     while (axiomnet_long_tx_avail(tx_ring) == 0) { /* no space to write */
+        drvdata->stats.wait_long_tx++;
         mutex_unlock(&tx_ring->long_port.mutex);
 
         /* no blocking write */
@@ -914,9 +961,20 @@ inline static int axiomnet_long_send(struct file *filep,
 
     ret = axiomnet_rdma_tx(filep, &(long_msg->header), NULL, &cb, 0);
     if (ret < 0) {
+        mutex_lock(&tx_ring->long_port.mutex);
+        drvdata->stats.err_long_tx++;
+        mutex_unlock(&tx_ring->long_port.mutex);
+
         EPRINTF("axiomnet_rdma_tx error");
         goto err;
     }
+
+    mutex_lock(&tx_ring->long_port.mutex);
+
+    drvdata->stats.pkt_long_tx++;
+    drvdata->stats.bytes_long_tx += long_msg->header.tx.payload_size;
+
+    mutex_unlock(&tx_ring->long_port.mutex);
 
 err_nopush:
     return ret;
@@ -957,6 +1015,7 @@ inline static ssize_t axiomnet_long_recv(struct file *filep,
     mutex_lock(&rx_ring->long_ports[port].mutex);
 
     while (axiomnet_long_rx_avail(rx_ring, port) == 0) { /* nothing to read */
+        drvdata->stats.wait_long_rx++;
         mutex_unlock(&rx_ring->long_ports[port].mutex);
 
         /* no blocking write */
@@ -1342,10 +1401,10 @@ static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
      * |                           |
      * |___________________________|
      * |                           | mem_nic_base
-     * |    LONG Rx Buf (32x4k)    |
+     * |    LONG Rx Buf (32x64k)   |
      * |___________________________|
      * |                           |
-     * |    LONG Tx Buf (32x4k)    |
+     * |    LONG Tx Buf (32x64k)   |
      * |___________________________|
      *
      */
@@ -1373,7 +1432,7 @@ static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
     if (drvdata->long_size > mem_nic_size) {
         ret = -EFAULT;
         EPRINTF("No space available to allocate LONG buffers. \
-                [avail: %ld required: %ld", mem_nic_size, drvdata->long_size);
+                [avail: %lu required: %llu", mem_nic_size, drvdata->long_size);
         goto err;
     }
 
@@ -1752,15 +1811,22 @@ static unsigned int axiomnet_poll_raw(struct file *filep, poll_table *wait)
 
     poll_wait(filep, &tx_ring->port.wait_queue, wait);
 
-    if (axiomnet_raw_tx_avail(tx_ring) != 0) { /* space to write */
-        ret |= POLLOUT | POLLWRNORM;
+    if (poll_requested_events(wait) & POLLOUT) {
+        drvdata->stats.poll_raw_tx++;
+        if (axiomnet_raw_tx_avail(tx_ring) != 0) { /* space to write */
+            ret |= POLLOUT | POLLWRNORM;
+            drvdata->stats.poll_avail_raw_tx++;
+        }
     }
 
-    if (port != AXIOMNET_PORT_INVALID) {
+    if ((poll_requested_events(wait) & POLLIN) &&
+            (port != AXIOMNET_PORT_INVALID)) {
         poll_wait(filep, &rx_ring->ports[port].wait_queue, wait);
 
+        drvdata->stats.poll_raw_rx++;
         if (axiomnet_raw_rx_avail(rx_ring, port) != 0) { /* something to read */
             ret |= POLLIN | POLLRDNORM;
+            drvdata->stats.poll_avail_raw_rx++;
         }
     }
 
@@ -1776,8 +1842,12 @@ static unsigned int axiomnet_poll_rdma(struct file *filep, poll_table *wait)
 
     poll_wait(filep, &tx_ring->rdma_port.wait_queue, wait);
 
-    if (axiomnet_rdma_tx_avail(tx_ring) != 0) { /* space to write */
-        ret |= POLLOUT | POLLWRNORM;
+    if (poll_requested_events(wait) & POLLOUT) {
+        drvdata->stats.poll_rdma_tx++;
+        if (axiomnet_rdma_tx_avail(tx_ring) != 0) { /* space to write */
+            ret |= POLLOUT | POLLWRNORM;
+            drvdata->stats.poll_avail_rdma_tx++;
+        }
     }
 
     return ret;
@@ -1795,16 +1865,25 @@ static unsigned int axiomnet_poll_long(struct file *filep, poll_table *wait)
     poll_wait(filep, &tx_ring->long_port.wait_queue, wait);
     poll_wait(filep, &tx_ring->rdma_port.wait_queue, wait);
 
-    if ((axiomnet_long_tx_avail(tx_ring) != 0) &&
-            (axiomnet_rdma_tx_avail(tx_ring) != 0)) { /* space to write */
-        ret |= POLLOUT | POLLWRNORM;
+    if (poll_requested_events(wait) & POLLOUT) {
+        drvdata->stats.poll_long_tx++;
+        if ((axiomnet_long_tx_avail(tx_ring) != 0) &&
+                (axiomnet_rdma_tx_avail(tx_ring) != 0)) { /* space to write */
+            ret |= POLLOUT | POLLWRNORM;
+            drvdata->stats.poll_avail_long_tx++;
+        }
     }
 
-    if (port != AXIOMNET_PORT_INVALID) {
-        poll_wait(filep, &rx_ring->long_ports[port].wait_queue, wait);
+    if ((poll_requested_events(wait) & POLLIN) &&
+            (port != AXIOMNET_PORT_INVALID)) {
+        if (port != AXIOMNET_PORT_INVALID) {
+            poll_wait(filep, &rx_ring->long_ports[port].wait_queue, wait);
 
-        if (axiomnet_long_rx_avail(rx_ring, port) != 0) { /* something to read */
-            ret |= POLLIN | POLLRDNORM;
+            drvdata->stats.poll_long_rx++;
+            if (axiomnet_long_rx_avail(rx_ring, port) != 0) { /* something to read */
+                ret |= POLLIN | POLLRDNORM;
+                drvdata->stats.poll_avail_long_rx++;
+            }
         }
     }
 
@@ -2186,6 +2265,11 @@ static long axiomnet_ioctl_generic(struct file *filep, unsigned int cmd,
     case AXNET_SET_CONTROL:
         get_user(buf_uint32, (uint32_t __user*)arg);
         axiom_hw_set_ni_control(drvdata->dev_api, buf_uint32);
+        break;
+    case AXNET_GET_STATS:
+        ret = copy_to_user(argp, &drvdata->stats, sizeof(drvdata->stats));
+        if (ret)
+            return -EFAULT;
         break;
     case AXNET_DEBUG_INFO:
         ret = axiomnet_debug_info(drvdata);

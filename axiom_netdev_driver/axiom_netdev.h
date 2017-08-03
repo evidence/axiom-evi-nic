@@ -215,6 +215,9 @@ struct axiomnet_drvdata {
     /* kthread */
     struct axiom_kthread kthread_raw; /*!< \brief kthread for RAW */
     struct axiom_kthread kthread_rdma; /*!< \brief kthread for RDMA */
+
+    /* statistics */
+    axiom_stats_t stats;
 };
 
 /*! \brief AXIOM char device status */

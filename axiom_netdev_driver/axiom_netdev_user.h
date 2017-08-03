@@ -117,14 +117,17 @@ typedef struct axiom_ioctl_token {
 /*! \brief AXIOM IOCTL to recv a raw message with iovec */
 #define AXNET_RECV_RAW_IOV      _IOWR(AXNET_MAGIC, 124, axiom_ioctl_raw_iov_t)
 /*! \brief AXIOM IOCTL to send a long message with iovec */
-#define AXNET_SEND_LONG_IOV      _IOW(AXNET_MAGIC, 125, axiom_ioctl_long_iov_t)
+#define AXNET_SEND_LONG_IOV     _IOW(AXNET_MAGIC, 125, axiom_ioctl_long_iov_t)
 /*! \brief AXIOM IOCTL to recv a long message with iovec */
-#define AXNET_RECV_LONG_IOV      _IOWR(AXNET_MAGIC, 126, axiom_ioctl_long_iov_t)
+#define AXNET_RECV_LONG_IOV     _IOWR(AXNET_MAGIC, 126, axiom_ioctl_long_iov_t)
 /*! \brief AXIOM IOCTL to check the status of RDMA */
-#define AXNET_RDMA_CHECK         _IOWR(AXNET_MAGIC, 127, axiom_ioctl_token_t)
+#define AXNET_RDMA_CHECK        _IOWR(AXNET_MAGIC, 127, axiom_ioctl_token_t)
 /*! \brief AXIOM IOCTL to wait a completion of RDMA */
-#define AXNET_RDMA_WAIT          _IOWR(AXNET_MAGIC, 128, axiom_ioctl_token_t)
+#define AXNET_RDMA_WAIT         _IOWR(AXNET_MAGIC, 128, axiom_ioctl_token_t)
+/*! \brief AXIOM IOCTL to get the statistics */
+#define AXNET_GET_STATS         _IOR(AXNET_MAGIC, 129, axiom_stats_t)
 
+/*! \brief AXIOM IOCTL for debug (internal-use) */
 #define AXNET_DEBUG_INFO        _IO(AXNET_MAGIC, 200)
 
 #endif /* !AXIOM_NETDEV_USER_h */

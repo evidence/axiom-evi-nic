@@ -742,6 +742,8 @@ axiom_err_t
 axiom_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
         uint8_t *if_features);
 
+axiom_err_t
+axiom_get_statistics(axiom_dev_t *dev, axiom_stats_t *stats);
 
 axiom_err_t
 axiom_debug_info(axiom_dev_t *dev);

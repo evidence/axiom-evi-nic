@@ -1716,6 +1716,25 @@ axiom_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
     return AXIOM_RET_OK;
 }
 
+axiom_err_t
+axiom_get_statistics(axiom_dev_t *dev, axiom_stats_t *stats)
+{
+    int ret;
+
+    if (!dev || dev->fd_generic <= 0) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    ret = ioctl(dev->fd_generic, AXNET_GET_STATS, stats);
+
+    if (ret < 0) {
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
+        return AXIOM_RET_ERROR;
+    }
+
+    return AXIOM_RET_OK;
+}
 
 axiom_err_t
 axiom_debug_info(axiom_dev_t *dev)

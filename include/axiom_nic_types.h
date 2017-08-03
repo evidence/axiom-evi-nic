@@ -51,6 +51,8 @@ typedef struct axiom_args   axiom_args_t;
 typedef uint64_t            axiom_flags_t;
 /*! \brief AXIOM token */
 typedef union axiom_token   axiom_token_t;
+/*! \brief AXIOM statistics */
+typedef struct axiom_stats  axiom_stats_t;
 
 /*! \brief Invalid node ID */
 #define AXIOM_NULL_NODE                 255
@@ -96,6 +98,70 @@ typedef union axiom_token   axiom_token_t;
 #define AXIOM_TOKEN_ACKED               2
 
 /*********************** struct/union definitions *****************************/
+/*! \brief AXIOM NIC statistics */
+struct axiom_stats {
+    /*! \brief Interrupts received (total and for each queues) */
+    uint64_t irq;
+    uint64_t irq_raw_tx;
+    uint64_t irq_raw_rx;
+    uint64_t irq_rdma_tx;
+    uint64_t irq_rdma_rx;
+
+    /*! \brief Packets sent and received
+     * (RDMA RX is used only for acks and RDMA TX counts also LONG TX) */
+    uint64_t pkt_raw_tx;
+    uint64_t pkt_raw_rx;
+    uint64_t pkt_long_tx;
+    uint64_t pkt_long_rx;
+    uint64_t pkt_rdma_tx;
+    uint64_t pkt_rdma_rx;
+
+    /*! \brief Bytes sent and received */
+    uint64_t bytes_raw_tx;
+    uint64_t bytes_raw_rx;
+    uint64_t bytes_long_tx;
+    uint64_t bytes_long_rx;
+    uint64_t bytes_rdma_tx;
+    uint64_t bytes_rdma_rx;
+
+    /*! \brief Error occured during send and receive */
+    uint64_t err_raw_tx;
+    uint64_t err_raw_rx;
+    uint64_t err_long_tx;
+    uint64_t err_long_rx;
+    uint64_t err_rdma_tx;
+    uint64_t err_rdma_rx;
+
+    /*! \brief Number of syscall blocked waiting new slots available */
+    uint64_t wait_raw_tx;
+    uint64_t wait_raw_rx;
+    uint64_t wait_long_tx;
+    uint64_t wait_long_rx;
+    uint64_t wait_rdma_tx;
+    uint64_t wait_rdma_rx;
+
+    /*! \brief Number of poll() requests */
+    uint64_t poll_raw_tx;
+    uint64_t poll_raw_rx;
+    uint64_t poll_long_tx;
+    uint64_t poll_long_rx;
+    uint64_t poll_rdma_tx;
+    uint64_t poll_rdma_rx;
+
+    /*! \brief Number of poll() requests where the space is available */
+    uint64_t poll_avail_raw_tx;
+    uint64_t poll_avail_raw_rx;
+    uint64_t poll_avail_long_tx;
+    uint64_t poll_avail_long_rx;
+    uint64_t poll_avail_rdma_tx;
+    uint64_t poll_avail_rdma_rx;
+
+    /*! \brief Number of RDMA/LONG packets retransmit */
+    uint64_t retries_rdma;
+    /*! \brief Number of RDMA/LONG packets discarded */
+    uint64_t discarded_rdma;
+};
+
 /*! \brief AXIOM token definition */
 union axiom_token {
     uint64_t raw;
