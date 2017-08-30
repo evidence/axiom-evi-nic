@@ -12,7 +12,7 @@ DEBIAN_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 #DEB_TARGET_GNU_TYPE=aarch64-linux-gnu
 #DEB_TARGET_MULTIARCH=aarch64-linux-gnu
 
-ifeq ($(P)$(E),10)
+ifeq ($(KERN),seco)
 KERNELDIR := $(AXIOMBSP)/build/linux/kernel/link-to-kernel-build
 else
 KERNELDIR := $(OUTPUT_DIR)/build/linux-custom
