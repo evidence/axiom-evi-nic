@@ -710,10 +710,12 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
 
                 mutex_lock(&tx_ring->rdma_port.mutex);
 
-                /*
-                 * sleep with lock acquired, to slow down the senders
-                 */
-                usleep_range(retry_udelay, retry_udelay + 10);
+                if (retry_udelay != 0) {
+                    /*
+                     * sleep with lock acquired, to slow down the senders
+                     */
+                    usleep_range(retry_udelay, retry_udelay + 10);
+                }
 
                 while (!axiom_hw_rdma_tx_avail(drvdata->dev_api)) {
                     /* XXX or wait_event_interruptible? */
