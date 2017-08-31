@@ -227,8 +227,8 @@ inline static void axiom_raw_rx_dequeue(struct axiomnet_raw_rx_hwring *rx_ring)
 
         spin_lock_irqsave(&sw_queue->queue_lock, flags);
         eviq_enqueue(&sw_queue->evi_queue, port, queue_slot);
-        wake_up(&rx_ring->ports[port].wait_queue);
         spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
+        wake_up(&rx_ring->ports[port].wait_queue);
 
         DPRINTF("queue insert - received: %d queue_slot: %d port: %d", received,
                 queue_slot, port);
@@ -332,9 +332,9 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
 free_enqueue:
     spin_lock_irqsave(&sw_queue->queue_lock, flags);
     eviq_free_push(&sw_queue->evi_queue, queue_slot);
+    spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
     /* send a notification to kthread */
     axiom_kthread_wakeup(&drvdata->kthread_raw);
-    spin_unlock_irqrestore(&sw_queue->queue_lock, flags);
 
 err:
     DPRINTF("end len:%zu", len);
@@ -527,9 +527,9 @@ err:
 
     spin_lock_irqsave(&rdma_queue->queue_lock, flags);
     eviq_free_push(&rdma_queue->evi_queue, queue_slot);
+    spin_unlock_irqrestore(&rdma_queue->queue_lock, flags);
     /* send a notification to other thread */
     wake_up(&(tx_ring->rdma_port.wait_queue));
-    spin_unlock_irqrestore(&rdma_queue->queue_lock, flags);
 
 err_nolock:
     DPRINTF("end");
@@ -769,9 +769,9 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
 
                 spin_lock_irqsave(&rdma_queue->queue_lock, flags);
                 eviq_free_push(&rdma_queue->evi_queue, rdma_status->queue_slot);
+                spin_unlock_irqrestore(&rdma_queue->queue_lock, flags);
                 /* send a notification to other thread */
                 wake_up(&(tx_ring->rdma_port.wait_queue));
-                spin_unlock_irqrestore(&rdma_queue->queue_lock, flags);
 
             }
             /* wake up waitinig process */
@@ -841,9 +841,9 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
 
             spin_lock_irqsave(&long_queue->queue_lock, flags);
             eviq_enqueue(&long_queue->evi_queue, port, queue_slot);
+            spin_unlock_irqrestore(&long_queue->queue_lock, flags);
             /* wake up process only when the queue was empty */
             wake_up(&rx_ring->long_ports[port].wait_queue);
-            spin_unlock_irqrestore(&long_queue->queue_lock, flags);
 
             DPRINTF("queue insert - queue_slot: %d port: %d",
                     queue_slot, port);
@@ -868,9 +868,9 @@ static void axiomnet_long_callback(struct axiomnet_drvdata *drvdata, void *data,
 
     spin_lock_irqsave(&long_queue->queue_lock, flags);
     eviq_free_push(&long_queue->evi_queue, queue_slot);
+    spin_unlock_irqrestore(&long_queue->queue_lock, flags);
     /* send a notification to other thread */
     wake_up(&(tx_ring->long_port.wait_queue));
-    spin_unlock_irqrestore(&long_queue->queue_lock, flags);
 }
 
 
@@ -988,9 +988,9 @@ err_nopush:
 err:
     spin_lock_irqsave(&long_queue->queue_lock, flags);
     eviq_free_push(&long_queue->evi_queue, queue_slot);
+    spin_unlock_irqrestore(&long_queue->queue_lock, flags);
     /* send a notification to other thread */
     wake_up(&(tx_ring->long_port.wait_queue));
-    spin_unlock_irqrestore(&long_queue->queue_lock, flags);
 
     return ret;
 }
@@ -1088,9 +1088,9 @@ inline static ssize_t axiomnet_long_recv(struct file *filep,
 free_enqueue:
     spin_lock_irqsave(&long_queue->queue_lock, flags);
     eviq_free_push(&long_queue->evi_queue, queue_slot);
+    spin_unlock_irqrestore(&long_queue->queue_lock, flags);
     /* send a notification to kthread */
     axiom_kthread_wakeup(&drvdata->kthread_rdma);
-    spin_unlock_irqrestore(&long_queue->queue_lock, flags);
 
     if (long_buf_lut) {
         /* free the buffer for the HW, copying the initialization structure */
