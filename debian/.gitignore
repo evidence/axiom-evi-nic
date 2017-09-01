@@ -12,5 +12,8 @@ libaxiom-user.postinst.debhelper
 libaxiom-user.postrm.debhelper
 libaxiom-user.substvars
 libaxiom-user/
+libaxiom-user-dbg.debhelper.log
+libaxiom-user-dbg.substvars
+libaxiom-user-dbg/
 tmp/
 changelog

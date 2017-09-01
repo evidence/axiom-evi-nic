@@ -76,12 +76,12 @@ binary-arch: make-changelog
 	dh_compress
 	dh_fixperms
 
-#	dh_strip
+	dh_strip -plibaxiom-user --dbg-package=libaxiom-user-dbg
 	echo "kversion=$(KVERSION)" >>$(DEBIAN_DIR)/axiom-evi-nic-modules.substvars
 	PATH=$(LINARO)/host/usr/bin:$(PATH) dh_makeshlibs
 	dh_shlibdeps  --sysroot=$(ROOTFS)
 	dh_installdeb
-	dh_gencontrol -plibaxiom-user -plibaxiom-user-dev
+	dh_gencontrol -plibaxiom-user -plibaxiom-user-dev -plibaxiom-user-dbg
 	dh_gencontrol -paxiom-evi-nic-modules -- -DPackage=axiom-evi-nic-modules-$(KVERSION)
 	mv $(DEBIAN_DIR)/axiom-evi-nic-modules/usr/share/doc/axiom-evi-nic-modules \
 		$(DEBIAN_DIR)/axiom-evi-nic-modules/usr/share/doc/axiom-evi-nic-modules-$(KVERSION)
