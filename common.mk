@@ -89,7 +89,7 @@ else
 # undefined CCARCH
 
 ifeq ($(FS),x86)
-    KERNELVER :=  4.4.0-21-generic
+    KERNELVER :=  $(shell uname -r)
 else
     KERNELVER :=  $(shell uname -r)
 endif
