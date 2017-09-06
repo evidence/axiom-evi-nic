@@ -122,6 +122,7 @@ inline static int axiomnet_raw_send(struct file *filep,
 
         mutex_lock(&tx_ring->port.mutex);
     }
+    mutex_unlock(&tx_ring->port.mutex);
 
     offset = 0;
     for (i = 0; i < iovcnt; i++) {
@@ -150,6 +151,7 @@ inline static int axiomnet_raw_send(struct file *filep,
     raw_msg.header.tx.port_type.field.error = 0;
     raw_msg.header.tx.port_type.field.s = 0;
 
+    mutex_lock(&tx_ring->port.mutex);
     /* copy packet into the ring */
     ret = axiom_hw_raw_tx(tx_ring->drvdata->dev_api, &(raw_msg));
     if (unlikely(ret < 0)) {
@@ -160,9 +162,9 @@ inline static int axiomnet_raw_send(struct file *filep,
 
     drvdata->stats.pkt_raw_tx++;
     drvdata->stats.bytes_raw_tx += header->tx.payload_size;
+    mutex_unlock(&tx_ring->port.mutex);
 
 err:
-    mutex_unlock(&tx_ring->port.mutex);
 
     DPRINTF("end");
 
@@ -447,10 +449,11 @@ inline static int axiomnet_rdma_tx(struct file *filep,
     queue_slot = eviq_free_pop(&rdma_queue->evi_queue);
     spin_unlock_irqrestore(&rdma_queue->queue_lock, flags);
 
+    mutex_unlock(&tx_ring->rdma_port.mutex);
+
     /* impossible */
     if (unlikely(queue_slot == EVIQ_NONE)) {
         ret = -EFAULT;
-        mutex_unlock(&tx_ring->rdma_port.mutex);
         return ret;
     }
 
@@ -486,6 +489,7 @@ inline static int axiomnet_rdma_tx(struct file *filep,
         rdma_status->callback.func = NULL;
     }
 
+    mutex_lock(&tx_ring->rdma_port.mutex);
     /* copy packet into the ring */
     ret = axiom_hw_rdma_tx(drvdata->dev_api, header);
     if (unlikely(ret != header->tx.msg_id)) {
@@ -915,10 +919,11 @@ inline static int axiomnet_long_send(struct file *filep,
     queue_slot = eviq_free_pop(&long_queue->evi_queue);
     spin_unlock_irqrestore(&long_queue->queue_lock, flags);
 
+    mutex_unlock(&tx_ring->long_port.mutex);
+
     /* impossible */
     if (unlikely(queue_slot == EVIQ_NONE)) {
         ret = -EFAULT;
-        mutex_unlock(&tx_ring->long_port.mutex);
         goto err_nopush;
     }
 
@@ -931,7 +936,6 @@ inline static int axiomnet_long_send(struct file *filep,
 
     if (unlikely(user_header->tx.payload_size > AXIOM_LONG_PAYLOAD_MAX_SIZE)) {
         ret = -EFBIG;
-        mutex_unlock(&tx_ring->long_port.mutex);
         goto err;
     }
 
@@ -942,7 +946,6 @@ inline static int axiomnet_long_send(struct file *filep,
 
         if ((copied + offset) > user_header->tx.payload_size) {
             ret = -EFBIG;
-            mutex_unlock(&tx_ring->long_port.mutex);
             EPRINTF("iov[%d] - iovcnt: %d psize: %d offset: %d copied: %d",
                     i, iovcnt, user_header->tx.payload_size, offset, copied);
             goto err;
@@ -952,14 +955,11 @@ inline static int axiomnet_long_send(struct file *filep,
                 iov[i].iov_base, copied);
         if (unlikely(ret)) {
             ret = -EFAULT;
-            mutex_unlock(&tx_ring->long_port.mutex);
             goto err;
         }
 
         offset += copied;
     }
-
-    mutex_unlock(&tx_ring->long_port.mutex);
 
     /* callback to free the buffer when the ack is received */
     cb.func = axiomnet_long_callback;
@@ -1041,6 +1041,8 @@ inline static ssize_t axiomnet_long_recv(struct file *filep,
     queue_slot = eviq_dequeue(&long_queue->evi_queue, port);
     spin_unlock_irqrestore(&long_queue->queue_lock, flags);
 
+    mutex_unlock(&rx_ring->long_ports[port].mutex);
+
     /* XXX: impossible! */
     if (unlikely(queue_slot == EVIQ_NONE)) {
         len = -EFAULT;
@@ -1092,14 +1094,15 @@ free_enqueue:
     /* send a notification to kthread */
     axiom_kthread_wakeup(&drvdata->kthread_rdma);
 
+    mutex_lock(&rx_ring->long_ports[port].mutex);
     if (long_buf_lut) {
         /* free the buffer for the HW, copying the initialization structure */
         axiom_hw_set_long_buf(drvdata->dev_api, long_buf_lut->buf_id,
                 &long_buf_lut->long_buf_hw);
     }
+    mutex_unlock(&rx_ring->long_ports[port].mutex);
 
 err:
-    mutex_unlock(&rx_ring->long_ports[port].mutex);
 
     DPRINTF("end len:%zu", len);
     return len;
@@ -2308,7 +2311,7 @@ static int axiomnet_mmap(struct file *filep, struct vm_area_struct *vma)
     }
 
     vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-    err = io_remap_pfn_range(vma, vma->vm_start,
+    err = remap_pfn_range(vma, vma->vm_start,
             (drvdata->rdma_paddr >> PAGE_SHIFT) + vma->vm_pgoff, size,
             vma->vm_page_prot);
     if (err) {
