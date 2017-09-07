@@ -1265,7 +1265,7 @@ axiom_rdma_write_internal(axiom_dev_t *dev, axiom_node_id_t remote_id,
     rdma.header.tx.port_type.field.type = AXIOM_TYPE_RDMA_WRITE;
     rdma.header.tx.port_type.field.s = 0;
     rdma.header.tx.dst = remote_id;
-    rdma.header.tx.payload_size = payload_size >> AXIOM_RDMA_PAYLOAD_SIZE_ORDER;
+    rdma.header.tx.payload_size = payload_size;
 
     rdma.app_id = dev->appid;
     rdma.src_addr = local_src_addr;
@@ -1347,7 +1347,7 @@ axiom_rdma_read_internal(axiom_dev_t *dev, axiom_node_id_t remote_id,
     rdma.header.tx.port_type.field.type = AXIOM_TYPE_RDMA_READ;
     rdma.header.tx.port_type.field.s = 0;
     rdma.header.tx.dst = remote_id;
-    rdma.header.tx.payload_size = payload_size >> AXIOM_RDMA_PAYLOAD_SIZE_ORDER;
+    rdma.header.tx.payload_size = payload_size;
 
     rdma.app_id = dev->appid;
     rdma.src_addr = remote_src_addr;
@@ -1423,10 +1423,21 @@ end:
     return ret;
 }
 
-axiom_err_t
-axiom_rdma_wait(axiom_dev_t *dev, axiom_token_t *token)
+static axiom_err_t
+axiom_rdma_wait_internal(axiom_dev_t *dev, axiom_token_t *token)
 {
     axiom_ioctl_token_t token_ioctl;
+
+    token_ioctl.tokens = token;
+    token_ioctl.count = 1;
+
+    return ioctl(dev->fd_rdma, AXNET_RDMA_WAIT, &token_ioctl);
+}
+
+axiom_err_t
+axiom_rdma_wait(axiom_dev_t *dev, axiom_token_t *tokens, int tokencnt)
+{
+    int acked;
     int ret;
 
     AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_RDMA_WAIT));
@@ -1437,19 +1448,38 @@ axiom_rdma_wait(axiom_dev_t *dev, axiom_token_t *token)
         goto end;
     }
 
-    token_ioctl.tokens = token;
-    token_ioctl.count = 1;
+    acked = axiom_rdma_check(dev, tokens, tokencnt);
+    if (!AXIOM_RET_IS_OK(acked)) {
+        return acked;
+    }
 
-    ret = ioctl(dev->fd_rdma, AXNET_RDMA_WAIT, &token_ioctl);
-    if (unlikely(ret < 0)) {
-        if (errno == EAGAIN) {
-            ret = AXIOM_RET_NOTAVAIL;
-            goto end;
+    while (acked < tokencnt) {
+        int tkn_id;
+
+        for (tkn_id = tokencnt - 1; tkn_id >= 0; tkn_id--) {
+            if (tokens[tkn_id].rdma.status == AXIOM_TOKEN_PENDING)
+                break;
         }
 
-        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
-        ret = AXIOM_RET_ERROR;
+        ret = axiom_rdma_wait_internal(dev, &tokens[tkn_id]);
+        if (unlikely(ret < 0)) {
+            if (errno == EAGAIN) {
+                ret = AXIOM_RET_NOTAVAIL;
+                break;
+            }
+
+            EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
+            ret = AXIOM_RET_ERROR;
+            break;
+        }
+
+        acked = axiom_rdma_check(dev, tokens, tokencnt);
+        if (!AXIOM_RET_IS_OK(acked)) {
+            return acked;
+        }
     }
+
+    ret = AXIOM_RET_OK;
 
 end:
     AXIOM_EXTRAE(Extrae_event(axiom_extrae_apinic, AX_EXTRAE_APINIC_END));
@@ -1606,9 +1636,9 @@ axiom_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
 int
 axiom_get_num_nodes(axiom_dev_t *dev)
 {
-    axiom_err_t err;
+    axiom_node_id_t i, node_id;
     uint8_t enabled_mask;
-    int i;
+    axiom_err_t err;
     /* init to 1, because the local node is not set in the routing table */
     int num_nodes = 1;
 
@@ -1617,13 +1647,24 @@ axiom_get_num_nodes(axiom_dev_t *dev)
         return AXIOM_RET_ERROR;
     }
 
+    /* get local id */
+    node_id = axiom_get_node_id(dev);
+
     for (i = 0; i < AXIOM_NODES_MAX; i++) {
+
+        /* we already count local node */
+        if (i == node_id)
+            continue;
+
         err = axiom_get_routing(dev, i, &enabled_mask);
         if (err)
             break;
 
-        /* count node i, if it is reachable through some interface */
-        if (enabled_mask)
+        /*
+         * count node i, if it is reachable through physical interfaces
+         * discard nodes reachable through the loopback interface (IF0)
+         */
+        if (enabled_mask != 0x0 && enabled_mask != 0x1)
             num_nodes++;
     }
 
@@ -1675,6 +1716,25 @@ axiom_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
     return AXIOM_RET_OK;
 }
 
+axiom_err_t
+axiom_get_statistics(axiom_dev_t *dev, axiom_stats_t *stats)
+{
+    int ret;
+
+    if (!dev || dev->fd_generic <= 0) {
+        EPRINTF("axiom device is not opened - dev: %p", dev);
+        return AXIOM_RET_ERROR;
+    }
+
+    ret = ioctl(dev->fd_generic, AXNET_GET_STATS, stats);
+
+    if (ret < 0) {
+        EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
+        return AXIOM_RET_ERROR;
+    }
+
+    return AXIOM_RET_OK;
+}
 
 axiom_err_t
 axiom_debug_info(axiom_dev_t *dev)

@@ -25,14 +25,12 @@
  * \brief  This function sends raw data to a remote node.
  *
  * \param dev           The axiom device private data pointer
- * \param header        The header of packet
- * \param payload       data to be sent
+ * \param msg           Message to send (header + payload)
  *
  * \return Returns a unique positive message id on success.
  */
 axiom_msg_id_t
-axiom_hw_raw_tx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
-        axiom_raw_payload_t *payload);
+axiom_hw_raw_tx(axiom_dev_t *dev, axiom_raw_msg_t *msg);
 
 /*!
  * \brief This function checks the space available in the raw TX queue.
@@ -48,14 +46,12 @@ axiom_hw_raw_tx_avail(axiom_dev_t *dev);
  * \brief This function receives raw data to a remote node.
  *
  * \param dev           The axiom device private data pointer
- * \param header        The header of packet
- * \param payload       data received
+ * \param msg           Message received (header + payload)
  *
  * \return Returns a unique positive message id on success.
  */
 axiom_msg_id_t
-axiom_hw_raw_rx(axiom_dev_t *dev, axiom_raw_hdr_t *header,
-        axiom_raw_payload_t *payload);
+axiom_hw_raw_rx(axiom_dev_t *dev, axiom_raw_msg_t *msg);
 
 /*!
  * \brief This function cheks the messages available in the raw RX queue.

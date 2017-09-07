@@ -500,12 +500,13 @@ axiom_rdma_check(axiom_dev_t *dev, axiom_token_t *tokens, int tokencnt);
  * \brief This function waits a completion of the RDMA.
  *
  * \param dev             the axiom device private data pointer
- * \param token           token that can be used to check the status of the RDMA
+ * \param tokens          array of tokens used to check the status of the RDMA
+ * \param tokencnt        number of tokens
  *
  * \return returns a unique positive message id on success or a generic error.
  */
 axiom_err_t
-axiom_rdma_wait(axiom_dev_t *dev, axiom_token_t *token);
+axiom_rdma_wait(axiom_dev_t *dev, axiom_token_t *tokens, int tokencnt);
 
 /*!
  * \brief This function map in the userspace process the RDMA zone
@@ -616,6 +617,12 @@ void setRoutingTable(axiom_node_id_t dst_node, uint32_t* nodeRoutingTable);
  * \param enabled_mask  bit mask interface (actual implementation support only 1
  *                      node)
  *
+ *                      bit position:        4   3   2   1   0
+ *                      bit mask = (....... IF4 IF3 IF2 IF1 IF0)
+ *
+ *                      IF0 = loopback interface
+ *                      IF1...IF4 = physical interfaces
+ *
  * \return Returns AXIOM_RET_OK on success, an error otherwise.
  */
 axiom_err_t
@@ -642,6 +649,12 @@ uint32_t* getRoutingTable(axiomnode_id_t dst_node);
  * \param node_id       Remote connected node id
  * \param enabled_mask  bit mask interface (actual implementation support only 1
  *                      node)
+ *
+ *                      bit position:        4   3   2   1   0
+ *                      bit mask = (....... IF4 IF3 IF2 IF1 IF0)
+ *
+ *                      IF0 = loopback interface
+ *                      IF1...IF4 = physical interfaces
  *
  * \return Returns AXIOM_RET_OK on success, an error otherwise.
  */
@@ -729,6 +742,8 @@ axiom_err_t
 axiom_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
         uint8_t *if_features);
 
+axiom_err_t
+axiom_get_statistics(axiom_dev_t *dev, axiom_stats_t *stats);
 
 axiom_err_t
 axiom_debug_info(axiom_dev_t *dev);

@@ -21,11 +21,6 @@
 
 #include "axiom_kernel_api.h"
 
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Evidence SRL");
-MODULE_DESCRIPTION("Axiom Network Device Driver");
-MODULE_VERSION("v0.13");
-
 extern int verbose;
 
 /*! \brief AXIOM HW device status */
@@ -36,12 +31,12 @@ typedef struct axiom_dev {
 
 
 axiom_dev_t *
-axiom_hw_dev_alloc(void *vregs)
+axiom_hw_dev_alloc(axiom_dev_regs_t *regs)
 {
     axiom_dev_t *dev;
 
     dev = vmalloc(sizeof(*dev));
-    dev->vregs = vregs;
+    dev->vregs = regs->vregs;
     dev->next_raw_id = 0;
 
     return dev;
@@ -292,7 +287,7 @@ axiom_hw_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
         enabled_if = AXIOMREG_ROUTING_NULL_IF;
     else
         /* Find first bit set, return as a number. */
-        enabled_if = ffs(enabled_mask);
+        enabled_if = ffs(enabled_mask) - 1;
 
     /* the register contains only one interface ID */
     iowrite8(enabled_if, dev->vregs + AXIOMREG_IO_ROUTING_BASE + node_id);

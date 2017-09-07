@@ -35,7 +35,6 @@ typedef enum {
     AXNP_RAW = 0x004
 } axiom_netperf_type_t;                     /*!< \brief axiom netperf type */
 
-
 /********************************* Packets *************************************/
 
 /*! \brief Generic message payload for the axiom-init deamon */
@@ -63,20 +62,7 @@ typedef struct axiom_traceroute_payload {
     uint8_t  step;              /*!< \brief Step of the message route */
 } axiom_traceroute_payload_t;
 
-
-/*! \brief Message payload for the axiom-netperf application */
-typedef struct axiom_netperf_payload {
-    uint8_t  command;           /*!< \brief Command of netperf messages */
-    uint8_t  padding[7];
-    uint64_t total_bytes;       /*!< \brief Total bytes of the stream */
-    uint64_t elapsed_time;      /*!< \brief Time elapsed to receive data */
-    uint8_t  type;              /*!< \brief Type of message used in the test */
-    uint8_t  magic;             /*!< \brief Magic byte write in the payload */
-    uint8_t  error;             /*!< \brief Error report */
-    uint8_t  spare[101];
-} axiom_netperf_payload_t;
-
-/* flags fod spawn messages */
+/* flags for spawn messages */
 
 /*! \brief Reset the given spawn session to default values */
 #define AXIOM_SPAWN_FLAG_RESET 0x01

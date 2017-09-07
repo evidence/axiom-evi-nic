@@ -25,22 +25,17 @@ axkt_worker(void *data)
 {
     struct axiom_kthread *ctx = data;
     int old_scheduled = atomic_read(&ctx->scheduled);
-    int new_scheduled = old_scheduled;
 
     for (;;) {
-        new_scheduled = atomic_read(&ctx->scheduled);
-
-        if (new_scheduled == old_scheduled &&
-                !ctx->work_todo_fn(ctx->worker_data)) {
-            wait_event_interruptible(ctx->wq,
-                    ctx->work_todo_fn(ctx->worker_data) ||
-                    axkt_should_stop(ctx));
-        }
+        wait_event_interruptible(ctx->wq,
+                atomic_read(&ctx->scheduled) != old_scheduled ||
+                ctx->work_todo_fn(ctx->worker_data) ||
+                axkt_should_stop(ctx));
 
         if (axkt_should_stop(ctx))
             break;
 
-        old_scheduled = new_scheduled;
+        old_scheduled = atomic_read(&ctx->scheduled);
 
         /* execute the worker function */
         ctx->worker_fn(ctx->worker_data);

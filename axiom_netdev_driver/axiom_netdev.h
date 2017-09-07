@@ -1,5 +1,5 @@
 /*!
- * \file axiom_netdev_module.h
+ * \file axiom_netdev.h
  *
  * \version     v0.13
  * \date        2016-05-03
@@ -9,12 +9,33 @@
  * Copyright (C) 2016, Evidence Srl
  * Terms of use are as specified in COPYING
  */
-#ifndef AXIOM_NETDEV_MODULE_H
-#define AXIOM_NETDEV_MODULE_H
+#ifndef AXIOM_NETDEV_H
+#define AXIOM_NETDEV_H
+#include <asm/uaccess.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/kthread.h>
+#include <linux/init.h>
+#include <linux/dma-mapping.h>
+#include <linux/interrupt.h>
+#include <linux/fs.h>
+#include <linux/cdev.h>
+#include <linux/types.h>
+#include <linux/delay.h>
+#include <linux/poll.h>
+#include <linux/uio.h>
+#include <linux/slab.h>
+
+#include "evi_queue.h"
 
 #include "dprintf.h"
+#include "axiom_nic_types.h"
 #include "axiom_nic_regs.h"
+#include "axiom_nic_packets.h"
+#include "axiom_mem_dev.h"
+#include "axiom_netdev_user.h"
 #include "axiom_kernel_api.h"
+#include "axiom_netdev_common.h"
 #include "axiom_kthread.h"
 
 /*! \brief AXIOM char device minor */
@@ -61,11 +82,9 @@
 #define AXIOMNET_PORT_INVALID           -1
 
 /*! \brief max number of retry to send RDMA request */
-#define AXIOMNET_MAX_RDMA_RETRY         100
+#define AXIOMNET_MAX_RDMA_RETRY         1000
 
 #define AXIOMNET_MAX_IOVEC              16
-
-struct axiomnet_drvdata;
 
 /*! \brief AXIOM RDMA callback function */
 typedef void (*axiom_callback_fn_t)(struct axiomnet_drvdata *drvdata,
@@ -102,7 +121,7 @@ struct axiomnet_raw_queue {
 struct axiomnet_long_queue {
     spinlock_t queue_lock;              /*!< \brief queue lock */
     evi_queue_t evi_queue;              /*!< \brief queue manager */
-    axiom_long_msg_t *queue_desc;        /*!< \brief queue elements */
+    axiom_long_msg_t *queue_desc;       /*!< \brief queue elements */
 };
 
 /*! \brief Structure to handle an AXIOM software RDMA queue */
@@ -136,9 +155,9 @@ struct axiomnet_raw_tx_hwring {
 
 /*! \brief Structure to handle an AXIOM hardware RDMA TX ring */
 struct axiomnet_rdma_tx_hwring {
-    struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM driver data */
-    struct axiomnet_rdma_queue rdma_queue;/*!< \brief AXIOM software RDMA queue */
-    struct axiomnet_long_queue long_queue; /*!< \brief AXIOM software LONG queue */
+    struct axiomnet_drvdata *drvdata;     /*!< \brief AXIOM driver data */
+    struct axiomnet_rdma_queue rdma_queue;/*!< \brief AXIOM SW RDMA queue */
+    struct axiomnet_long_queue long_queue;/*!< \brief AXIOM SW LONG queue */
     /*!< \brief port of this ring to handle RDMA TX messages */
     struct axiomnet_sw_port rdma_port;
     /*!< \brief port of this ring to handle LONG TX messages */
@@ -167,18 +186,9 @@ struct axiomnet_long_buf_lut {
 
 /*! \brief AXIOM device driver data */
 struct axiomnet_drvdata {
-    struct device *dev;                 /*!< \brief parent device */
     axiom_dev_t *dev_api;               /*!< \brief AXIOM dev HW API*/
     struct mutex lock;                  /*!< \brief Axiom driver mutex */
     int used;                           /*!< \brief Current number of open() */
-
-    /* I/O registers */
-    void __iomem *vregs;                /*!< \brief Memory mapped IO registers:
-                                                    virtual kernel address */
-    struct resource *regs_res;          /*!< \brief IO resource */
-
-    /* IRQ */
-    int irq;                            /*!< \brief IRQ descriptor */
 
     /* DMA */
     dma_addr_t dma_paddr;
@@ -205,6 +215,9 @@ struct axiomnet_drvdata {
     /* kthread */
     struct axiom_kthread kthread_raw; /*!< \brief kthread for RAW */
     struct axiom_kthread kthread_rdma; /*!< \brief kthread for RDMA */
+
+    /* statistics */
+    axiom_stats_t stats;
 };
 
 /*! \brief AXIOM char device status */
@@ -231,6 +244,7 @@ struct axiomnet_priv {
     struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM device driver data */
     int bind_port;                      /*!< \biref Port bound to the process */
     axiomnet_fdtype_t type;             /*!< \brief Type of file descriptor */
+    int rdma_debug;                     /*!< \brief RDMA debug enabled */
 };
 
-#endif /* AXIOM_NETDEV_MODULE_H */
+#endif /* AXIOM_NETDEV_H */
