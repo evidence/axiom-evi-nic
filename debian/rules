@@ -95,7 +95,7 @@ binary-arch: make-changelog init-install init-control
 
 binary-indep:
 
-clean: clean-changelog
+clean: clean-changelog init-control
 	dh_testdir
 	make clean
 	dh_clean

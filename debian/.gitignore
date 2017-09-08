@@ -17,3 +17,4 @@ libaxiom-user-dbg.substvars
 libaxiom-user-dbg/
 tmp/
 changelog
+control
