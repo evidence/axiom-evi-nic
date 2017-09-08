@@ -1,7 +1,7 @@
 /*!
  * \file axiom_nic_packets.h
  *
- * \version     v0.13
+ * \version     v0.14
  * \date        2016-03-25
  *
  * This file contains the following AXIOM NIC packets description:

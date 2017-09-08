@@ -1,7 +1,7 @@
 /*!
  * axiom_routing_protocol.pseudo.c
  *
- * \version     v0.13
+ * \version     v0.14
  * \date        2016-03-08
  *
  * This file contains the pseudo code of AXIOM Routing Protocol

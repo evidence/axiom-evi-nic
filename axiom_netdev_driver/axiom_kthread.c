@@ -1,7 +1,7 @@
 /*!
  * \file axiom_kthread.c
  *
- * \version     v0.13
+ * \version     v0.14
  * \date        2016-06-15
  *
  * This file contains the implementation of the Axiom kernel kthread.
