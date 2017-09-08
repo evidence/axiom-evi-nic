@@ -1,0 +1,33 @@
+Source: axiom-nic
+Section: unknown
+Priority: optional
+Maintainer: Massimiliano <massy@unknown>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.9.5
+Homepage: <insert the upstream URL, if relevant>
+#Vcs-Git: git://anonscm.debian.org/collab-maint/axiom-apps.git
+#Vcs-Browser: http://anonscm.debian.org/?p=collab-maint/axiom-apps.git;a=summary
+
+Package: axiom-evi-nic-modules
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, linux-image-${kversion}
+Description: axiom nic kernel module
+ axiom nic kernel module
+
+Package: libaxiom-user
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: axiom user library
+ axiom user library
+
+Package: libaxiom-user-dbg
+Architecture: any
+Depends: libaxiom-user(= ${binary:Version}), ${misc:Depends}
+Description: axiom user library debug symbols
+ axiom user library debug symbols
+
+Package: libaxiom-user-dev
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: axiom user library - development files
+ axiom user library - development files

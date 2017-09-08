@@ -80,7 +80,13 @@ ifeq ($(FS),br)
 	done
 endif
 ifeq ($(FS),x86)
+ifdef FROMDEB
+#this is used from debian/rules
+	$(MAKE) PREFIX=/usr/local TARGET_INST_DIR=$(TARGET_INST_DIR) real_install
+else
+#this is used from the script/Makefile
 	sudo $(MAKE) PREFIX=/usr/local TARGET_INST_DIR=/ real_install
+endif
 else
 	$(FAKEROOT) $(MAKE) real_install
 endif

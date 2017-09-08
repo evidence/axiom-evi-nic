@@ -63,8 +63,9 @@ AXIOM_NIC_DRIVER := $(COMMKFILE_DIR)/axiom_netdev_driver
 AXIOM_KERNEL_CFLAGS := -I$(realpath $(SYSROOT_DIR)/usr/include/linux)
 
 ifdef CCARCH
+#
 # defined CCARCH
-
+#
 ifeq ($(KERN),seco)
     CCPREFIX := ${HOST_DIR}/usr/bin/$(CCARCH)-linux-gnu-
 else
@@ -86,10 +87,12 @@ endif
 endif
 
 else
+#
 # undefined CCARCH
+#
 
-ifeq ($(FS),x86)
-    KERNELVER :=  $(shell uname -r)
+ifdef _KVERSION
+    KERNELVER :=  $(_KVERSION)
 else
     KERNELVER :=  $(shell uname -r)
 endif
