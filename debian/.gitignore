@@ -18,3 +18,5 @@ libaxiom-user-dbg/
 tmp/
 changelog
 control
+libaxiom-user-dev.install
+libaxiom-user.install
