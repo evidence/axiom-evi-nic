@@ -17,6 +17,7 @@
 #include <linux/wait.h>
 
 #include "axiom_nic_regs.h"
+#include "axiom_nic_regs_arm64.h"
 #include "axiom_nic_packets.h"
 
 #include "axiom_kernel_api.h"
@@ -51,28 +52,29 @@ axiom_hw_dev_free(axiom_dev_t *dev)
 void
 axiom_hw_enable_irq(axiom_dev_t *dev)
 {
-    axi_gpio_write32(&dev->regs.axi.mskirq, AXIOMREG_IRQ_ALL);
+    axi_reg_write32(&dev->regs.axi.registers, AXIOMREG_IO_MSKIRQ, AXIOMREG_IRQ_ALL);
 }
 
 void
 axiom_hw_disable_irq(axiom_dev_t *dev)
 {
-    axi_gpio_write32(&dev->regs.axi.mskirq, ~(uint32_t)(AXIOMREG_IRQ_ALL));
+    axi_reg_write32(&dev->regs.axi.registers, AXIOMREG_IO_MSKIRQ,
+            ~(uint32_t)(AXIOMREG_IRQ_ALL));
 }
 
 uint32_t
 axiom_hw_pending_irq(axiom_dev_t *dev)
 {
-    return axi_gpio_read32(&dev->regs.axi.pndirq);
+    return axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_PNDIRQ);
 }
 
 void
 axiom_hw_ack_irq(axiom_dev_t *dev, uint32_t ack_irq)
 {
     /* set bit to reset */
-    axi_gpio_write32(&dev->regs.axi.pndirq, ack_irq);
+    axi_reg_write32(&dev->regs.axi.registers, AXIOMREG_IO_CLRIRQ, ack_irq);
     /* clear all bits */
-    axi_gpio_write32(&dev->regs.axi.pndirq, 0x0);
+    axi_reg_write32(&dev->regs.axi.registers, AXIOMREG_IO_CLRIRQ, 0x0);
 }
 
 axiom_err_t
@@ -81,8 +83,8 @@ axiom_hw_check_version(axiom_dev_t *dev)
     uint32_t version;
 
     /* TODO: check version */
-    version = axi_gpio_read32(&dev->regs.axi.version);
-    IPRINTF(verbose, "version: 0x%08x", version);
+    version = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_VERSION);
+    IPRINTF(1, "version: 0x%08x", version);
 
     return AXIOM_RET_OK;
 }
@@ -256,8 +258,8 @@ axiom_hw_read_ni_control(axiom_dev_t *dev)
 void
 axiom_hw_set_rdma_zone(axiom_dev_t *dev, uint64_t start, uint64_t end)
 {
-    axi_gpio_write64(&dev->regs.axi.dma_start, start);
-    axi_gpio_write64(&dev->regs.axi.dma_end, end);
+    axi_reg_write64(&dev->regs.axi.registers, AXIOMREG_IO_DMA_START, start);
+    axi_reg_write64(&dev->regs.axi.registers, AXIOMREG_IO_DMA_END, end);
 }
 
 void
@@ -271,7 +273,7 @@ axiom_hw_set_long_buf(axiom_dev_t *dev, int buf_id,
 void
 axiom_hw_set_node_id(axiom_dev_t *dev, axiom_node_id_t node_id)
 {
-    axi_gpio_write32(&dev->regs.axi.nodeid, node_id);
+    axi_reg_write32(&dev->regs.axi.registers, AXIOMREG_IO_NODEID, node_id);
 }
 
 axiom_node_id_t
@@ -279,7 +281,7 @@ axiom_hw_get_node_id(axiom_dev_t *dev)
 {
     uint32_t ret;
 
-    ret = axi_gpio_read32(&dev->regs.axi.nodeid);
+    ret = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_NODEID);
 
     return ret;
 }
@@ -302,12 +304,9 @@ axiom_hw_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
      * IF 1-4 = out interfaces
      */
     /* TODO: set AXIOMREG_SIZE_ROUTING to 4 */
-    axi_bram_write32(&dev->regs.axi.rt_phy, node_id * 4, enabled_if);
-    axi_bram_write32(&dev->regs.axi.rt_rx, node_id * 4, enabled_if);
-    axi_bram_write32(&dev->regs.axi.rt_tx_dma, node_id * 4, enabled_if);
-    axi_bram_write32(&dev->regs.axi.rt_tx_raw, node_id * 4, enabled_if);
+    axi_bram_write32(&dev->regs.axi.routing, node_id * 4, enabled_if);
 
-    return 0;
+    return AXIOM_RET_OK;
 }
 
 axiom_err_t
@@ -317,22 +316,22 @@ axiom_hw_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
     uint32_t enabled_if;
 
     /* the register contains only one interface ID */
-    enabled_if = axi_bram_read32(&dev->regs.axi.rt_phy, node_id * 4);
+    enabled_if = axi_bram_read32(&dev->regs.axi.routing, node_id * 4);
 
     if (enabled_if == AXIOMREG_ROUTING_NULL_IF)
         *enabled_mask = 0;
     else
         *enabled_mask = (1 << enabled_if);
 
-    return 0;
+    return AXIOM_RET_OK;
 }
 
 axiom_err_t
 axiom_hw_get_if_number(axiom_dev_t *dev, axiom_if_id_t *if_number)
 {
-    *if_number = axi_gpio_read32(&dev->regs.axi.ifnumber);
+    *if_number = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFNUMBER);
 
-    return 0;
+    return AXIOM_RET_OK;
 }
 
 axiom_err_t
@@ -344,10 +343,16 @@ axiom_hw_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
 
     switch(if_number) {
     case 0:
-        ftr = axi_gpio_read32(&dev->regs.axi.ifinfobase0);
+        ftr = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFINFO_1);
         break;
     case 1:
-        ftr = axi_gpio_read32(&dev->regs.axi.ifinfobase1);
+        ftr = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFINFO_2);
+        break;
+    case 2:
+        ftr = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFINFO_3);
+        break;
+    case 3:
+        ftr = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFINFO_4);
         break;
     default:
         err = AXIOM_RET_ERROR;
@@ -364,27 +369,24 @@ axiom_print_status_reg(axiom_dev_t *dev)
     printk(KERN_ERR "axiom --- STATUS REGISTERS start ---\n");
 
     printk(KERN_ERR "axiom - version: 0x%08x\n",
-            axi_gpio_read32(&dev->regs.axi.version));
+            axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_VERSION));
 
 #if 0
     printk(KERN_ERR "axiom - status: 0x%08x\n",
-            axi_gpio_read32(&dev->regs.axi.status));
+            axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_STATUS));
 #endif
 
     printk(KERN_ERR "axiom - ifnumber: 0x%08x\n",
-            axi_gpio_read32(&dev->regs.axi.ifnumber));
+            axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFNUMBER));
 
     printk(KERN_ERR "axiom - ifinfo[0]: 0x%02x\n",
-            axi_gpio_read32(&dev->regs.axi.ifinfobase0));
+            axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFINFO_1));
     printk(KERN_ERR "axiom - ifinfo[1]: 0x%02x\n",
-            axi_gpio_read32(&dev->regs.axi.ifinfobase1));
-#if 0
-    /* TODO */
+            axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFINFO_2));
     printk(KERN_ERR "axiom - ifinfo[2]: 0x%02x\n",
-            axi_gpio_read32(&dev->regs.axi.ifinfobase2));
+            axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFINFO_3));
     printk(KERN_ERR "axiom - ifinfo[3]: 0x%02x\n",
-            axi_gpio_read32(&dev->regs.axi.ifinfobase3));
-#endif
+            axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFINFO_4));
 
     printk(KERN_ERR "axiom --- STATUS REGISTERS end ---\n");
 }
@@ -395,12 +397,11 @@ axiom_print_control_reg(axiom_dev_t *dev)
 
     printk(KERN_ERR "axiom --- CONTROL REGISTERS start ---\n");
 
-#if 0
-    /* TODO */
     printk(KERN_ERR "axiom - control: 0x%08x\n",
-            axi_gpio_read32(&dev->regs.axi.control));
-#endif
-    printk(KERN_ERR "axiom - nodeid: 0x%08x\n", axi_gpio_read32(&dev->regs.axi.nodeid));
+            axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_CONTROL));
+
+    printk(KERN_ERR "axiom - nodeid: 0x%08x\n",
+            axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_NODEID));
 
     printk(KERN_ERR "axiom --- CONTROL REGISTERS end ---\n");
 }

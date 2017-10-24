@@ -17,6 +17,7 @@
 #include <linux/wait.h>
 
 #include "axiom_nic_regs.h"
+#include "axiom_nic_regs_qemuarm64.h"
 #include "axiom_nic_packets.h"
 
 #include "axiom_kernel_api.h"

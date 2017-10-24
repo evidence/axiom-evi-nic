@@ -16,6 +16,7 @@
 
 #include "axiom_netdev.h"
 #include "axiom_xilinx.h"
+#include "axiom_nic_regs_arm64.h"
 
 /*! \brief AXIOM arm device driver data */
 struct axiomnet_armdata {
@@ -60,17 +61,17 @@ static irqreturn_t axiomnet_arm_irq(int irq, void *dev_id)
     return serviced;
 }
 
-static int axiomnet_gpio_init(struct axiomnet_armdata *armdata,
-        const char *gpio_name, struct axi_gpio *gpio)
+static int axiomnet_reg_init(struct axiomnet_armdata *armdata,
+        const char *reg_name, struct axi_reg *reg)
 {
     struct device_node *node;
     struct resource axi_res;
     int err = 0;
 
-    node = of_parse_phandle(armdata->dev->of_node, gpio_name, 0);
+    node = of_parse_phandle(armdata->dev->of_node, reg_name, 0);
     if (IS_ERR(node)) {
         dev_err(armdata->dev, "%s: not found in the device-tree\n",
-                gpio_name);
+                reg_name);
         err = PTR_ERR(node);
         goto error;
     }
@@ -78,29 +79,20 @@ static int axiomnet_gpio_init(struct axiomnet_armdata *armdata,
     err = of_address_to_resource(node, 0, &axi_res);
     if (err) {
         dev_err(armdata->dev, "%s: resource 0 not found in the device-tree\n",
-                gpio_name);
+                reg_name);
         goto error;
     }
 
-    gpio->base_addr = devm_ioremap_resource(armdata->dev, &axi_res);
-    if (IS_ERR(gpio->base_addr)) {
-        dev_err(armdata->dev, "%s: resource 0 could not map\n", gpio_name);
+    reg->base_addr = devm_ioremap_resource(armdata->dev, &axi_res);
+    if (IS_ERR(reg->base_addr)) {
+        dev_err(armdata->dev, "%s: resource 0 could not map\n", reg_name);
         err = PTR_ERR(node);
         goto error;
     }
 
-    DPRINTF("%s mapped - paddr: 0x%llx vaddr: %p", gpio_name,
-            axi_res.start, gpio->base_addr);
+    DPRINTF("%s mapped - paddr: 0x%llx vaddr: %p", reg_name,
+            axi_res.start, reg->base_addr);
 
-    err = of_property_read_u32(node, "xlnx,is-dual", &gpio->dual);
-    if (err) {
-        dev_err(armdata->dev,
-                "%s: is-dual not found in the device-tree\n",
-                gpio_name);
-        goto error;
-    }
-
-    DPRINTF("%s dual: %d", gpio_name, gpio->dual);
 error:
     return err;
 }
@@ -216,22 +208,9 @@ static int axiomnet_axi_init(struct axiomnet_armdata *armdata)
         void *res;
     };
 
-#define GPIO_NUM        14
-    struct res_to_init gpio_to_init[GPIO_NUM] = {
-        {"reg-version", &armdata->regs.axi.version},
-        {"reg-ifnumber", &armdata->regs.axi.ifnumber},
-        {"reg-ifinfobase0", &armdata->regs.axi.ifinfobase0},
-        {"reg-ifinfobase1", &armdata->regs.axi.ifinfobase1},
-        {"reg-nodeid", &armdata->regs.axi.nodeid},
-        {"reg-mskirq", &armdata->regs.axi.mskirq},
-        {"reg-pndirq", &armdata->regs.axi.pndirq},
-        {"reg-dma-start", &armdata->regs.axi.dma_start},
-        {"reg-dma-end", &armdata->regs.axi.dma_end},
-        {"reg-rtctrl", &armdata->regs.axi.rtctrl},
-        {"reg-aur_ctrl0", &armdata->regs.axi.aur_ctrl0},
-        {"reg-aur_ctrl1", &armdata->regs.axi.aur_ctrl1},
-        {"reg-aur_status0", &armdata->regs.axi.aur_status0},
-        {"reg-aur_status1", &armdata->regs.axi.aur_status1}
+#define REG_NUM         1
+    struct res_to_init reg_to_init[REG_NUM] = {
+        {"registers", &armdata->regs.axi.registers},
     };
 
 #define FIFO_NUM        4
@@ -242,21 +221,18 @@ static int axiomnet_axi_init(struct axiomnet_armdata *armdata)
         {"fifo-rdma-rx", &armdata->regs.axi.fifo_rdma_rx}
     };
 
-#define BRAM_NUM        5
+#define BRAM_NUM        2
     struct res_to_init bram_to_init[BRAM_NUM] = {
         {"bram-long-buf", &armdata->regs.axi.long_buf},
-        {"bram-rt-phy", &armdata->regs.axi.rt_phy},
-        {"bram-rt-rx", &armdata->regs.axi.rt_rx},
-        {"bram-rt-tx-dma", &armdata->regs.axi.rt_tx_dma},
-        {"bram-rt-tx-raw", &armdata->regs.axi.rt_tx_raw}
+        {"bram-routing", &armdata->regs.axi.routing},
     };
 
     int i, err = 0;
 
-    /* init GPIO registers */
-    for (i = 0; i < GPIO_NUM; i++) {
-        err = axiomnet_gpio_init(armdata, gpio_to_init[i].name,
-                gpio_to_init[i].res);
+    /* init registers */
+    for (i = 0; i < REG_NUM; i++) {
+        err = axiomnet_reg_init(armdata, reg_to_init[i].name,
+                reg_to_init[i].res);
         if (err) {
             goto error;
         }
@@ -280,15 +256,9 @@ static int axiomnet_axi_init(struct axiomnet_armdata *armdata)
         }
     }
 
-    /* init AURORA and router */
-    axi_gpio_write32(&armdata->regs.axi.rtctrl, 0xFF);
-    axi_gpio_write32(&armdata->regs.axi.aur_ctrl0, 0x20);
-    axi_gpio_write32(&armdata->regs.axi.aur_ctrl1, 0x20);
-    axi_gpio_write32(&armdata->regs.axi.aur_ctrl0, 0x0);
-    axi_gpio_write32(&armdata->regs.axi.aur_ctrl1, 0x0);
-
-    DPRINTF("aur_status0: 0x%x", axi_gpio_read32(&armdata->regs.axi.aur_ctrl0));
-    DPRINTF("aur_status1: 0x%x", axi_gpio_read32(&armdata->regs.axi.aur_ctrl1));
+    /* Reset Aurora IPs */
+    axi_reg_write32(&armdata->regs.axi.registers, AXIOMREG_IO_CONTROL,
+            AXIOMREG_CONTROL_RESET);
 
 error:
     return err;

@@ -27,6 +27,10 @@ typedef struct axi_bram {
     void __iomem *base_addr;
 } axi_bram_t;
 
+typedef struct axi_reg {
+    void __iomem *base_addr;
+} axi_reg_t;
+
 /******************************** xllfifo ************************************/
 
 /************************** Constant Definitions *****************************/
@@ -147,6 +151,100 @@ typedef struct axi_bram {
 #define XGPIO_GIE_GINTR_ENABLE_MASK	0x80000000
 /*@}*/
 
+/******************************* xregisters ***********************************/
+
+/************************** Constant Definitions *****************************/
+
+// registers
+// 0x00 : reserved
+// 0x04 : reserved
+// 0x08 : reserved
+// 0x0c : reserved
+// 0x10 : Data signal of DMAend_V
+//        bit 31~0 - DMAend_V[31:0] (Read/Write)
+// 0x14 : Data signal of DMAend_V
+//        bit 31~0 - DMAend_V[63:32] (Read/Write)
+// 0x18 : reserved
+// 0x1c : Data signal of DMAstart_V
+//        bit 31~0 - DMAstart_V[31:0] (Read/Write)
+// 0x20 : Data signal of DMAstart_V
+//        bit 31~0 - DMAstart_V[63:32] (Read/Write)
+// 0x24 : reserved
+// 0x28 : Data signal of NodeId_V
+//        bit 7~0 - NodeId_V[7:0] (Read/Write)
+//        others  - reserved
+// 0x2c : reserved
+// 0x30 : Data signal of MSKirq_V
+//        bit 3~0 - MSKirq_V[3:0] (Read/Write)
+//        others  - reserved
+// 0x34 : reserved
+// 0x38 : Data signal of PNDirq_V
+//        bit 3~0 - PNDirq_V[3:0] (Read)
+//        others  - reserved
+// 0x3c : Control signal of PNDirq_V
+//        bit 0  - PNDirq_V_ap_vld (Read/COR)
+//        others - reserved
+// 0x40 : Data signal of CLRirq_V
+//        bit 3~0 - CLRirq_V[3:0] (Read/Write)
+//        others  - reserved
+// 0x44 : reserved
+// 0x48 : Data signal of IFinfoBase1_V
+//        bit 2~0 - IFinfoBase1_V[2:0] (Read)
+//        others  - reserved
+// 0x4c : reserved
+// 0x50 : Data signal of IFinfoBase2_V
+//        bit 2~0 - IFinfoBase2_V[2:0] (Read)
+//        others  - reserved
+// 0x54 : reserved
+// 0x58 : Data signal of IFinfoBase3_V
+//        bit 2~0 - IFinfoBase3_V[2:0] (Read)
+//        others  - reserved
+// 0x5c : reserved
+// 0x60 : Data signal of IFinfoBase4_V
+//        bit 2~0 - IFinfoBase4_V[2:0] (Read)
+//        others  - reserved
+// 0x64 : reserved
+// 0x68 : Data signal of Version_V
+//        bit 15~0 - Version_V[15:0] (Read)
+//        others   - reserved
+// 0x6c : reserved
+// 0x70 : Data signal of IFnumber_V
+//        bit 2~0 - IFnumber_V[2:0] (Read)
+//        others  - reserved
+// 0x74 : reserved
+// 0x78 : Data signal of Control_V
+//        bit 1~0 - Control_V[1:0] (Read/Write)
+//        others - reserved
+// 0x7c : reserved
+// (SC = Self Clear, COR = Clear on Read, TOW = Toggle on Write, COH = Clear on Handshake)
+
+#define XREGISTER_CONTROLLER_REGISTERS_ADDR_DMAEND_V_DATA      0x10
+#define XREGISTER_CONTROLLER_REGISTERS_BITS_DMAEND_V_DATA      64
+#define XREGISTER_CONTROLLER_REGISTERS_ADDR_DMASTART_V_DATA    0x1c
+#define XREGISTER_CONTROLLER_REGISTERS_BITS_DMASTART_V_DATA    64
+#define XREGISTER_CONTROLLER_REGISTERS_ADDR_NODEID_V_DATA      0x28
+#define XREGISTER_CONTROLLER_REGISTERS_BITS_NODEID_V_DATA      8
+#define XREGISTER_CONTROLLER_REGISTERS_ADDR_MSKIRQ_V_DATA      0x30
+#define XREGISTER_CONTROLLER_REGISTERS_BITS_MSKIRQ_V_DATA      4
+#define XREGISTER_CONTROLLER_REGISTERS_ADDR_PNDIRQ_V_DATA      0x38
+#define XREGISTER_CONTROLLER_REGISTERS_BITS_PNDIRQ_V_DATA      4
+#define XREGISTER_CONTROLLER_REGISTERS_ADDR_CLRIRQ_V_DATA      0x40
+#define XREGISTER_CONTROLLER_REGISTERS_BITS_CLRIRQ_V_DATA      4
+#define XREGISTER_CONTROLLER_REGISTERS_ADDR_IFINFOBASE1_V_DATA 0x48
+#define XREGISTER_CONTROLLER_REGISTERS_BITS_IFINFOBASE1_V_DATA 3
+#define XREGISTER_CONTROLLER_REGISTERS_ADDR_IFINFOBASE2_V_DATA 0x50
+#define XREGISTER_CONTROLLER_REGISTERS_BITS_IFINFOBASE2_V_DATA 3
+#define XREGISTER_CONTROLLER_REGISTERS_ADDR_IFINFOBASE3_V_DATA 0x58
+#define XREGISTER_CONTROLLER_REGISTERS_BITS_IFINFOBASE3_V_DATA 3
+#define XREGISTER_CONTROLLER_REGISTERS_ADDR_IFINFOBASE4_V_DATA 0x60
+#define XREGISTER_CONTROLLER_REGISTERS_BITS_IFINFOBASE4_V_DATA 3
+#define XREGISTER_CONTROLLER_REGISTERS_ADDR_VERSION_V_DATA     0x68
+#define XREGISTER_CONTROLLER_REGISTERS_BITS_VERSION_V_DATA     16
+#define XREGISTER_CONTROLLER_REGISTERS_ADDR_IFNUMBER_V_DATA    0x70
+#define XREGISTER_CONTROLLER_REGISTERS_BITS_IFNUMBER_V_DATA    3
+#define XREGISTER_CONTROLLER_REGISTERS_ADDR_CONTROL_V_DATA     0x78
+#define XREGISTER_CONTROLLER_REGISTERS_BITS_CONTROL_V_DATA     2
+
 static inline uint32_t
 axi_gpio_read32(axi_gpio_t *gpio)
 {
@@ -164,6 +262,36 @@ axi_gpio_write64(axi_gpio_t *gpio, uint64_t value)
 {
     iowrite32(value, gpio->base_addr + XGPIO_DATA_OFFSET);
     iowrite32((value >> 32), gpio->base_addr + XGPIO_DATA2_OFFSET);
+}
+
+static inline uint32_t
+axi_reg_read32(axi_reg_t *reg, int offset)
+{
+    return ioread32(reg->base_addr + offset);
+}
+
+static inline void
+axi_reg_write32(axi_reg_t *reg, int offset, uint32_t value)
+{
+    iowrite32(value, reg->base_addr + offset);
+}
+
+static inline uint64_t
+axi_reg_read64(axi_reg_t *reg, int offset)
+{
+    uint64_t value;
+
+    value = ioread32(reg->base_addr + offset);
+    value += ((uint64_t)ioread32(reg->base_addr + offset + 4)) << 32;
+
+    return value;
+}
+
+static inline void
+axi_reg_write64(axi_reg_t *reg, int offset, uint64_t value)
+{
+    iowrite32(value, reg->base_addr + offset);
+    iowrite32((value >> 32), reg->base_addr + offset + 4);
 }
 
 static inline void
