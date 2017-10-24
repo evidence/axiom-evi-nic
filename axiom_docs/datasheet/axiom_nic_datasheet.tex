@@ -41,7 +41,7 @@
 	\hline
 	\end{tabularx}}
 
-\newcommand{\versionapi}{v0.14}
+\newcommand{\versionapi}{v0.15-beta}
 
 % Title Page
 \title{Axiom NIC Datasheet}
@@ -58,57 +58,61 @@
 \subsection{Register summary}
 \begin{regglobalsummary}
         \hline \textbf{\nameref{mod:status}} & & & & \\
-                                             & & & & \\
-        \hline \nameref{reg:version} & 0xA0170000 & 32 & ro & Version register\\
-	\hline \nameref{reg:ifnumber} & 0xA0140000 & 32 & ro & Number of
-	interface\\
-        \hline \nameref{reg:ifinfo_base_1} & 0xA0150000 & 8 & ro & Interface
-        status table\\
-        \hline \nameref{reg:ifinfo_base_2} & 0xA0160000 & 8 & ro & Interface
-        status table\\
+                                      & & & & \\
+        \hline \nameref{reg:version} & 0xA0090000+0x68 & 32 & ro & Version
+        register\\
+        \hline \nameref{reg:ifnumber} & 0xA0090000+0x70 & 32 & ro & Number of
+        interface\\
+        \hline \nameref{reg:ifinfo_base_1} & 0xA0090000+0x48 & 32 & ro &
+        Interface 1 status register\\
+        \hline \nameref{reg:ifinfo_base_2} & 0xA0090000+0x50 & 32 & ro &
+        Interface 2 status register\\
+        \hline \nameref{reg:ifinfo_base_3} & 0xA0090000+0x58 & 32 & ro &
+        Interface 3 status register\\
+        \hline \nameref{reg:ifinfo_base_4} & 0xA0090000+0x60 & 32 & ro &
+        Interface 4 status register\\
         \hline \textbf{\nameref{mod:control}} & & & & \\
-                                              & & & & \\
-	\hline \nameref{reg:nodeid} & 0xA00A0000 & 32 & rw & Node ID register \\
-	\hline \nameref{reg:dma_start} & 0xA0080000 & 64 & wo & DMA start
-	register\\
-	\hline \nameref{reg:dma_end} & 0xA0070000 & 64 & wo & DMA end
-	register \\
+                                       & & & & \\
+        \hline \nameref{reg:control} & 0xA0090000+0x78 & 32 & rw &
+        Control register\\
+        \hline \nameref{reg:nodeid} & 0xA0090000+0x28 & 32 & rw &
+        Node ID register \\
+        \hline \nameref{reg:dma_start} & 0xA0090000+0x1C & 64 & rw &
+        DMA start register\\
+        \hline \nameref{reg:dma_end} & 0xA0090000+0x10 & 64 & rw &
+        DMA end register \\
         \hline \textbf{\nameref{mod:interrupt}} & & & & \\
-                                                & & & & \\
-	\hline \nameref{reg:mskirq} & 0xA0090000 & 32 & rw & Mask Interrupt
-	Register\\
-	\hline \nameref{reg:pndirq} & 0xA00B0000 & 32 & rw & Pending Interrupt
-	Register\\
+                                         & & & & \\
+        \hline \nameref{reg:mskirq} & 0xA0090000+0x30 & 32 & rw &
+        Mask Interrupt Register\\
+        \hline \nameref{reg:pndirq} & 0xA0090000+0x38 & 32 & ro &
+        Pending Interrupt Register\\
+        \hline \nameref{reg:clrirq} & 0xA0090000+0x40 & 32 & wo &
+        Pending Interrupt Register\\
         \hline \textbf{\nameref{mod:routing}} & & & & \\
-                                              & & & & \\
-        \hline \nameref{reg:PHY1_routing_base} & 0xA0010000+n & 8 & rw & Routing
-        table base register\\ & n=0...255 & & & \\
-        \hline \nameref{reg:rx_routing_base} & 0xA0014000+n & 8 & rw & Routing
-        table base register\\ & n=0...255 & & & \\
-        \hline \nameref{reg:tx_dma_routing_base} & 0xA0016000+n & 8 & rw & Routing
-        table base register\\ & n=0...255 & & & \\
-        \hline \nameref{reg:tx_raw_routing_base} & 0xA0018000+n & 8 & rw & Routing
-        table base register\\ & n=0...255 & & & \\
+                                       & & & & \\
+        \hline \nameref{reg:routing_base} & 0xA0002000+n & 8 & rw &
+        Routing table base register\\ & n=0...255 & & & \\
         \hline \textbf{\nameref{mod:queue}} & & & & \\
-                                            & & & & \\
-	\hline \nameref{reg:raw_tx_status} & 0xA0120000+0x0c & 32 & ro & RAW TX queue
-	status register\\
-        \hline \nameref{reg:raw_tx_desc} & 0xA0130000 & 32 & wo & RAW TX queue
-        descriptor register\\
-	\hline \nameref{reg:raw_rx_status} & 0xA00E0000+0x1c & 32 & ro & RAW RX queue
-	status register\\
-        \hline \nameref{reg:raw_rx_desc} & 0xA00F0000+0x1000 & 32 & ro & RAW RX queue
-        descriptor register\\
-	\hline \nameref{reg:rdma_tx_status} & 0xA0100000+0x0c & 32 & ro & RDMA TX
-	queue status register\\
-        \hline \nameref{reg:rdma_tx_desc} & 0xA0110000 & 32 & wo & RDMA TX queue
-        descriptor register\\
-	\hline \nameref{reg:rdma_rx_status} & 0xA00C0000+0x1c & 32 & ro & RDMA RX
-	queue status register\\
-        \hline \nameref{reg:rdma_rx_desc} & 0xA00D0000+0x1000 & 32 & ro & RDMA RX queue
-        descriptor register\\
-        \hline \nameref{reg:long_buf_base} & 0xA0012000+8*n & 64 & rw & LONG
-        buffers base register\\ & n=0...31 & & & \\
+                                     & & & & \\
+        \hline \nameref{reg:raw_tx_status} & 0xA0070000+0x0c & 32 & ro &
+        RAW TX queue status register\\
+        \hline \nameref{reg:raw_tx_desc} & 0xA0080000 & 32 & wo &
+        RAW TX queue descriptor register\\
+        \hline \nameref{reg:raw_rx_status} & 0xA0030000+0x1c & 32 & ro &
+        RAW RX queue status register\\
+        \hline \nameref{reg:raw_rx_desc} & 0xA0040000+0x1000 & 32 & ro &
+        RAW RX queue descriptor register\\
+        \hline \nameref{reg:rdma_tx_status} & 0xA0050000+0x0c & 32 & ro &
+        RDMA TX queue status register\\
+        \hline \nameref{reg:rdma_tx_desc} & 0xA0060000 & 32 & wo &
+        RDMA TX queue descriptor register\\
+        \hline \nameref{reg:rdma_rx_status} & 0xA0010000+0x1c & 32 & ro &
+        RDMA RX queue status register\\
+        \hline \nameref{reg:rdma_rx_desc} & 0xA0020000+0x1000 & 32 & ro &
+        RDMA RX queue descriptor register\\
+        \hline \nameref{reg:long_buf_base} & 0xA0000000+8*n & 64 & rw &
+        LONG buffers base register\\ & n=0...31 & & & \\
 \end{regglobalsummary}
 
 
@@ -120,21 +124,25 @@
 
 \subsection{Register summary}
 \begin{regsummary}
-	\hline \nameref{reg:version} & 0xA0170000 & 32 & ro & 0x0 & Version
-	register\\
-	\hline \nameref{reg:ifnumber} & 0xA0140000 & 32 & ro & 0x0 & Number of
-	interface\\
-        \hline \nameref{reg:ifinfo_base_1} & 0xA0150000 & 8 & ro & 0x0 & Interface
-        status table\\
-        \hline \nameref{reg:ifinfo_base_2} & 0xA0160000 & 8 & ro  & 0x0 & Interface
-        status table\\
+        \hline \nameref{reg:version} & 0xA0090000+0x68 & 32 & ro & 0x0 &
+        Version register\\
+        \hline \nameref{reg:ifnumber} & 0xA0090000+0x70 & 32 & ro & 0x0 &
+        Number of interface\\
+        \hline \nameref{reg:ifinfo_base_1} & 0xA0090000+0x48 & 32 & ro & 0x0 &
+        Interface 1 status register\\
+        \hline \nameref{reg:ifinfo_base_2} & 0xA0090000+0x50 & 32 & ro  & 0x0 &
+        Interface 2 status register\\
+        \hline \nameref{reg:ifinfo_base_3} & 0xA0090000+0x58 & 32 & ro  & 0x0 &
+        Interface 3 status register\\
+        \hline \nameref{reg:ifinfo_base_4} & 0xA0090000+0x60 & 32 & ro  & 0x0 &
+        Interface 4 status register\\
 \end{regsummary}
 
 
 \subsubsection{VERSION} \label{reg:version}
 \begin{regdescription}
 	Name			\> VERSION\\
-	Relative Address	\> 0xA0170000\\
+	Relative Address	\> 0xA0090000+0x68\\
 	Width			\> 32 bits\\
 	Access Type		\> ro\\
 	Init Value		\> 0x00000000\\
@@ -151,7 +159,7 @@
 \subsubsection{IFNUMBER} \label{reg:ifnumber}
 \begin{regdescription}
 	Name			\> IFNUMBER\\
-	Relative Address	\> 0xA0140000\\
+	Relative Address	\> 0xA0090000+0x70\\
 	Width			\> 32 bits\\
 	Access Type		\> ro\\
 	Init Value		\> 0x00\\
@@ -168,41 +176,87 @@
 \subsubsection{IFINFO\_BASE\_1} \label{reg:ifinfo_base_1}
 \begin{regdescription}
 	Name			\> IFINFO\_BASE\_1\\
-	Relative Address	\> 0xA0150000\\
-	Width (single row)	\> 8 bits\\
+	Relative Address	\> 0xA0090000+0x48\\
+	Width (single row)	\> 32 bits\\
 	Access Type		\> ro\\
 	Init Value		\> 0x00\\
-	Description		\> Interface 1 (Rx\_1) status table\\
+	Description		\> Interface 1 (Rx\_1) status register\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 7:3 & ro & 0x0 & Reserved. Writes are ignored, read
-	data is zero.\\
-	\hline CONNECTED & 2 & ro & 0x0 & Interface connected status.\\
+        \hline reserved & 31:3 & ro & 0x0 & Reserved. Writes are ignored, read
+        data is zero.\\
+        \hline CONNECTED & 2 & ro & 0x0 & Interface connected status.\\
                & & & & 1b = interface is physically connected to another board.\\
                & & & & 0b = interface is disconnected.\\
-	\hline RX & 1 & ro & 0x0 & Interface RX functionality.\\
+        \hline RX & 1 & ro & 0x0 & Interface RX functionality.\\
                & & & & This bit is set when the interface can work as RX.\\
-	\hline TX & 0 & ro & 0x0 & Interface TX functionality.\\
+        \hline TX & 0 & ro & 0x0 & Interface TX functionality.\\
                & & & & This bit is set when the interface can work as TX.\\
 \end{regdetails}
+
+
 \subsubsection{IFINFO\_BASE\_2} \label{reg:ifinfo_base_2}
 \begin{regdescription}
 	Name			\> IFINFO\_BASE\_2\\
-	Relative Address	\> 0xA0160000\\
-	Width (single row)	\> 8 bits\\
+	Relative Address	\> 0xA0090000+0x50\\
+	Width (single row)	\> 32 bits\\
 	Access Type		\> ro\\
 	Init Value		\> 0x00\\
-	Description		\> Interface 2 (Tx\_1) status table\\
+	Description		\> Interface 2 (Tx\_1) status register\\
 \end{regdescription}
 \begin{regdetails}
-	\hline reserved & 7:3 & ro & 0x0 & Reserved. Writes are ignored, read
+	\hline reserved & 31:3 & ro & 0x0 & Reserved. Writes are ignored, read
 	data is zero.\\
-	\hline CONNECTED & 2 & ro & 0x0 & Interface connected status.\\
+        \hline CONNECTED & 2 & ro & 0x0 & Interface connected status.\\
                & & & & 1b = interface is physically connected to another board.\\
                & & & & 0b = interface is disconnected.\\
-	\hline RX & 1 & ro & 0x0 & Interface RX functionality.\\
+        \hline RX & 1 & ro & 0x0 & Interface RX functionality.\\
                & & & & This bit is set when the interface can work as RX.\\
-	\hline TX & 0 & ro & 0x0 & Interface TX functionality.\\
+        \hline TX & 0 & ro & 0x0 & Interface TX functionality.\\
+               & & & & This bit is set when the interface can work as TX.\\
+\end{regdetails}
+
+
+\subsubsection{IFINFO\_BASE\_3} \label{reg:ifinfo_base_3}
+\begin{regdescription}
+	Name			\> IFINFO\_BASE\_3\\
+	Relative Address	\> 0xA0090000+0x58\\
+	Width (single row)	\> 32 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00\\
+	Description		\> Interface 3 (Rx\_2) status register\\
+\end{regdescription}
+\begin{regdetails}
+        \hline reserved & 31:3 & ro & 0x0 & Reserved. Writes are ignored, read
+        data is zero.\\
+        \hline CONNECTED & 2 & ro & 0x0 & Interface connected status.\\
+               & & & & 1b = interface is physically connected to another board.\\
+               & & & & 0b = interface is disconnected.\\
+        \hline RX & 1 & ro & 0x0 & Interface RX functionality.\\
+               & & & & This bit is set when the interface can work as RX.\\
+        \hline TX & 0 & ro & 0x0 & Interface TX functionality.\\
+               & & & & This bit is set when the interface can work as TX.\\
+\end{regdetails}
+
+
+\subsubsection{IFINFO\_BASE\_4} \label{reg:ifinfo_base_4}
+\begin{regdescription}
+	Name			\> IFINFO\_BASE\_4\\
+	Relative Address	\> 0xA0090000+0x60\\
+	Width (single row)	\> 32 bits\\
+	Access Type		\> ro\\
+	Init Value		\> 0x00\\
+	Description		\> Interface 4 (Tx\_2) status register\\
+\end{regdescription}
+\begin{regdetails}
+        \hline reserved & 31:3 & ro & 0x0 & Reserved. Writes are ignored, read
+        data is zero.\\
+        \hline CONNECTED & 2 & ro & 0x0 & Interface connected status.\\
+               & & & & 1b = interface is physically connected to another board.\\
+               & & & & 0b = interface is disconnected.\\
+        \hline RX & 1 & ro & 0x0 & Interface RX functionality.\\
+               & & & & This bit is set when the interface can work as RX.\\
+        \hline TX & 0 & ro & 0x0 & Interface TX functionality.\\
                & & & & This bit is set when the interface can work as TX.\\
 \end{regdetails}
 
@@ -215,19 +269,38 @@
 
 \subsection{Register summary}
 \begin{regsummary}
-	\hline \nameref{reg:nodeid} & 0xA00A0000 & 32 & rw & 0x0 & Node ID
-	register \\
-	\hline \nameref{reg:dma_start} & 0xA0080000 & 64 & wo & 0x0 & DMA start
-	register \\
-	\hline \nameref{reg:dma_end} & 0x00000050 & 64 & wo & 0x0 & DMA end
-	register \\
+        \hline \nameref{reg:control} & 0xA0090000+0x78 & 32 & rw & 0x0 &
+        Control register \\
+        \hline \nameref{reg:nodeid} & 0xA0090000+0x28 & 32 & rw & 0x0 &
+        Node ID register \\
+        \hline \nameref{reg:dma_start} & 0xA0090000+0x1C & 64 & rw & 0x0 &
+        DMA start register \\
+        \hline \nameref{reg:dma_end} & 0xA0090000+0x10 & 64 & rw & 0x0 &
+        DMA end register \\
 \end{regsummary}
+
+
+\subsubsection{CONTROL} \label{reg:control}
+\begin{regdescription}
+	Name			\> CONTROL\\
+	Relative Address	\> 0xA0090000+0x78\\
+	Width			\> 32 bits\\
+	Access Type		\> rw\\
+	Init Value		\> 0x00000000\\
+	Description		\> Control register \\
+\end{regdescription}
+\begin{regdetails}
+        \hline reserved & 31:2 & rw & 0x0 & Reserved. Writes are ignored, read
+        data is zero.\\
+        \hline reserved & 1 & rw & 0x0 & Aurora Reset bit, used to reset all four Aurora IPs.\\
+        \hline reserved & 0 & rw & 0x0 & LOOPBACK bit, used to enable external loopback.\\
+\end{regdetails}
 
 
 \subsubsection{NODEID} \label{reg:nodeid}
 \begin{regdescription}
 	Name			\> NODEID\\
-	Relative Address	\> 0xA00A0000\\
+	Relative Address	\> 0xA0090000+0x28\\
 	Width			\> 32 bits\\
 	Access Type		\> rw\\
 	Init Value		\> 0x00000000\\
@@ -243,8 +316,8 @@
 \subsubsection{DMA\_START} \label{reg:dma_start}
 \begin{regdescription}
 	Name			\> DMA\_START\\
-	Relative Address	\> 0xA0080000 (+0x8 for second channel)\\
-	Width			\> 2 Channels * 32 bits\\
+	Relative Address	\> 0xA0090000+0x1C\\
+	Width			\> 64 bits\\
 	Access Type		\> wo\\
 	Init Value		\> 0x00000000\\
 	Description		\> DMA start register\\
@@ -261,8 +334,8 @@
 \subsubsection{DMA\_END} \label{reg:dma_end}
 \begin{regdescription}
 	Name			\> DMA\_END\\
-	Relative Address	\> 0xA0070000 (+0x8 for second channel)\\
-	Width			\> 2 Channels * 32 bits\\
+	Relative Address	\> 0xA0090000+0x10\\
+	Width			\> 64 bits\\
 	Access Type		\> wo\\
 	Init Value		\> 0x00000000\\
 	Description		\> DMA end register\\
@@ -274,6 +347,7 @@
 	\hline DMA\_END\_HIGH & 63:32 & wo & 0x0 & Upper Half of the Physical memory address of the
 	last byte of DMA zone that can be accessed from the NIC.\\
 \end{regdetails}
+
 
 \section{Interrupt Registers} \label{mod:interrupt}
 \begin{regdescription}
@@ -287,18 +361,22 @@
 	                \>      is dequeued by the HW. [transition full, not full]\\
 \end{regdescription}
 
+
 \subsection{Register summary}
 \begin{regsummary}
-	\hline \nameref{reg:mskirq} & 0xA0090000 & 32 & rw & 0x0 & Mask
-	Interrupt Register\\
-	\hline \nameref{reg:pndirq} & 0xA00B0000 & 32 & rw & 0x0 & Pending
-	Interrupt Register\\
+        \hline \nameref{reg:mskirq} & 0xA0090000+0x30 & 32 & rw & 0x0 &
+        Mask Interrupt Register\\
+        \hline \nameref{reg:pndirq} & 0xA0090000+0x38 & 32 & ro & 0x0 &
+        Pending Interrupt Register\\
+        \hline \nameref{reg:clrirq} & 0xA0090000+0x40 & 32 & wo & 0x0 &
+        Clear Interrupt Register\\
 \end{regsummary}
+
 
 \subsubsection{MSKIRQ} \label{reg:mskirq}
 \begin{regdescription}
 	Name			\> MSKIRQ\\
-	Relative Address	\> 0xA0090000\\
+	Relative Address	\> 0xA0090000+0x30\\
 	Width			\> 32 bits\\
 	Access Type		\> rw\\
 	Init Value		\> 0x00000000\\
@@ -322,39 +400,58 @@
                & & & & 0b = RAW TX interrupt is disabled.\\
 \end{regdetails}
 
+
 \subsubsection{PNDIRQ} \label{reg:pndirq}
 \begin{regdescription}
 	Name			\> PNDIRQ\\
-	Relative Address	\> 0xA00B0000\\
+	Relative Address	\> 0xA0090000+0x38\\
 	Width			\> 32 bits\\
-	Access Type		\> rw\\
+	Access Type		\> ro\\
 	Init Value		\> 0x00000000\\
 	Description		\> Pending Interrupt Register. Used to report
-	                           the cause of the interrupt \\
-	                        \> and send back an ACK, when the SW handles it.\\
+	                           the cause of the interrupt.\\
 \end{regdescription}
 \begin{regdetails}
 	\hline reserved & 31:4 & rw & 0x0 & Reserved. Read data is zero.\\
 	\hline IRQ\_RDMA\_RX & 3 & rw & 0x0 & Interrupt RDMA RX queue.\\
                & & & & This bit is set by the HW to 1b when the RDMA RX queue
                generates an interrupt.\\
-               & & & & This bit is reset by the SW to 0b when the RDMA RX queue
-               interrupt is acknowledged.\\
 	\hline IRQ\_RDMA\_TX & 2 & rw & 0x0 & Interrupt RDMA TX queue.\\
                & & & & This bit is set by the HW to 1b when the RDMA TX queue
                generates an interrupt.\\
-               & & & & This bit is reset by the SW to 0b when the RDMA TX queue
-               interrupt is acknowledged.\\
 	\hline IRQ\_RAW\_RX & 1 & rw & 0x0 & Interrupt RAW RX queue.\\
                & & & & This bit is set by the HW to 1b when the RAW RX queue
                generates an interrupt.\\
-               & & & & This bit is reset by the SW to 0b when the RAW RX queue
-               interrupt is acknowledged.\\
 	\hline IRQ\_RAW\_TX & 0 & rw & 0x0 & Interrupt RAW TX queue.\\
                & & & & This bit is set by the HW to 1b when the RAW TX queue
                generates an interrupt.\\
-               & & & & This bit is reset by the SW to 0b when the RAW TX queue
-               interrupt is acknowledged.\\
+\end{regdetails}
+
+
+\subsubsection{CLRIRQ} \label{reg:clrirq}
+\begin{regdescription}
+	Name			\> PNDIRQ\\
+	Relative Address	\> 0xA0090000+0x40\\
+	Width			\> 32 bits\\
+	Access Type		\> wo\\
+	Init Value		\> 0x00000000\\
+	Description		\> Clear Interrupt Register. Used to clear
+	                           pending interrupts.\\ 
+\end{regdescription}
+\begin{regdetails}
+	\hline reserved & 31:4 & rw & 0x0 & Reserved. Read data is zero.\\
+	\hline IRQ\_RDMA\_RX & 3 & rw & 0x0 & Interrupt RDMA RX queue.\\
+               & & & & This bit is set by the SW to 1b when the RDMA RX queue
+               interrupt is handled. It is then set by the SW to 0b.\\
+	\hline IRQ\_RDMA\_TX & 2 & rw & 0x0 & Interrupt RDMA TX queue.\\
+               & & & & This bit is set by the SW to 1b when the RDMA TX queue
+               interrupt is handled. It is then set by the SW to 0b.\\
+	\hline IRQ\_RAW\_RX & 1 & rw & 0x0 & Interrupt RAW RX queue.\\
+               & & & & This bit is set by the SW to 1b when the RAW RX queue
+               interrupt is handled. It is then set by the SW to 0b.\\
+	\hline IRQ\_RAW\_TX & 0 & rw & 0x0 & Interrupt RAW TX queue.\\
+               & & & & This bit is set by the SW to 1b when the RAW TX queue
+               interrupt is handled. It is then set by the SW to 0b.\\
 \end{regdetails}
 
 
@@ -362,29 +459,20 @@
 \begin{regdescription}
 	Module Name 	\> Routing Registers\\
 	Description 	\> Registers used to manage the routing table\\
-    \> All four Routing Tables should have the same values\\
 \end{regdescription}
 
 \subsection{Register summary}
 \begin{regsummary}
-    \hline \nameref{reg:PHY1_routing_base} & 0xA0010000+n & 8 & rw & 0x00 & Routing
-    table base register\\
-                            & n=0...255 & & & & \\
-                            \hline \nameref{reg:rx_routing_base} & 0xA0014000+n & 8 & rw & 0x00 & Routing
-    table base register\\
-                            & n=0...255 & & & & \\
-                            \hline \nameref{reg:tx_dma_routing_base} & 0xA0016000+n & 8 & rw & 0x00 & Routing
-    table base register\\
-                            & n=0...255 & & & & \\
-                            \hline \nameref{reg:tx_raw_routing_base} & 0xA0018000+n & 8 & rw & 0x00 & Routing
-    table base register\\
-                            & n=0...255 & & & & \\
+    \hline \nameref{reg:routing_base} & 0xA0020000+n & 8 & rw & 0x00 &
+    Routing table base register\\
+    & n=0...255 & & & & \\
 \end{regsummary}
 
-\subsubsection{PHY1\_ROUTING\_BASE} \label{reg:PHY1_routing_base}
+
+\subsubsection{ROUTING\_BASE} \label{reg:routing_base}
 \begin{regdescription}
-	Name			\> PHY1\_ROUTING\_BASE\\
-	Relative Address	\> 0xA0010000+n, n=0...255\\
+	Name			\> ROUTING\_BASE\\
+	Relative Address	\> 0xA0002000+n, n=0...255\\
 	Width (single row)	\> 8 bits\\
 	Access Type		\> rw\\
 	Init Value		\> 0x00000000\\
@@ -396,66 +484,10 @@
 \end{regdescription}
 \begin{regdetails}
 	\hline ENABLED\_IF & 7:0 & rw & 0x0 & ID of the interface to reach the
-	node n (array index). Value 0x0 is the NI and value 0x1 is the Tx\_1 IF. If the node is not reachable, the SW must write
-	0xFF in this register.\\
+	node n (array index). Value 0x0 is the NI and value 0x1 is the Tx\_1 IF.
+	If the node is not reachable, the SW must write 0xFF in this register.\\
 \end{regdetails}
 
-\subsubsection{RX\_ROUTING\_BASE} \label{reg:rx_routing_base}
-\begin{regdescription}
-	Name			\> RX\_ROUTING\_BASE\\
-	Relative Address	\> 0xA0014000+n, n=0...255\\
-	Width (single row)	\> 8 bits\\
-	Access Type		\> rw\\
-	Init Value		\> 0x00000000\\
-	Description		\> Routing table base register\\
-	                        \> This array of registers represents the
-	                        routing table.\\
-	                        \> The array index represents the destination
-	                        node id.\\
-\end{regdescription}
-\begin{regdetails}
-	\hline ENABLED\_IF & 7:0 & rw & 0x0 & ID of the interface to reach the
-	node n (array index). Value 0x0 is the NI and value 0x1 is the Tx\_1 IF. If the node is not reachable, the SW must write
-	0xFF in this register.\\
-\end{regdetails}
-
-\subsubsection{TX\_DMA\_ROUTING\_BASE} \label{reg:tx_dma_routing_base}
-\begin{regdescription}
-	Name			\> TX\_DMA\_ROUTING\_BASE\\
-	Relative Address	\> 0xA0016000+n, n=0...255\\
-	Width (single row)	\> 8 bits\\
-	Access Type		\> rw\\
-	Init Value		\> 0x00000000\\
-	Description		\> Routing table base register\\
-	                        \> This array of registers represents the
-	                        routing table.\\
-	                        \> The array index represents the destination
-	                        node id.\\
-\end{regdescription}
-\begin{regdetails}
-	\hline ENABLED\_IF & 7:0 & rw & 0x0 & ID of the interface to reach the
-	node n (array index). Value 0x0 is the NI and value 0x1 is the Tx\_1 IF. If the node is not reachable, the SW must write
-	0xFF in this register.\\
-\end{regdetails}
-
-\subsubsection{TX\_RAW\_ROUTING\_BASE} \label{reg:tx_raw_routing_base}
-\begin{regdescription}
-	Name			\> TX\_RAW\_ROUTING\_BASE\\
-	Relative Address	\> 0xA0018000+n, n=0...255\\
-	Width (single row)	\> 8 bits\\
-	Access Type		\> rw\\
-	Init Value		\> 0x00000000\\
-	Description		\> Routing table base register\\
-	                        \> This array of registers represents the
-	                        routing table.\\
-	                        \> The array index represents the destination
-	                        node id.\\
-\end{regdescription}
-\begin{regdetails}
-	\hline ENABLED\_IF & 7:0 & rw & 0x0 & ID of the interface to reach the
-	node n (array index). Value 0x0 is the NI and value 0x1 is the Tx\_1 IF. If the node is not reachable, the SW must write
-	0xFF in this register.\\
-\end{regdetails}
 
 \subsection{Queues Registers} \label{mod:queue}
 \begin{regdescription}
@@ -465,45 +497,46 @@
 
 \subsection{Register summary}
 \begin{regsummary}
-	\hline \nameref{reg:raw_tx_status} & 0xA0120000+0x0c & 32 & ro & 0x0 & RAW TX
-	queue status register\\
-        \hline \nameref{reg:raw_tx_desc} & 0xA0130000 & 32 & wo & 0x0 & RAW TX
-        queue descriptor register\\
-	\hline \nameref{reg:raw_rx_status} & 0xA00E0000+0x1c & 32 & ro & 0x0 & RAW RX
-	queue status register\\
-        \hline \nameref{reg:raw_rx_desc} & 0xA00F0000+0x1000 & 32 & ro & 0x0 & RAW RX
-        queue descriptor register\\
-	\hline \nameref{reg:rdma_tx_status} & 0xA0100000+0x0c & 32 & ro & 0x0 & RDMA
-	TX queue status register\\
-        \hline \nameref{reg:rdma_tx_desc} & 0xA0110000 & 32 & wo & 0x0 & RDMA TX
-        queue descriptor register\\
-	\hline \nameref{reg:rdma_rx_status} & 0xA00C0000+0x1c & 32 & ro & 0x0 & RDMA
-	RX queue status register\\
-        \hline \nameref{reg:rdma_rx_desc} & 0xA00D0000+0x1000 & 32 & ro & 0x0 & RDMA RX
-        queue descriptor register\\
-        \hline \nameref{reg:long_buf_base} & 0xA0012000+8*n & 64 & rw & 0x0 & LONG
-        buffers base register\\
-            & n=0...31 & & & & \\
+        \hline \nameref{reg:raw_tx_status} & 0xA0070000+0x0c & 32 & ro & 0x0 &
+        RAW TX queue status register\\
+        \hline \nameref{reg:raw_tx_desc} & 0xA0080000 & 32 & wo & 0x0 &
+        RAW TX queue descriptor register\\
+        \hline \nameref{reg:raw_rx_status} & 0xA0030000+0x1c & 32 & ro & 0x0 &
+        RAW RX queue status register\\
+        \hline \nameref{reg:raw_rx_desc} & 0xA0040000+0x1000 & 32 & ro & 0x0 &
+        RAW RX queue descriptor register\\
+        \hline \nameref{reg:rdma_tx_status} & 0xA0050000+0x0c & 32 & ro & 0x0 &
+        RDMA TX queue status register\\
+        \hline \nameref{reg:rdma_tx_desc} & 0xA0060000 & 32 & wo & 0x0 &
+        RDMA TX queue descriptor register\\
+        \hline \nameref{reg:rdma_rx_status} & 0xA0010000+0x1c & 32 & ro & 0x0 &
+        RDMA RX queue status register\\
+        \hline \nameref{reg:rdma_rx_desc} & 0xA0020000+0x1000 & 32 & ro & 0x0 &
+        RDMA RX queue descriptor register\\
+        \hline \nameref{reg:long_buf_base} & 0xA0000000+8*n & 64 & rw & 0x0 &
+        LONG buffers base register\\
+        & n=0...31 & & & & \\
 \end{regsummary}
 
 \subsubsection{RAW\_TX\_STATUS} \label{reg:raw_tx_status}
 \begin{regdescription}
 	Name			\> RAW\_TX\_STATUS\\
-	Relative Address	\> 0xA0120000+0x0c\\
+	Relative Address	\> 0xA0070000+0x0c\\
 	Width			\> 32 bits\\
 	Access Type		\> ro\\
 	Init Value		\> 0x00000000\\
 	Description		\> RAW TX queue status register\\
 \end{regdescription}
 \begin{regdetails}
-	\hline QSTATUS\_AVAIL & 31:0 & ro & 0x0 & The Vacancy of the Tx FIFO. When greater than 0, in the RAW TX
-	queue there is space available for new descriptors from the SW.\\
+	\hline QSTATUS\_AVAIL & 31:0 & ro & 0x0 & The Vacancy of the Tx FIFO.
+	When greater than 0, in the RAW TX queue there is space available for
+	new descriptors from the SW.\\
 \end{regdetails}
 
 \subsubsection{RAW\_TX\_DESC} \label{reg:raw_tx_desc}
 \begin{regdescription}
 	Name			\> RAW\_TX\_DESC\\
-	Relative Address	\> 0xA0130000\\
+	Relative Address	\> 0xA0080000\\
 	Width 	                \> 32 bits\\
 	Access Type		\> wo\\
 	Init Value		\> 0x00000000\\
@@ -516,39 +549,42 @@
 	                        these registers\\
 \end{regdescription}
 \begin{regdetails}
-	\hline PAYLOAD & 2079:40 & ro & 0x0 & Payload of this message\\
-	\hline reserved & 39:32 & wo & 0x0 & Reserved. Writes are ignored, read
-	data is zero.\\
-	\hline PAYLOAD\_SIZE & 31:24 & wo & 0x0 & Payload size of this message\\
-	\hline MSG\_ID & 23:16 & wo & 0x0 & Unique ID for this message spcified
-	by the software\\
-	\hline DESTINATION & 15:8 & wo & 0x0 & Receiver node id or local
-	interface to send message to the neighbour \\
-	\hline S & 7 & wo & 0x0 & S bit. Ignored in RAW message\\
-	\hline ERROR & 6 & wo & 0x0 & Error bit. Ignored in TX message\\
-	\hline PORT & 5:3 & wo & 0x0 & Message port.\\
+        \hline PAYLOAD & 2079:40 & ro & 0x0 & Payload of this message\\
+        \hline reserved & 39:32 & wo & 0x0 & Reserved. Writes are ignored, read
+        data is zero.\\
+        \hline PAYLOAD\_SIZE & 31:24 & wo & 0x0 & Payload size of this message\\
+        \hline MSG\_ID & 23:16 & wo & 0x0 & Unique ID for this message spcified
+        by the software\\
+        \hline DESTINATION & 15:8 & wo & 0x0 & Receiver node id or local
+        interface to send message to the neighbour \\
+        \hline S & 7 & wo & 0x0 & S bit. Ignored in RAW message\\
+        \hline ERROR & 6 & wo & 0x0 & Error bit. Ignored in TX message\\
+        \hline PORT & 5:3 & wo & 0x0 & Message port.\\
         \hline TYPE & 2:0 & wo & 0x0 & Message types.\\
-                    & & & & (ACK = 0, INIT = 1, RAW\_NEIGHBOUR = 2, RAW\_DATA = 3, LONG\_DATA = 4, RDMA\_WRITE = 5, RDMA\_READ = 6, RDMA\_RESPONSE = 7)\\
+                    & & & & (ACK = 0, INIT = 1, RAW\_NEIGHBOUR = 2,
+                    RAW\_DATA = 3, LONG\_DATA = 4, RDMA\_WRITE = 5,
+                    RDMA\_READ = 6, RDMA\_RESPONSE = 7)\\
 \end{regdetails}
 
 \subsubsection{RAW\_RX\_STATUS} \label{reg:raw_rx_status}
 \begin{regdescription}
 	Name			\> RAW\_RX\_STATUS\\
-	Relative Address	\> 0xA00E0000+0x1c\\
+	Relative Address	\> 0xA0030000+0x1c\\
 	Width			\> 32 bits\\
 	Access Type		\> ro\\
 	Init Value		\> 0x00000000\\
 	Description		\> RAW RX queue status register\\
 \end{regdescription}
 \begin{regdetails}
-	\hline QSTATUS\_AVAIL & 31:0 & ro & 0x0 & The Occupancy of the Rx FIFO. When greater than 0, in the RAW RX
-	queue there are descriptors available to be read from the SW.\\
+	\hline QSTATUS\_AVAIL & 31:0 & ro & 0x0 & The Occupancy of the Rx FIFO.
+	When greater than 0, in the RAW RX queue there are descriptors available
+	to be read from the SW.\\
 \end{regdetails}
 
 \subsubsection{RAW\_RX\_DESC} \label{reg:raw_rx_desc}
 \begin{regdescription}
 	Name			\> RAW\_RX\_DESC\\
-	Relative Address	\> 0xA00F0000+0x1000\\
+	Relative Address	\> 0xA0040000+0x1000\\
 	Width (single row)	\> 32 bits\\
 	Access Type		\> ro\\
 	Init Value		\> 0x00000000\\
@@ -570,30 +606,34 @@
 	\hline SOURCE & 15:8 & ro & 0x0 & Sender node id or local interface
 	where neighbour message is received\\
 	\hline S & 7 & ro & 0x0 & S bit. Ignored in RAW message\\
-	\hline ERROR & 6 & ro & 0x0 & Error bit. When set to 1b, there is an error.\\
+	\hline ERROR & 6 & ro & 0x0 & Error bit. When set to 1b,
+	there is an error.\\
 	\hline PORT & 5:3 & ro & 0x0 & Message port.\\
         \hline TYPE & 2:0 & ro & 0x0 & Message types.\\
-                    & & & & (ACK = 0, INIT = 1, RAW\_NEIGHBOUR = 2, RAW\_DATA = 3, LONG\_DATA = 4, RDMA\_WRITE = 5, RDMA\_READ = 6, RDMA\_RESPONSE = 7)\\
+                    & & & & (ACK = 0, INIT = 1, RAW\_NEIGHBOUR = 2,
+                    RAW\_DATA = 3, LONG\_DATA = 4, RDMA\_WRITE = 5,
+                    RDMA\_READ = 6, RDMA\_RESPONSE = 7)\\
 \end{regdetails}
 
 \subsubsection{RDMA\_TX\_STATUS} \label{reg:rdma_tx_status}
 \begin{regdescription}
 	Name			\> RDMA\_TX\_STATUS\\
-	Relative Address	\> 0xA0100000+0x0c\\
+	Relative Address	\> 0xA0050000+0x0c\\
 	Width			\> 32 bits\\
 	Access Type		\> ro\\
 	Init Value		\> 0x00000000\\
 	Description		\> RDMA queue status register\\
 \end{regdescription}
 \begin{regdetails}
-	\hline QSTATUS\_AVAIL & 31:0 & ro & 0x0 & The Vacancy of the Tx FIFO. When greater than 0, in the DMA TX
-	queue there is space available for new descriptors from the SW.\\
+	\hline QSTATUS\_AVAIL & 31:0 & ro & 0x0 & The Vacancy of the Tx FIFO.
+	When greater than 0, in the DMA TX queue there is space available for
+	new descriptors from the SW.\\
 \end{regdetails}
 
 \subsubsection{RDMA\_TX\_DESC} \label{reg:rdma_tx_desc}
 \begin{regdescription}
 	Name			\> RDMA\_TX\_DESC\\
-	Relative Address	\> 0xA0110000\\
+	Relative Address	\> 0xA00600000\\
 	Width 	                \> 32 bits\\
 	Access Type		\> wo\\
 	Init Value		\> 0x00000000\\
@@ -606,37 +646,41 @@
 	                        these registers\\
 \end{regdescription}
 \begin{regdetails}
-        \hline DST\_ADDR & 103:72 & wo & 0x0 & Destination memory address, not used for LONG\_DATA \\
+        \hline DST\_ADDR & 103:72 & wo & 0x0 & Destination memory address,
+        not used for LONG\_DATA \\
         \hline SRC\_ADDR & 71:40 & wo & 0x0 & Source memory address\\
-	\hline PAYLOAD\_SIZE & 39:24 & wo & 0x0 & Payload size of this RDMA\\
-	\hline MSG\_ID & 23:16 & wo & 0x0 & Unique ID for this message spcified
-	by the software\\
-	\hline DESTINATION & 15:8 & wo & 0x0 & Receiver node id\\
-	\hline S & 7 & wo & 0x0 & S bit. Ignored in TX message\\
-	\hline ERROR & 6 & wo & 0x0 & Error bit. Ignored in TX message\\
-	\hline PORT & 5:3 & wo & 0x0 & Message port.\\
+        \hline PAYLOAD\_SIZE & 39:24 & wo & 0x0 & Payload size of this RDMA\\
+        \hline MSG\_ID & 23:16 & wo & 0x0 & Unique ID for this message spcified
+        by the software\\
+        \hline DESTINATION & 15:8 & wo & 0x0 & Receiver node id\\
+        \hline S & 7 & wo & 0x0 & S bit. Ignored in TX message\\
+        \hline ERROR & 6 & wo & 0x0 & Error bit. Ignored in TX message\\
+        \hline PORT & 5:3 & wo & 0x0 & Message port.\\
         \hline TYPE & 2:0 & wo & 0x0 & Message types.\\
-                    & & & & (ACK = 0, INIT = 1, RAW\_NEIGHBOUR = 2, RAW\_DATA = 3, LONG\_DATA = 4, RDMA\_WRITE = 5, RDMA\_READ = 6, RDMA\_RESPONSE = 7)\\
+                    & & & & (ACK = 0, INIT = 1, RAW\_NEIGHBOUR = 2,
+                    RAW\_DATA = 3, LONG\_DATA = 4, RDMA\_WRITE = 5,
+                    RDMA\_READ = 6, RDMA\_RESPONSE = 7)\\
 \end{regdetails}
 
 \subsubsection{RDMA\_RX\_STATUS} \label{reg:rdma_rx_status}
 \begin{regdescription}
 	Name			\> RDMA\_RX\_STATUS\\
-	Relative Address	\> 0xA00C0000+0x1c\\
+	Relative Address	\> 0xA0010000+0x1c\\
 	Width			\> 32 bits\\
 	Access Type		\> ro\\
 	Init Value		\> 0x00000000\\
 	Description		\> RDMA RX queue status register\\
 \end{regdescription}
 \begin{regdetails}
-	\hline QSTATUS\_AVAIL & 31:0 & ro & 0x0 & The Occupancy of the Rx FIFO. When greater than 0, in the DMA RX
-	queue there are descriptors available to be read from the SW.\\
+	\hline QSTATUS\_AVAIL & 31:0 & ro & 0x0 & The Occupancy of the Rx FIFO.
+	When greater than 0, in the DMA RX queue there are descriptors available
+	to be read from the SW.\\
 \end{regdetails}
 
 \subsubsection{RDMA\_RX\_DESC} \label{reg:rdma_rx_desc}
 \begin{regdescription}
 	Name			\> RDMA\_RX\_DESC\\
-	Relative Address	\> 0xA00D0000+0x1000\\
+	Relative Address	\> 0xA0020000+0x1000\\
 	Width                   \> 32 bits\\
 	Access Type		\> ro\\
 	Init Value		\> 0x00000000\\
@@ -649,7 +693,8 @@
 	                        these registers\\
 \end{regdescription}
 \begin{regdetails}
-        \hline SRC\_ADDR & 71:40 & ro & 0x0 & Destination memory address, used only when S = 0b\\
+        \hline SRC\_ADDR & 71:40 & ro & 0x0 & Destination memory address, used
+        only when S = 0b\\
 	\hline PAYLOAD\_SIZE & 39:24 & ro & 0x0 & Payload size of this RDMA\\
 	\hline MSG\_ID & 23:16 & ro & 0x0 & Unique ID for this message spcified
 	by the software\\
@@ -660,13 +705,15 @@
 	contains an error from the receive.\\
 	\hline PORT & 5:3 & ro & 0x0 & Message port.\\
         \hline TYPE & 2:0 & ro & 0x0 & Message types.\\
-                    & & & & (ACK = 0, INIT = 1, RAW\_NEIGHBOUR = 2, RAW\_DATA = 3, LONG\_DATA = 4, RDMA\_WRITE = 5, RDMA\_READ = 6, RDMA\_RESPONSE = 7)\\
+                    & & & & (ACK = 0, INIT = 1, RAW\_NEIGHBOUR = 2,
+                    RAW\_DATA = 3, LONG\_DATA = 4, RDMA\_WRITE = 5,
+                    RDMA\_READ = 6, RDMA\_RESPONSE = 7)\\
 \end{regdetails}
 
 \subsubsection{LONG\_BUF\_BASE[n]} \label{reg:long_buf_base}
 \begin{regdescription}
 	Name			\> LONG\_BUF\_BASE[n]\\
-	Relative Address	\> 0xA0012000+8*n, n=0...31\\
+	Relative Address	\> 0xA0000000+8*n, n=0...31\\
 	Width (single row)	\> 64 bits\\
 	Access Type		\> rw\\
 	Init Value		\> 0x00000000\\
