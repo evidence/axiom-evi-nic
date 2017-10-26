@@ -259,6 +259,8 @@ static int axiomnet_axi_init(struct axiomnet_armdata *armdata)
     /* Reset Aurora IPs */
     axi_reg_write32(&armdata->regs.axi.registers, AXIOMREG_IO_CONTROL,
             AXIOMREG_CONTROL_RESET);
+    axi_reg_write32(&armdata->regs.axi.registers, AXIOMREG_IO_CONTROL,
+            0x0);
 
 error:
     return err;
