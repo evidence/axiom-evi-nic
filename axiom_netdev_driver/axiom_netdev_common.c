@@ -1806,19 +1806,31 @@ void axiomnet_debug_rdma(struct axiomnet_drvdata *drvdata)
 }
 
 
-int axiomnet_debug_info(struct axiomnet_drvdata *drvdata)
+int axiomnet_debug_info(struct axiomnet_drvdata *drvdata, uint32_t flags)
 {
     if (!drvdata)
         return -EINVAL;
 
     printk(KERN_ERR "\n---- AXIOM NIC DEBUG ----\n\n");
-    axiom_print_status_reg(drvdata->dev_api);
-    axiom_print_control_reg(drvdata->dev_api);
+
+    if (flags & AXIOM_DEBUG_FLAG_STATUS)
+        axiom_print_status_reg(drvdata->dev_api);
+    if (flags & AXIOM_DEBUG_FLAG_CONTROL)
+        axiom_print_control_reg(drvdata->dev_api);
+    if (flags & AXIOM_DEBUG_FLAG_ROUTING)
+        axiom_print_routing_reg(drvdata->dev_api);
+    if (flags & AXIOM_DEBUG_FLAG_QUEUES)
+        axiom_print_queue_reg(drvdata->dev_api);
+    if (flags & AXIOM_DEBUG_FLAG_FPGA)
+        axiom_print_fpga_debug(drvdata->dev_api);
 
     printk(KERN_ERR "\n---- AXIOM DRIVER DEBUG ----\n\n");
-    axiomnet_debug_raw(drvdata);
-    axiomnet_debug_long(drvdata);
-    axiomnet_debug_rdma(drvdata);
+    if (flags & AXIOM_DEBUG_FLAG_RAW)
+        axiomnet_debug_raw(drvdata);
+    if (flags & AXIOM_DEBUG_FLAG_LONG)
+        axiomnet_debug_long(drvdata);
+    if (flags & AXIOM_DEBUG_FLAG_RDMA)
+        axiomnet_debug_rdma(drvdata);
 
     return 0;
 }
@@ -2237,6 +2249,7 @@ static long axiomnet_ioctl_generic(struct file *filep, unsigned int cmd,
     uint8_t buf_uint8;
     uint8_t buf_uint8_2;
     axiom_ioctl_routing_t buf_routing;
+    axiom_ioctl_debug_t buf_debug;
     long ret = 0;
 
     DPRINTF("start");
@@ -2266,9 +2279,9 @@ static long axiomnet_ioctl_generic(struct file *filep, unsigned int cmd,
             return -EFAULT;
         ret = axiom_hw_get_routing(drvdata->dev_api, buf_routing.node_id,
                 &buf_routing.enabled_mask);
-        ret = copy_to_user(argp, &buf_routing, sizeof(buf_routing));
         if (ret)
             return -EFAULT;
+        ret = copy_to_user(argp, &buf_routing, sizeof(buf_routing));
         break;
     case AXNET_GET_IFNUMBER:
         ret = axiom_hw_get_if_number(drvdata->dev_api, &buf_uint8);
@@ -2297,7 +2310,10 @@ static long axiomnet_ioctl_generic(struct file *filep, unsigned int cmd,
             return -EFAULT;
         break;
     case AXNET_DEBUG_INFO:
-        ret = axiomnet_debug_info(drvdata);
+        ret = copy_from_user(&buf_debug, argp, sizeof(buf_debug));
+        if (ret)
+            return -EFAULT;
+        ret = axiomnet_debug_info(drvdata, buf_debug.flags);
         break;
     default:
         ret = -EINVAL;

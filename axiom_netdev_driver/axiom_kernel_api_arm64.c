@@ -458,3 +458,17 @@ axiom_print_queue_reg(axiom_dev_t *dev)
 
     printk(KERN_ERR "axiom --- QUEUE REGISTERS end ---\n");
 }
+
+void
+axiom_print_fpga_debug(axiom_dev_t *dev)
+{
+    uint32_t buf32;
+
+    printk(KERN_ERR "axiom --- FPGA DEBUG start ---\n");
+
+    buf32 = axi_gpio_read32(&dev->regs.axi.debug);
+    printk(KERN_ERR "axiom - FPGA GPIO debug: 0x%02x\n", buf32);
+
+    printk(KERN_ERR "axiom --- FPGA DEBUG end ---\n");
+    return;
+}

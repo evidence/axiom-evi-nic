@@ -89,6 +89,19 @@ typedef struct axiom_stats  axiom_stats_t;
 /*! \brief Avoid flush of RX port queue after the axiom_bind() API */
 #define AXIOM_FLAG_NOFLUSH              0x00000008
 
+
+/**************************** Axiom debug flags *******************************/
+#define AXIOM_DEBUG_FLAG_STATUS         0x0000001
+#define AXIOM_DEBUG_FLAG_CONTROL        0x0000002
+#define AXIOM_DEBUG_FLAG_ROUTING        0x0000004
+#define AXIOM_DEBUG_FLAG_QUEUES         0x0000008
+#define AXIOM_DEBUG_FLAG_RAW            0x0000010
+#define AXIOM_DEBUG_FLAG_LONG           0x0000020
+#define AXIOM_DEBUG_FLAG_RDMA           0x0000040
+#define AXIOM_DEBUG_FLAG_FPGA           0x0000080
+
+#define AXIOM_DEBUG_FLAG_ALL            0xFFFFFFF
+
 /*************************** Axiom token status  *******************************/
 /*! \brief AXIOM token invalid status */
 #define AXIOM_TOKEN_INVALID             0

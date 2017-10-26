@@ -25,6 +25,7 @@ typedef union axiom_dev_regs {
         axi_fifo_t fifo_rdma_rx;
         axi_bram_t long_buf;
         axi_bram_t routing;
+        axi_gpio_t debug;
     } axi;
 
     void __iomem *vregs;
@@ -83,5 +84,13 @@ axiom_print_routing_reg(axiom_dev_t *dev);
  */
 void
 axiom_print_queue_reg(axiom_dev_t *dev);
+
+/*!
+ * \brief Print AXIOM NIC FPGA debug register
+ *
+ * \param dev           The axiom device private data pointer
+ */
+void
+axiom_print_fpga_debug(axiom_dev_t *dev);
 
 #endif /* !AXIOM_KERNEL_API_H */

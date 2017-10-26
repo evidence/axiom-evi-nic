@@ -597,18 +597,6 @@ axiom_set_node_id(axiom_dev_t *dev, axiom_node_id_t node_id);
 axiom_node_id_t
 axiom_get_node_id(axiom_dev_t *dev);
 
-#if 0
-/*!
- * \brief This function sets the routing table of a particular node.
- *
- * \param dev           The axiom device private data pointer
- * \param dst_node      Remote node id to setup its routing table
- * \param nodeRoutingTable  Routing table to be sent
- */
-void setRoutingTable(axiom_node_id_t dst_node, uint32_t* nodeRoutingTable);
-/*XXX: NOT NECESSARY */
-#endif
-
 /*!
  * \brief This function sets the routing table of a local node.
  *
@@ -628,19 +616,6 @@ void setRoutingTable(axiom_node_id_t dst_node, uint32_t* nodeRoutingTable);
 axiom_err_t
 axiom_set_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
         uint8_t enabled_mask);
-
-#if 0
-/*!
- * \brief This function returns the routing table of a node.
- *
- * \param dev           The axiom device private data pointer
- * \param dst_node      Remote node id to read its routing table
- *
- * \return Returns the routing table of a node.
- */
-uint32_t* getRoutingTable(axiomnode_id_t dst_node);
-/*XXX: NOT NECESSARY */
-#endif
 
 /*!
  * \brief This function gets the routing table of a local node.
@@ -673,50 +648,6 @@ axiom_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
 int
 axiom_get_num_nodes(axiom_dev_t *dev);
 
-#if 0
-/*!
- * \brief This function updates the routing table of a node for a particular
- *        entry.
- *
- * \param dst_node       Remote node id to update its routing table
- * \param nodeIdToUpdate Entry to update within the routing table
- */
-void updateRoutingTable(axiom_node_id_t dst_node, axiom_node_id_t nodeIdToUpdate);
-/*XXX: NOT NECESSARY */
-
-/*!
- * \brief This function invalidates an entry of the dst_node routing table.
- *
- * \param dst_node       Remote node id to remove entry from its routing table
- * \param nodeIdToUpdate Node id that no longer belongs to the routing table of
- *        dst_node
- */
-void deleteNodeFromRoutingTable(axiom_node_id_t dst_node,
-                                axiom_node_id_t nodeIdToRemove);
-/*XXX: NOT NECESSARY */
-
-/*!
- * \brief This function sends an identification packet to the neighbor node
- *        connected to an IF, and receives its id.
- *
- * \param dev           The axiom device private data pointer
- * \param if_id         Online interface Id where the identification message will be sent
- *
- * \return Returns the id of the neighbor node .
- */
-axiom_node_id_t identifyNeighborNode(axiom_dev_t *dev, axiom_if_id_t if_id);
-/*XXX: NOT NECESSARY */
-
-/*!
- * \brief This function transmits the node’s neighbor – interface pairs to the
- *        "master node".
- *
- * \param dev           The axiom device private data pointer
- */
-void reportNeighbors(axiom_dev_t *dev);
-/*XXX: NOT NECESSARY */
-#endif
-
 /*!
  * \brief This function reads the number of interfaces which are present on a
  *        node.
@@ -746,7 +677,7 @@ axiom_err_t
 axiom_get_statistics(axiom_dev_t *dev, axiom_stats_t *stats);
 
 axiom_err_t
-axiom_debug_info(axiom_dev_t *dev);
+axiom_debug_info(axiom_dev_t *dev, uint32_t flags);
 
 /** \} */
 

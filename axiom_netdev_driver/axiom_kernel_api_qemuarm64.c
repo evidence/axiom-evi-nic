@@ -425,3 +425,9 @@ axiom_print_queue_reg(axiom_dev_t *dev)
 
     printk("axiom --- QUEUE REGISTERS end ---\n");
 }
+
+void
+axiom_print_fpga_debug(axiom_dev_t *dev)
+{
+    return;
+}

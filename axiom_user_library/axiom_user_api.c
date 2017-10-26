@@ -1739,8 +1739,9 @@ axiom_get_statistics(axiom_dev_t *dev, axiom_stats_t *stats)
 }
 
 axiom_err_t
-axiom_debug_info(axiom_dev_t *dev)
+axiom_debug_info(axiom_dev_t *dev, uint32_t flags)
 {
+    axiom_ioctl_debug_t debug;
     int ret;
 
     if (!dev || dev->fd_generic <= 0) {
@@ -1748,7 +1749,8 @@ axiom_debug_info(axiom_dev_t *dev)
         return AXIOM_RET_ERROR;
     }
 
-    ret = ioctl(dev->fd_generic, AXNET_DEBUG_INFO);
+    debug.flags = flags;
+    ret = ioctl(dev->fd_generic, AXNET_DEBUG_INFO, &debug);
 
     if (ret < 0) {
         EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));

@@ -61,6 +61,51 @@ static irqreturn_t axiomnet_arm_irq(int irq, void *dev_id)
     return serviced;
 }
 
+static int axiomnet_gpio_init(struct axiomnet_armdata *armdata,
+        const char *gpio_name, struct axi_gpio *gpio)
+{
+    struct device_node *node;
+    struct resource axi_res;
+    int err = 0;
+
+    node = of_parse_phandle(armdata->dev->of_node, gpio_name, 0);
+    if (IS_ERR(node)) {
+        dev_err(armdata->dev, "%s: not found in the device-tree\n",
+                gpio_name);
+        err = PTR_ERR(node);
+        goto error;
+    }
+
+    err = of_address_to_resource(node, 0, &axi_res);
+    if (err) {
+        dev_err(armdata->dev, "%s: resource 0 not found in the device-tree\n",
+                gpio_name);
+        goto error;
+    }
+
+    gpio->base_addr = devm_ioremap_resource(armdata->dev, &axi_res);
+    if (IS_ERR(gpio->base_addr)) {
+        dev_err(armdata->dev, "%s: resource 0 could not map\n", gpio_name);
+        err = PTR_ERR(node);
+        goto error;
+    }
+
+    DPRINTF("%s mapped - paddr: 0x%llx vaddr: %p", gpio_name,
+            axi_res.start, gpio->base_addr);
+
+    err = of_property_read_u32(node, "xlnx,is-dual", &gpio->dual);
+    if (err) {
+        dev_err(armdata->dev,
+                "%s: is-dual not found in the device-tree\n",
+                gpio_name);
+        goto error;
+    }
+
+    DPRINTF("%s dual: %d", gpio_name, gpio->dual);
+error:
+    return err;
+}
+
 static int axiomnet_reg_init(struct axiomnet_armdata *armdata,
         const char *reg_name, struct axi_reg *reg)
 {
@@ -213,6 +258,11 @@ static int axiomnet_axi_init(struct axiomnet_armdata *armdata)
         {"registers", &armdata->regs.axi.registers},
     };
 
+#define GPIO_NUM         1
+    struct res_to_init gpio_to_init[GPIO_NUM] = {
+        {"gpio-debug", &armdata->regs.axi.debug},
+    };
+
 #define FIFO_NUM        4
     struct res_to_init fifo_to_init[FIFO_NUM] = {
         {"fifo-raw-tx", &armdata->regs.axi.fifo_raw_tx},
@@ -233,6 +283,15 @@ static int axiomnet_axi_init(struct axiomnet_armdata *armdata)
     for (i = 0; i < REG_NUM; i++) {
         err = axiomnet_reg_init(armdata, reg_to_init[i].name,
                 reg_to_init[i].res);
+        if (err) {
+            goto error;
+        }
+    }
+
+    /* init GPIO registers */
+    for (i = 0; i < GPIO_NUM; i++) {
+        err = axiomnet_gpio_init(armdata, gpio_to_init[i].name,
+                gpio_to_init[i].res);
         if (err) {
             goto error;
         }

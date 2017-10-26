@@ -62,6 +62,11 @@ typedef struct axiom_ioctl_token {
     int count;                  /*!< \brief number of tokens */
 } axiom_ioctl_token_t;
 
+/*! \brief AXIOM ioctl debug parameters */
+typedef struct axiom_ioctl_debug {
+    uint32_t flags;             /*!< \brief debug active flags */
+} axiom_ioctl_debug_t;
+
 /* ioctl defines */
 
 /*! \brief AXIOM IOCTL magic number used in the IOCTL id*/
@@ -128,6 +133,6 @@ typedef struct axiom_ioctl_token {
 #define AXNET_GET_STATS         _IOR(AXNET_MAGIC, 129, axiom_stats_t)
 
 /*! \brief AXIOM IOCTL for debug (internal-use) */
-#define AXNET_DEBUG_INFO        _IO(AXNET_MAGIC, 200)
+#define AXNET_DEBUG_INFO        _IOW(AXNET_MAGIC, 200, axiom_ioctl_debug_t)
 
 #endif /* !AXIOM_NETDEV_USER_h */
