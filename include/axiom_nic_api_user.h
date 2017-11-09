@@ -25,6 +25,9 @@
 /*! \brief unique application ID */
 #define AXIOM_ENV_ALLOC_APPID           "AXIOM_ALLOC_APPID"
 
+/*! \brief API version number string */
+#define AXIOM_API_VERSION_STR "v0.14"
+
 /*!
  * \brief  axiom arguments for the axiom_open() function
  */
