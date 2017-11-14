@@ -22,8 +22,9 @@
 #define AXIOM_NODES_MAX                         255
 /*! \brief Maximum number of interfaces supported by the AXIOM NIC */
 #define AXIOM_INTERFACES_MAX                    4
-/*! \brief Max number of port available in RAW messages */
-#define AXIOM_PORT_MAX                          8
+/*! \brief Max number of port available in RAW messages.
+ *         Note: port 7 is reserved for XSMLL messages */
+#define AXIOM_PORT_MAX                          7
 /*! \brief Max number of type available */
 #define AXIOM_TYPE_MAX                          8
 /*! \brief Max number of message id available */
