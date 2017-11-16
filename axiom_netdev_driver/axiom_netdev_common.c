@@ -33,7 +33,87 @@ static int axiomnet_alloc_chrdev(struct axiomnet_drvdata *drvdata,
 static void axiomnet_destroy_chrdev(struct axiomnet_drvdata *drvdata,
         struct axiomnet_chrdev *chrdev);
 
+#define AXIOM_CACHE_WORKAROUND
+#ifdef AXIOM_CACHE_WORKAROUND
+/*
+ * With no-cached memory regions the memcpy() generates a fault if the buffers
+ * are not aligned to 8 bytes.
+ * This is a workaround, waiting a FORTH bitstream that support RDMA cached
+ * memory.
+ */
+#define AXIOM_COPY_ALIGN	(8ULL)
+#define AXIOM_COPY_MASK	        ((uintptr_t)(AXIOM_COPY_ALIGN - 1))
+static inline unsigned long axiom_copy_from_user(void *to,
+        const void __user *from, unsigned long n)
+{
+    unsigned long offset = 0, ret;
+    uintptr_t actual_to, actual_from;
 
+    if (!access_ok(VERIFY_READ, from, n)) {
+        return n;
+    }
+
+    while (offset < n) {
+        unsigned long copied = n - offset;
+        actual_to = (uintptr_t) ((uint8_t *) to) + offset;
+        actual_from = (uintptr_t) ((uint8_t *)from) + offset;
+
+        if ((actual_from & AXIOM_COPY_MASK) != 0) {
+            copied = actual_from & AXIOM_COPY_MASK;
+        }
+
+        if (((actual_to & AXIOM_COPY_MASK) != 0) &&
+                (actual_to & AXIOM_COPY_MASK) < copied) {
+            copied = actual_to & AXIOM_COPY_MASK;
+        }
+
+        ret = __copy_from_user(((uint8_t *) to) + offset,
+                ((uint8_t *) from) + offset, copied);
+        if (ret)
+            return ret;
+        offset += copied;
+    }
+
+    return 0;
+}
+
+static inline unsigned long axiom_copy_to_user(void __user *to,
+        const void *from, unsigned long n)
+{
+    unsigned long offset = 0, ret;
+    uintptr_t actual_to, actual_from;
+
+    if (!access_ok(VERIFY_WRITE, to, n)) {
+        return n;
+    }
+
+    while (offset < n) {
+        unsigned long copied = n - offset;
+        actual_to = (uintptr_t) ((uint8_t *)to) + offset;
+        actual_from = (uintptr_t) ((uint8_t *)from) + offset;
+
+        if ((actual_to & AXIOM_COPY_MASK) != 0) {
+            copied = actual_to & AXIOM_COPY_MASK;
+        }
+
+        if (((actual_from & AXIOM_COPY_MASK) != 0) &&
+                (actual_from & AXIOM_COPY_MASK) < copied) {
+            copied = actual_from & AXIOM_COPY_MASK;
+        }
+
+        ret = __copy_to_user(((uint8_t *) to) + offset,
+                ((uint8_t *) from) + offset, copied);
+        if (ret)
+            return ret;
+        offset += copied;
+    }
+
+    return 0;
+}
+#else /* !AXIOM_CACHE_WORKAROUND */
+#define axiom_copy_from_user		copy_from_user
+#define axiom_copy_to_user		copy_to_user
+#endif /* AXIOM_CACHE_WORKAROUND */
 
 /************************ AxiomNet Device Driver ******************************/
 
@@ -135,7 +215,7 @@ inline static int axiomnet_raw_send(struct file *filep,
             goto err;
         }
 
-        ret = copy_from_user((uint8_t *)(&(raw_msg.payload)) + offset,
+        ret = axiom_copy_from_user((uint8_t *)(&(raw_msg.payload)) + offset,
                 iov[i].iov_base, copied);
         if (unlikely(ret)) {
             ret = -EFAULT;
@@ -322,7 +402,7 @@ inline static ssize_t axiomnet_raw_recv(struct file *filep,
         int copied = min((int)(iov[i].iov_len),
                 (int)(raw_msg->header.rx.payload_size - offset));
 
-        ret = copy_to_user(iov[i].iov_base,
+        ret = axiom_copy_to_user(iov[i].iov_base,
                 (uint8_t *)(&(raw_msg->payload)) + offset, copied);
         if (unlikely(ret)) {
             len = -EFAULT;
@@ -564,7 +644,7 @@ static long axiomnet_rdma_check(struct file *filep,
         return -ENOMEM;
     }
 
-    ret = copy_from_user(tokens, token_ioctl->tokens,
+    ret = axiom_copy_from_user(tokens, token_ioctl->tokens,
             sizeof(*tokens) * token_ioctl->count);
     if (ret) {
         ret = -EFAULT;
@@ -596,7 +676,7 @@ static long axiomnet_rdma_check(struct file *filep,
         }
     }
 
-    ret = copy_to_user(token_ioctl->tokens, tokens,
+    ret = axiom_copy_to_user(token_ioctl->tokens, tokens,
             sizeof(*tokens) * token_ioctl->count);
     if (ret) {
         ret = -EFAULT;
@@ -627,7 +707,7 @@ static long axiomnet_rdma_wait(struct file *filep,
         return -EINVAL;
     }
 
-    ret = copy_from_user(&token, token_ioctl->tokens, sizeof(token));
+    ret = axiom_copy_from_user(&token, token_ioctl->tokens, sizeof(token));
     if (ret) {
         return -EFAULT;
     }
@@ -662,7 +742,7 @@ static long axiomnet_rdma_wait(struct file *filep,
 
     token.rdma.status = AXIOM_TOKEN_ACKED;
 
-    ret = copy_to_user(token_ioctl->tokens, &token, sizeof(token));
+    ret = axiom_copy_to_user(token_ioctl->tokens, &token, sizeof(token));
     if (ret) {
         return -EFAULT;
     }
@@ -963,7 +1043,7 @@ inline static int axiomnet_long_send(struct file *filep,
             goto err;
         }
 
-        ret = copy_from_user((uint8_t *)(long_msg->payload) + offset,
+        ret = axiom_copy_from_user((uint8_t *)(long_msg->payload) + offset,
                 iov[i].iov_base, copied);
         if (unlikely(ret)) {
             ret = -EFAULT;
@@ -1089,7 +1169,7 @@ inline static ssize_t axiomnet_long_recv(struct file *filep,
         int copied = min((int)(iov[i].iov_len),
                 (int)(long_msg->header.rx.payload_size - offset));
 
-        ret = copy_to_user(iov[i].iov_base,
+        ret = axiom_copy_to_user(iov[i].iov_base,
                 (uint8_t *)(long_buf_lut->long_buf_sw) + offset, copied);
         if (unlikely(ret)) {
             len = -EFAULT;
@@ -1947,7 +2027,7 @@ static long axiomnet_ioctl_raw(struct file *filep, unsigned int cmd,
 
     switch (cmd) {
     case AXNET_BIND:
-        ret = copy_from_user(&buf_bind, argp, sizeof(buf_bind));
+        ret = axiom_copy_from_user(&buf_bind, argp, sizeof(buf_bind));
         if (ret)
             return -EFAULT;
         ret = axiomnet_bind(priv, &(buf_bind.port));
@@ -1960,12 +2040,12 @@ static long axiomnet_ioctl_raw(struct file *filep, unsigned int cmd,
             if (ret)
                 return ret;
         }
-        ret = copy_to_user(argp, &buf_bind, sizeof(buf_bind));
+        ret = axiom_copy_to_user(argp, &buf_bind, sizeof(buf_bind));
         if (ret)
             return -EFAULT;
         break;
     case AXNET_SEND_RAW:
-        ret = copy_from_user(&buf_raw, argp, sizeof(buf_raw));
+        ret = axiom_copy_from_user(&buf_raw, argp, sizeof(buf_raw));
         if (ret)
             return -EFAULT;
         iov[0].iov_base = buf_raw.payload;
@@ -1973,12 +2053,12 @@ static long axiomnet_ioctl_raw(struct file *filep, unsigned int cmd,
         ret = axiomnet_raw_send(filep, &(buf_raw.header), iov, 1);
         break;
     case AXNET_SEND_RAW_IOV:
-        ret = copy_from_user(&buf_raw_iov, argp, sizeof(buf_raw_iov));
+        ret = axiom_copy_from_user(&buf_raw_iov, argp, sizeof(buf_raw_iov));
         if (ret)
             return -EFAULT;
         if (buf_raw_iov.iovcnt > AXIOMNET_MAX_IOVEC)
             return -EFBIG;
-        ret = copy_from_user(&iov, buf_raw_iov.iov, buf_raw_iov.iovcnt *
+        ret = axiom_copy_from_user(&iov, buf_raw_iov.iov, buf_raw_iov.iovcnt *
                 sizeof(buf_raw_iov.iov[0]));
         if (ret)
             return -EFAULT;
@@ -1986,7 +2066,7 @@ static long axiomnet_ioctl_raw(struct file *filep, unsigned int cmd,
                 buf_raw_iov.iovcnt);
         break;
     case AXNET_RECV_RAW:
-        ret = copy_from_user(&buf_raw, argp, sizeof(buf_raw));
+        ret = axiom_copy_from_user(&buf_raw, argp, sizeof(buf_raw));
         if (ret)
             return -EFAULT;
         iov[0].iov_base = buf_raw.payload;
@@ -1994,17 +2074,17 @@ static long axiomnet_ioctl_raw(struct file *filep, unsigned int cmd,
         ret = axiomnet_raw_recv(filep, &(buf_raw.header), iov, 1);
         if (ret < 0)
             return ret;
-        ret = copy_to_user(argp, &buf_raw, sizeof(buf_raw));
+        ret = axiom_copy_to_user(argp, &buf_raw, sizeof(buf_raw));
         if (ret)
             return -EFAULT;
         break;
     case AXNET_RECV_RAW_IOV:
-        ret = copy_from_user(&buf_raw_iov, argp, sizeof(buf_raw_iov));
+        ret = axiom_copy_from_user(&buf_raw_iov, argp, sizeof(buf_raw_iov));
         if (ret)
             return -EFAULT;
         if (buf_raw_iov.iovcnt > AXIOMNET_MAX_IOVEC)
             return -EFBIG;
-        ret = copy_from_user(&iov, buf_raw_iov.iov, buf_raw_iov.iovcnt *
+        ret = axiom_copy_from_user(&iov, buf_raw_iov.iov, buf_raw_iov.iovcnt *
                 sizeof(buf_raw_iov.iov[0]));
         if (ret)
             return -EFAULT;
@@ -2012,7 +2092,7 @@ static long axiomnet_ioctl_raw(struct file *filep, unsigned int cmd,
                 buf_raw_iov.iovcnt);
         if (ret < 0)
             return ret;
-        ret = copy_to_user(argp, &buf_raw_iov, sizeof(buf_raw_iov));
+        ret = axiom_copy_to_user(argp, &buf_raw_iov, sizeof(buf_raw_iov));
         if (ret)
             return -EFAULT;
         break;
@@ -2058,7 +2138,7 @@ static long axiomnet_ioctl_long(struct file *filep, unsigned int cmd,
 
     switch (cmd) {
     case AXNET_BIND:
-        ret = copy_from_user(&buf_bind, argp, sizeof(buf_bind));
+        ret = axiom_copy_from_user(&buf_bind, argp, sizeof(buf_bind));
         if (ret)
             return -EFAULT;
         ret = axiomnet_bind(priv, &(buf_bind.port));
@@ -2071,12 +2151,12 @@ static long axiomnet_ioctl_long(struct file *filep, unsigned int cmd,
             if (ret)
                 return ret;
         }
-        ret = copy_to_user(argp, &buf_bind, sizeof(buf_bind));
+        ret = axiom_copy_to_user(argp, &buf_bind, sizeof(buf_bind));
         if (ret)
             return -EFAULT;
         break;
     case AXNET_SEND_LONG:
-        ret = copy_from_user(&buf_long, argp, sizeof(buf_long));
+        ret = axiom_copy_from_user(&buf_long, argp, sizeof(buf_long));
         if (ret)
             return -EFAULT;
         iov[0].iov_base = buf_long.payload;
@@ -2084,12 +2164,12 @@ static long axiomnet_ioctl_long(struct file *filep, unsigned int cmd,
         ret = axiomnet_long_send(filep, &(buf_long.header), iov, 1);
         break;
     case AXNET_SEND_LONG_IOV:
-        ret = copy_from_user(&buf_long_iov, argp, sizeof(buf_long_iov));
+        ret = axiom_copy_from_user(&buf_long_iov, argp, sizeof(buf_long_iov));
         if (ret)
             return -EFAULT;
         if (buf_long_iov.iovcnt > AXIOMNET_MAX_IOVEC)
             return -EFBIG;
-        ret = copy_from_user(&iov, buf_long_iov.iov, buf_long_iov.iovcnt *
+        ret = axiom_copy_from_user(&iov, buf_long_iov.iov, buf_long_iov.iovcnt *
                 sizeof(buf_long_iov.iov[0]));
         if (ret)
             return -EFAULT;
@@ -2097,7 +2177,7 @@ static long axiomnet_ioctl_long(struct file *filep, unsigned int cmd,
                 buf_long_iov.iovcnt);
         break;
     case AXNET_RECV_LONG:
-        ret = copy_from_user(&buf_long, argp, sizeof(buf_long));
+        ret = axiom_copy_from_user(&buf_long, argp, sizeof(buf_long));
         if (ret)
             return -EFAULT;
         iov[0].iov_base = buf_long.payload;
@@ -2105,17 +2185,17 @@ static long axiomnet_ioctl_long(struct file *filep, unsigned int cmd,
         ret = axiomnet_long_recv(filep, &(buf_long.header), iov, 1);
         if (ret < 0)
             return ret;
-        ret = copy_to_user(argp, &buf_long, sizeof(buf_long));
+        ret = axiom_copy_to_user(argp, &buf_long, sizeof(buf_long));
         if (ret)
             return -EFAULT;
         break;
     case AXNET_RECV_LONG_IOV:
-        ret = copy_from_user(&buf_long_iov, argp, sizeof(buf_long_iov));
+        ret = axiom_copy_from_user(&buf_long_iov, argp, sizeof(buf_long_iov));
         if (ret)
             return -EFAULT;
         if (buf_long_iov.iovcnt > AXIOMNET_MAX_IOVEC)
             return -EFBIG;
-        ret = copy_from_user(&iov, buf_long_iov.iov, buf_long_iov.iovcnt *
+        ret = axiom_copy_from_user(&iov, buf_long_iov.iov, buf_long_iov.iovcnt *
                 sizeof(buf_long_iov.iov[0]));
         if (ret)
             return -EFAULT;
@@ -2123,7 +2203,7 @@ static long axiomnet_ioctl_long(struct file *filep, unsigned int cmd,
                 buf_long_iov.iovcnt);
         if (ret < 0)
             return ret;
-        ret = copy_to_user(argp, &buf_long_iov, sizeof(buf_long_iov));
+        ret = axiom_copy_to_user(argp, &buf_long_iov, sizeof(buf_long_iov));
         if (ret)
             return -EFAULT;
         break;
@@ -2174,7 +2254,7 @@ static long axiomnet_ioctl_rdma(struct file *filep, unsigned int cmd,
         break;
     case AXNET_RDMA_WRITE:
     case AXNET_RDMA_READ:
-        ret = copy_from_user(&buf_rdma, argp, sizeof(buf_rdma));
+        ret = axiom_copy_from_user(&buf_rdma, argp, sizeof(buf_rdma));
         if (ret)
             return -EFAULT;
 
@@ -2211,12 +2291,12 @@ static long axiomnet_ioctl_rdma(struct file *filep, unsigned int cmd,
         if (ret < 0)
             return ret;
 
-        err = copy_to_user(argp, &buf_rdma, sizeof(buf_rdma));
+        err = axiom_copy_to_user(argp, &buf_rdma, sizeof(buf_rdma));
         if (err)
             return -EFAULT;
         break;
     case AXNET_RDMA_CHECK:
-        ret = copy_from_user(&buf_token, argp, sizeof(buf_token));
+        ret = axiom_copy_from_user(&buf_token, argp, sizeof(buf_token));
         if (ret)
             return -EFAULT;
 
@@ -2224,7 +2304,7 @@ static long axiomnet_ioctl_rdma(struct file *filep, unsigned int cmd,
 
         break;
     case AXNET_RDMA_WAIT:
-        ret = copy_from_user(&buf_token, argp, sizeof(buf_token));
+        ret = axiom_copy_from_user(&buf_token, argp, sizeof(buf_token));
         if (ret)
             return -EFAULT;
 
@@ -2267,21 +2347,21 @@ static long axiomnet_ioctl_generic(struct file *filep, unsigned int cmd,
         put_user(buf_uint8, (uint8_t __user*)arg);
         break;
     case AXNET_SET_ROUTING:
-        ret = copy_from_user(&buf_routing, argp, sizeof(buf_routing));
+        ret = axiom_copy_from_user(&buf_routing, argp, sizeof(buf_routing));
         if (ret)
             return -EFAULT;
         ret = axiom_hw_set_routing(drvdata->dev_api, buf_routing.node_id,
                 buf_routing.enabled_mask);
         break;
     case AXNET_GET_ROUTING:
-        ret = copy_from_user(&buf_routing, argp, sizeof(buf_routing));
+        ret = axiom_copy_from_user(&buf_routing, argp, sizeof(buf_routing));
         if (ret)
             return -EFAULT;
         ret = axiom_hw_get_routing(drvdata->dev_api, buf_routing.node_id,
                 &buf_routing.enabled_mask);
         if (ret)
             return -EFAULT;
-        ret = copy_to_user(argp, &buf_routing, sizeof(buf_routing));
+        ret = axiom_copy_to_user(argp, &buf_routing, sizeof(buf_routing));
         break;
     case AXNET_GET_IFNUMBER:
         ret = axiom_hw_get_if_number(drvdata->dev_api, &buf_uint8);
@@ -2305,12 +2385,12 @@ static long axiomnet_ioctl_generic(struct file *filep, unsigned int cmd,
         axiom_hw_set_ni_control(drvdata->dev_api, buf_uint32);
         break;
     case AXNET_GET_STATS:
-        ret = copy_to_user(argp, &drvdata->stats, sizeof(drvdata->stats));
+        ret = axiom_copy_to_user(argp, &drvdata->stats, sizeof(drvdata->stats));
         if (ret)
             return -EFAULT;
         break;
     case AXNET_DEBUG_INFO:
-        ret = copy_from_user(&buf_debug, argp, sizeof(buf_debug));
+        ret = axiom_copy_from_user(&buf_debug, argp, sizeof(buf_debug));
         if (ret)
             return -EFAULT;
         ret = axiomnet_debug_info(drvdata, buf_debug.flags);
