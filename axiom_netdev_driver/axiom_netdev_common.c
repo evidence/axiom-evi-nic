@@ -48,81 +48,87 @@ static void axiomnet_destroy_chrdev(struct axiomnet_drvdata *drvdata,
 static inline unsigned long axiom_copy_from_user(void *to,
         const void __user *from, unsigned long n)
 {
-    unsigned long offset = 0, ret;
-    uintptr_t actual_to = (uintptr_t) to, actual_from = (uintptr_t) from;
+    unsigned long offset = 0, ret = 0, odd_to, odd_from;
+    uint8_t *actual_to = (uint8_t *) to;
+    uint8_t *actual_from = (uint8_t *) from;
 
     if (!access_ok(VERIFY_READ, from, n)) {
+        EPRINTF("access_ok failed");
         return n;
     }
 
+#if 0
     if (actual_from < AXIOM_RDMA_VADDR ||
             actual_from >= (AXIOM_RDMA_VADDR + AXIOM_RDMA_SIZE)) {
         return __copy_from_user(to, from, n);
     }
+#endif
 
-    while (offset < n) {
-        unsigned long copied = n - offset, odd_to, odd_from;
-        actual_to = (uintptr_t) (((uint8_t *) to) + offset);
-        actual_from = (uintptr_t) (((uint8_t *)from) + offset);
-        odd_to = AXIOM_COPY_ALIGN - (actual_to & AXIOM_COPY_MASK);
-        odd_from = AXIOM_COPY_ALIGN - (actual_from & AXIOM_COPY_MASK);
+    odd_to = AXIOM_COPY_ALIGN - (((uintptr_t)actual_to) & AXIOM_COPY_MASK);
+    odd_from = AXIOM_COPY_ALIGN - (((uintptr_t)actual_from) & AXIOM_COPY_MASK);
 
-        if (odd_to != AXIOM_COPY_ALIGN || odd_from != AXIOM_COPY_ALIGN) {
-            unsigned long tmp_copied = (odd_to < odd_from) ? odd_to : odd_from;
-
-            if (tmp_copied < copied) {
-                copied = tmp_copied;
+    if (odd_to == AXIOM_COPY_ALIGN && odd_from == AXIOM_COPY_ALIGN) {
+        ret = __copy_from_user(to, from, n);
+    } else {
+        if (odd_to != odd_from) {
+            while (offset < n) {
+                *(actual_to++) = *(actual_from++);
+                ++offset;
             }
-        }
+        } else {
+            while (offset < odd_to) {
+                *(actual_to++) = *(actual_from++);
+                ++offset;
+            }
 
-        ret = __copy_from_user(((uint8_t *) to) + offset,
-                ((uint8_t *) from) + offset, copied);
-        if (ret)
-            return ret;
-        offset += copied;
+            ret = __copy_from_user(actual_to, actual_from, n - offset);
+        }
     }
 
-    return 0;
+    return ret;
 }
 
 static inline unsigned long axiom_copy_to_user(void __user *to,
         const void *from, unsigned long n)
 {
-    unsigned long offset = 0, ret;
-    uintptr_t actual_to = (uintptr_t) to, actual_from = (uintptr_t) from;
+    unsigned long offset = 0, ret = 0, odd_to, odd_from;
+    uint8_t *actual_to = (uint8_t *) to;
+    uint8_t *actual_from = (uint8_t *) from;
 
     if (!access_ok(VERIFY_WRITE, to, n)) {
+        EPRINTF("access_ok failed");
         return n;
     }
 
+#if 0
     if (actual_to < AXIOM_RDMA_VADDR ||
             actual_to >= (AXIOM_RDMA_VADDR + AXIOM_RDMA_SIZE)) {
         return __copy_to_user(to, from, n);
     }
+#endif
 
-    while (offset < n) {
-        unsigned long copied = n - offset, odd_to, odd_from;
-        actual_to = (uintptr_t) (((uint8_t *) to) + offset);
-        actual_from = (uintptr_t) (((uint8_t *)from) + offset);
-        odd_to = AXIOM_COPY_ALIGN - (actual_to & AXIOM_COPY_MASK);
-        odd_from = AXIOM_COPY_ALIGN - (actual_from & AXIOM_COPY_MASK);
+    odd_to = AXIOM_COPY_ALIGN - (((uintptr_t)actual_to) & AXIOM_COPY_MASK);
+    odd_from = AXIOM_COPY_ALIGN - (((uintptr_t)actual_from) & AXIOM_COPY_MASK);
 
-        if (odd_to != AXIOM_COPY_ALIGN || odd_from != AXIOM_COPY_ALIGN) {
-            unsigned long tmp_copied = (odd_to < odd_from) ? odd_to : odd_from;
-
-            if (tmp_copied < copied) {
-                copied = tmp_copied;
+    if (odd_to == AXIOM_COPY_ALIGN && odd_from == AXIOM_COPY_ALIGN) {
+        ret = __copy_from_user(to, from, n);
+    } else {
+        if (odd_to != odd_from) {
+            while (offset < n) {
+                *(actual_to++) = *(actual_from++);
+                ++offset;
             }
-        }
+        } else {
+            while (offset < odd_to) {
+                *(actual_to++) = *(actual_from++);
+                ++offset;
+            }
 
-        ret = __copy_to_user(((uint8_t *) to) + offset,
-                ((uint8_t *) from) + offset, copied);
-        if (ret)
-            return ret;
-        offset += copied;
+            ret = __copy_from_user(actual_to, actual_from, n - offset);
+        }
     }
 
-    return 0;
+    return ret;
 }
 #else /* !AXIOM_CACHE_WORKAROUND */
 #define axiom_copy_from_user		copy_from_user
