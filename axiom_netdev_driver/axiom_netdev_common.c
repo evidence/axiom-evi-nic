@@ -72,12 +72,12 @@ static inline unsigned long axiom_copy_from_user(void *to,
     } else {
         if (odd_to != odd_from) {
             while (offset < n) {
-                *(actual_to++) = *(actual_from++);
+                __get_user(*(actual_to++), actual_from++);
                 ++offset;
             }
         } else {
             while (offset < odd_to) {
-                *(actual_to++) = *(actual_from++);
+                __get_user(*(actual_to++), actual_from++);
                 ++offset;
             }
 
@@ -115,12 +115,12 @@ static inline unsigned long axiom_copy_to_user(void __user *to,
     } else {
         if (odd_to != odd_from) {
             while (offset < n) {
-                *(actual_to++) = *(actual_from++);
+                __put_user(*(actual_from++), actual_to++);
                 ++offset;
             }
         } else {
             while (offset < odd_to) {
-                *(actual_to++) = *(actual_from++);
+                __put_user(*(actual_from++), actual_to++);
                 ++offset;
             }
 
