@@ -111,7 +111,7 @@ static inline unsigned long axiom_copy_to_user(void __user *to,
     odd_from = AXIOM_COPY_ALIGN - (((uintptr_t)actual_from) & AXIOM_COPY_MASK);
 
     if (odd_to == AXIOM_COPY_ALIGN && odd_from == AXIOM_COPY_ALIGN) {
-        ret = __copy_from_user(to, from, n);
+        ret = __copy_to_user(to, from, n);
     } else {
         if (odd_to != odd_from) {
             while (offset < n) {
@@ -124,7 +124,7 @@ static inline unsigned long axiom_copy_to_user(void __user *to,
                 ++offset;
             }
 
-            ret = __copy_from_user(actual_to, actual_from, n - offset);
+            ret = __copy_to_user(actual_to, actual_from, n - offset);
         }
     }
 
