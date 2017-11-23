@@ -214,8 +214,9 @@ struct axiomnet_drvdata {
     struct axiomnet_rdma_rx_hwring rdma_rx_ring;/*!\brief RDMA RX ring */
 
     /* kthread */
-    struct axiom_kthread kthread_raw; /*!< \brief kthread for RAW */
-    struct axiom_kthread kthread_rdma; /*!< \brief kthread for RDMA */
+    struct axiom_kthread kthread_raw;   /*!< \brief kthread for RAW */
+    struct axiom_kthread kthread_rdma;  /*!< \brief kthread for RDMA */
+    struct axiom_kthread kthread_wtd;   /*!< \brief kthread for watchdog */
 
     /* statistics */
     axiom_stats_t stats;
@@ -227,8 +228,8 @@ struct axiomnet_chrdev {
     struct class *dclass;               /*!< \brief Device Class */
     struct cdev cdev;                   /*!< \biref Axiom char dev */
     struct cdev cdev_raw;               /*!< \biref Axiom raw char dev */
-    struct cdev cdev_long;               /*!< \biref Axiom long char dev */
-    struct cdev cdev_rdma;               /*!< \biref Axiom rdma char dev */
+    struct cdev cdev_long;              /*!< \biref Axiom long char dev */
+    struct cdev cdev_rdma;              /*!< \biref Axiom rdma char dev */
     /*! \brief AXIOM device driver data */
     struct axiomnet_drvdata *drvdata;
 };

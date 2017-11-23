@@ -21,10 +21,15 @@ int verbose = 0;
 module_param(verbose, int, 0644);
 MODULE_PARM_DESC(verbose, "versbose level (0=none,...,16=all)");
 
-/*! \brief delay module parameter */
+/*! \brief delay (usec) module parameter */
 int retry_udelay = 200;
 module_param(retry_udelay, int, 0644);
 MODULE_PARM_DESC(retry_udelay, "usec to sleep when retry to TX a long packet");
+
+/*! \brief period (msec) of watchdog */
+int watchdog_period = 100;
+module_param(watchdog_period, int, 0644);
+MODULE_PARM_DESC(watchdog_period, "watchdog period in msec");
 
 struct axiomnet_chrdev chrdev;
 
@@ -1302,6 +1307,37 @@ static void axiomnet_rdma_rx_worker(void *data)
     axiom_rdma_rx_dequeue(rx_ring);
 }
 
+inline static bool axiomnet_watchdog_work_todo(void *data)
+{
+    if (watchdog_period == 0)
+        return false;
+
+    return true;
+}
+
+static void axiomnet_watchdog_worker(void *data)
+{
+    struct axiomnet_drvdata *drvdata = (struct axiomnet_drvdata *) data;
+
+    if (axiomnet_raw_rx_work_todo(&drvdata->raw_rx_ring)) {
+        axiom_kthread_wakeup(&(drvdata->kthread_raw));
+    }
+
+    if (axiomnet_raw_tx_avail(&drvdata->raw_tx_ring)) {
+        wake_up(&(drvdata->raw_tx_ring.port.wait_queue));
+    }
+
+    if (axiomnet_rdma_rx_work_todo(&drvdata->rdma_rx_ring)) {
+        axiom_kthread_wakeup(&(drvdata->kthread_rdma));
+    }
+
+    if (axiomnet_rdma_tx_avail(&drvdata->rdma_tx_ring)) {
+        wake_up(&(drvdata->rdma_tx_ring.rdma_port.wait_queue));
+    }
+
+    msleep(watchdog_period);
+}
+
 /***************************** Init functions *********************************/
 
 static void axiomnet_raw_rx_hwring_release(struct axiomnet_drvdata *drvdata,
@@ -1696,9 +1732,20 @@ int axiomnet_probe(struct axiomnet_drvdata *drvdata,
 
     axiom_hw_enable_irq(drvdata->dev_api);
 
+    /* init watchdog kthread */
+    err = axiom_kthread_init(&drvdata->kthread_wtd, axiomnet_watchdog_worker,
+            axiomnet_watchdog_work_todo, drvdata, "WTD kthread");
+    if (err) {
+        EPRINTF("could not init kthread\n");
+        goto free_rdma;
+    }
+
     DPRINTF("end");
 
     return 0;
+free_rdma:
+    axiom_hw_disable_irq(drvdata->dev_api);
+    axiomnet_rdma_release(drvdata);
 free_rdma_kthread:
     axiom_kthread_uninit(&drvdata->kthread_rdma);
 free_raw_kthread:
@@ -1724,6 +1771,7 @@ int axiomnet_remove(struct axiomnet_drvdata *drvdata)
 
     axiomnet_rdma_release(drvdata);
 
+    axiom_kthread_uninit(&drvdata->kthread_wtd);
     axiom_kthread_uninit(&drvdata->kthread_rdma);
     axiom_kthread_uninit(&drvdata->kthread_raw);
 
