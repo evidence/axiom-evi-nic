@@ -19,7 +19,7 @@
  */
 
 /*! \brief Maximum number of nodes supported by the AXIOM NIC */
-#define AXIOM_NODES_MAX                         255
+#define AXIOM_NODES_MAX                         256
 /*! \brief Maximum number of interfaces supported by the AXIOM NIC */
 #define AXIOM_INTERFACES_MAX                    4
 /*! \brief Max number of port available in RAW messages.

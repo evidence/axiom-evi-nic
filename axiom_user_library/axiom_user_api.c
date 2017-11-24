@@ -610,6 +610,8 @@ axiom_send_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
             ret = AXIOM_RET_NOTAVAIL;
         } else if (errno == EINTR) {
             ret = AXIOM_RET_INTR;
+        } else if (errno == ENXIO) {
+            ret = AXIOM_RET_NOTREACH;
         } else {
             EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
             ret = AXIOM_RET_ERROR;
@@ -657,6 +659,8 @@ axiom_send_iov_raw(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
             ret = AXIOM_RET_NOTAVAIL;
         } else if (errno == EINTR) {
             ret = AXIOM_RET_INTR;
+        } else if (errno == ENXIO) {
+            ret = AXIOM_RET_NOTREACH;
         } else {
             EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
             ret = AXIOM_RET_ERROR;
@@ -723,6 +727,8 @@ axiom_recv_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
             ret = AXIOM_RET_NOTAVAIL;
         } else if (errno == EINTR) {
             ret = AXIOM_RET_INTR;
+        } else if (errno == ENXIO) {
+            ret = AXIOM_RET_NOTREACH;
         } else {
             EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
             ret = AXIOM_RET_ERROR;
@@ -773,6 +779,8 @@ axiom_recv_iov_raw(axiom_dev_t *dev, axiom_node_id_t *src_id,
             ret = AXIOM_RET_NOTAVAIL;
         } else if (errno == EINTR) {
             ret = AXIOM_RET_INTR;
+        } else if (errno == ENXIO) {
+            ret = AXIOM_RET_NOTREACH;
         } else {
             EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
             ret = AXIOM_RET_ERROR;
@@ -911,6 +919,8 @@ axiom_send_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
             ret = AXIOM_RET_NOTAVAIL;
         } else if (errno == EINTR) {
             ret = AXIOM_RET_INTR;
+        } else if (errno == ENXIO) {
+            ret = AXIOM_RET_NOTREACH;
         } else {
             EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
             ret = AXIOM_RET_ERROR;
@@ -956,6 +966,8 @@ axiom_send_iov_long(axiom_dev_t *dev, axiom_node_id_t dst_id, axiom_port_t port,
             ret = AXIOM_RET_NOTAVAIL;
         } else if (errno == EINTR) {
             ret = AXIOM_RET_INTR;
+        } else if (errno == ENXIO) {
+            ret = AXIOM_RET_NOTREACH;
         } else {
             EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
             ret = AXIOM_RET_ERROR;
@@ -1013,6 +1025,8 @@ axiom_recv_long(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *port,
             ret = AXIOM_RET_NOTAVAIL;
         } else if (errno == EINTR) {
             ret = AXIOM_RET_INTR;
+        } else if (errno == ENXIO) {
+            ret = AXIOM_RET_NOTREACH;
         } else {
             EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
             ret = AXIOM_RET_ERROR;
@@ -1062,6 +1076,8 @@ axiom_recv_iov_long(axiom_dev_t *dev, axiom_node_id_t *src_id, axiom_port_t *por
             ret = AXIOM_RET_NOTAVAIL;
         } else if (errno == EINTR) {
             ret = AXIOM_RET_INTR;
+        } else if (errno == ENXIO) {
+            ret = AXIOM_RET_NOTREACH;
         } else {
             EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
             ret = AXIOM_RET_ERROR;
@@ -1279,6 +1295,8 @@ axiom_rdma_write_internal(axiom_dev_t *dev, axiom_node_id_t remote_id,
             ret = AXIOM_RET_NOTAVAIL;
         } else if (errno == EINTR) {
             ret = AXIOM_RET_INTR;
+        } else if (errno == ENXIO) {
+            ret = AXIOM_RET_NOTREACH;
         } else {
             EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
             ret = AXIOM_RET_ERROR;
@@ -1362,6 +1380,8 @@ axiom_rdma_read_internal(axiom_dev_t *dev, axiom_node_id_t remote_id,
             ret = AXIOM_RET_NOTAVAIL;
         } else if (errno == EINTR) {
             ret = AXIOM_RET_INTR;
+        } else if (errno == ENXIO) {
+            ret = AXIOM_RET_NOTREACH;
         } else {
             EPRINTF("ioctl error - ret: %d errno: %s", ret, strerror(errno));
             ret = AXIOM_RET_ERROR;

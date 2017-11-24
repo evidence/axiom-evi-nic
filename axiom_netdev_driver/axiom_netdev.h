@@ -219,7 +219,11 @@ struct axiomnet_drvdata {
     struct axiom_kthread kthread_wtd;   /*!< \brief kthread for watchdog */
 
     /* statistics */
-    axiom_stats_t stats;
+    axiom_stats_t stats;                /*!< \brief NIC statistics */
+
+    /* routing info */
+    axiom_if_id_t routing_table[AXIOM_NODES_MAX];/*!< \brief Routing table */
+    axiom_node_id_t node_id;                     /*!< \brief AXIOM Node ID */
 };
 
 /*! \brief AXIOM char device status */

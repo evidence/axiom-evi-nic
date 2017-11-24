@@ -65,13 +65,15 @@ typedef struct axiom_stats  axiom_stats_t;
 /*! \brief Return value OK */
 #define AXIOM_RET_OK                    0
 /*! \brief Return value ERROR: generic error */
-#define AXIOM_RET_ERROR                 -1
+#define AXIOM_RET_ERROR                 (-1)
 /*! \brief Return value NOTAVAIL: space not available */
-#define AXIOM_RET_NOTAVAIL              -2
+#define AXIOM_RET_NOTAVAIL              (-2)
 /*! \brief Return value INTR: system call interrupted */
-#define AXIOM_RET_INTR                  -3
+#define AXIOM_RET_INTR                  (-3)
 /*! \brief Return value NOMEM: memory not available */
-#define AXIOM_RET_NOMEM                 -4
+#define AXIOM_RET_NOMEM                 (-4)
+/*! \brief Return value NOTREACH: node not reachable */
+#define AXIOM_RET_NOTREACH              (-5)
 
 
 /*! \brief Check if return value is OK */

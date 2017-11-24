@@ -210,6 +210,11 @@ inline static int axiomnet_raw_send(struct file *filep,
         return -EFBIG;
     }
 
+    if (unlikely(header->tx.port_type.field.type != AXIOM_TYPE_RAW_NEIGHBOUR &&
+                drvdata->routing_table[header->tx.dst] == 0x0)) {
+        return -ENXIO;
+    }
+
     mutex_lock(&tx_ring->port.mutex);
 
     while (axiomnet_raw_tx_avail(tx_ring) == 0) { /* no space to write */
@@ -535,6 +540,10 @@ inline static int axiomnet_rdma_tx(struct file *filep,
     int ret, avail;
 
     DPRINTF("start");
+
+    if (unlikely(drvdata->routing_table[header->tx.dst] == 0x0)) {
+        return -ENXIO;
+    }
 
     mutex_lock(&tx_ring->rdma_port.mutex);
 
@@ -2409,10 +2418,12 @@ static long axiomnet_ioctl_generic(struct file *filep, unsigned int cmd,
     case AXNET_SET_NODEID:
         get_user(buf_uint8, (uint8_t __user*)arg);
         axiom_hw_set_node_id(drvdata->dev_api, buf_uint8);
+        drvdata->node_id = buf_uint8;
         break;
     case AXNET_GET_NODEID:
         buf_uint8 = axiom_hw_get_node_id(drvdata->dev_api);
         put_user(buf_uint8, (uint8_t __user*)arg);
+        drvdata->node_id = buf_uint8;
         break;
     case AXNET_SET_ROUTING:
         ret = axiom_copy_from_user(&buf_routing, argp, sizeof(buf_routing));
@@ -2420,6 +2431,9 @@ static long axiomnet_ioctl_generic(struct file *filep, unsigned int cmd,
             return -EFAULT;
         ret = axiom_hw_set_routing(drvdata->dev_api, buf_routing.node_id,
                 buf_routing.enabled_mask);
+        if (ret)
+            return -EFAULT;
+        drvdata->routing_table[buf_routing.node_id] = buf_routing.enabled_mask;
         break;
     case AXNET_GET_ROUTING:
         ret = axiom_copy_from_user(&buf_routing, argp, sizeof(buf_routing));
@@ -2429,6 +2443,7 @@ static long axiomnet_ioctl_generic(struct file *filep, unsigned int cmd,
                 &buf_routing.enabled_mask);
         if (ret)
             return -EFAULT;
+        drvdata->routing_table[buf_routing.node_id] = buf_routing.enabled_mask;
         ret = axiom_copy_to_user(argp, &buf_routing, sizeof(buf_routing));
         break;
     case AXNET_GET_IFNUMBER:
