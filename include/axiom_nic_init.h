@@ -26,6 +26,9 @@
 /*! \brief AXIOM init master node */
 #define AXIOM_INIT_MASTER_NODE          1
 
+/*! \brief socket pathname to comunicate with axiom-init */
+#define AXIOM_INIT_SOCKET_PATHNAME "/tmp/axinit.sock"
+
 /********************************* Types **************************************/
 typedef uint8_t		axiom_init_cmd_t;   /*!< \brief init command type*/
 
