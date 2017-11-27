@@ -363,7 +363,7 @@ main (int argc, char *argv[])
 
                 axsw_logic_set_vm_sd(&logic_status, vm_index, new_sd);
 
-                for (if_id = 0; if_id < AXIOM_INTERFACES_MAX; if_id++) {
+                for (if_id = 0; if_id <= AXIOM_INTERFACES_MAX; if_id++) {
                     int connected = 0;
                     if (axsw_logic_find_neighbour_if(&logic_status, vm_index,
                                 if_id) >= 0) {

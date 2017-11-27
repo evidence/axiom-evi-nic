@@ -18,17 +18,27 @@
  * \{
  */
 
-/*! \brief Maximum number of nodes supported by the AXIOM NIC */
-#define AXIOM_NODES_MAX                         256
-/*! \brief Maximum number of interfaces supported by the AXIOM NIC */
+/*! \brief Maximum value of node_id supported by the AXIOM NIC */
+#define AXIOM_NODES_MAX                         255
+/*! \brief Maximum number of node_id supported by the AXIOM NIC */
+#define AXIOM_NODES_NUM                         (AXIOM_NODES_MAX + 1)
+/*! \brief Maximum value of interfaces supported by the AXIOM NIC */
 #define AXIOM_INTERFACES_MAX                    4
-/*! \brief Max number of port available in RAW messages.
+/*! \brief Maximum number of interfaces supported by the AXIOM NIC */
+#define AXIOM_INTERFACES_NUM                    (AXIOM_INTERFACES_MAX + 1)
+/*! \brief Max value of port available in RAW messages.
  *         Note: port 7 is reserved for XSMLL messages */
-#define AXIOM_PORT_MAX                          7
+#define AXIOM_PORT_MAX                          6
+/*! \brief Max number of port available in RAW messages. */
+#define AXIOM_PORT_NUM                          (AXIOM_PORT_MAX + 1)
+/*! \brief Max value of type available */
+#define AXIOM_TYPE_MAX                          7
 /*! \brief Max number of type available */
-#define AXIOM_TYPE_MAX                          8
+#define AXIOM_TYPE_NUM                          (AXIOM_TYPE_MAX + 1)
+/*! \brief Max value of message id available */
+#define AXIOM_MSG_ID_MAX                        255
 /*! \brief Max number of message id available */
-#define AXIOM_MSG_ID_MAX                        256
+#define AXIOM_MSG_ID_NUM                        (AXIOM_MSG_ID_MAX + 1)
 
 /*! \brief Header size in the raw message */
 #define AXIOM_RAW_HEADER_SIZE                   5

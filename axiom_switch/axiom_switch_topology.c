@@ -53,13 +53,13 @@ axsw_init_topology(axsw_logic_t *logic)
 {
     int i,j;
 
-    for (i = 0; i < AXIOM_NODES_MAX; i++) {
-        for (j = 0; j < AXIOM_INTERFACES_MAX; j++) {
+    for (i = 0; i < AXIOM_NODES_NUM; i++) {
+        for (j = 0; j < AXIOM_INTERFACES_NUM; j++) {
             logic->start_topology.topology[i][j] = AXIOM_NULL_NODE;
         }
     }
-    logic->start_topology.num_nodes =  AXIOM_NODES_MAX;
-    logic->start_topology.num_interfaces =  AXIOM_INTERFACES_MAX;
+    logic->start_topology.num_nodes =  AXIOM_NODES_NUM;
+    logic->start_topology.num_interfaces =  AXIOM_INTERFACES_NUM;
 }
 
 void
@@ -80,7 +80,7 @@ axsw_make_ring_topology(axsw_logic_t *logic, int num_nodes)
     }
 
     logic->start_topology.num_nodes =  num_nodes;
-    logic->start_topology.num_interfaces =  AXIOM_INTERFACES_MAX;
+    logic->start_topology.num_interfaces =  AXIOM_INTERFACES_NUM;
 
 }
 
@@ -162,7 +162,7 @@ axsw_make_mesh_topology(axsw_logic_t *logic, uint8_t rows, uint8_t columns)
     }
 
     logic->start_topology.num_nodes =  num_nodes;
-    logic->start_topology.num_interfaces =  AXIOM_INTERFACES_MAX;
+    logic->start_topology.num_interfaces =  AXIOM_INTERFACES_NUM;
 }
 
 
@@ -183,8 +183,8 @@ axsw_make_topology_from_file(axsw_logic_t *logic, char *filename) {
 
     while ((read = getline(&line, &len, file)) != -1) {
        line_count++;
-       if (line_count > AXIOM_NODES_MAX) {
-           printf("The topology contains more than %d nodes\n", AXIOM_NODES_MAX);
+       if (line_count > AXIOM_NODES_NUM) {
+           printf("The topology contains more than %d nodes\n", AXIOM_NODES_NUM);
            return -1;
        }
        if_index = 0;
@@ -203,7 +203,7 @@ axsw_make_topology_from_file(axsw_logic_t *logic, char *filename) {
                            AXIOM_NODES_MAX);
                    return -1;
                }
-               if (if_index >= AXIOM_INTERFACES_MAX) {
+               if (if_index > AXIOM_INTERFACES_MAX) {
                    printf("The topology contains nodes with more than  than %d \
                            interfaces\n", AXIOM_INTERFACES_MAX);
                    return -1;
@@ -217,7 +217,7 @@ axsw_make_topology_from_file(axsw_logic_t *logic, char *filename) {
            }
        }
     }
-    logic->start_topology.num_interfaces =  AXIOM_INTERFACES_MAX;
+    logic->start_topology.num_interfaces =  AXIOM_INTERFACES_NUM;
     logic->start_topology.num_nodes = line_count;
     free(line);
     fclose(file);

@@ -60,14 +60,14 @@
 #define AXIOMNET_MAX_OPEN       64
 
 /*! \brief number of AXIOM software RAW queue */
-#define AXIOMNET_RAW_QUEUE_NUM           AXIOM_PORT_MAX
+#define AXIOMNET_RAW_QUEUE_NUM           AXIOM_PORT_NUM
 /*! \brief number of free elements in the AXIOM free RAW queue */
 #define AXIOMNET_RAW_QUEUE_FREE_LEN      (256 * AXIOMNET_RAW_QUEUE_NUM)
 
 /*! \brief number of AXIOM software RDMA queue */
 #define AXIOMNET_RDMA_QUEUE_NUM          0
 /*! \brief number of free elements in the AXIOM free RDMA queue */
-#define AXIOMNET_RDMA_QUEUE_FREE_LEN     AXIOM_MSG_ID_MAX
+#define AXIOMNET_RDMA_QUEUE_FREE_LEN     AXIOM_MSG_ID_NUM
 
 /*! \brief number of AXIOM software LONG TX queue */
 #define AXIOMNET_LONG_TXQUEUE_NUM        0
@@ -75,7 +75,7 @@
 #define AXIOMNET_LONG_TXQUEUE_FREE_LEN   AXIOMREG_LEN_LONG_BUF
 
 /*! \brief number of AXIOM software LONG RX queue */
-#define AXIOMNET_LONG_RXQUEUE_NUM        AXIOM_PORT_MAX
+#define AXIOMNET_LONG_RXQUEUE_NUM        AXIOM_PORT_NUM
 /*! \brief number of free elements in the AXIOM free LONG RX queue */
 #define AXIOMNET_LONG_RXQUEUE_FREE_LEN   AXIOMREG_LEN_LONG_BUF
 
@@ -143,7 +143,7 @@ struct axiomnet_raw_rx_hwring {
     struct axiomnet_drvdata *drvdata;   /*!< \brief AXIOM driver data */
     struct axiomnet_raw_queue sw_queue; /*!< \brief AXIOM software queue */
     /*!< \brief ports of this ring */
-    struct axiomnet_sw_port ports[AXIOM_PORT_MAX];
+    struct axiomnet_sw_port ports[AXIOM_PORT_NUM];
     uint8_t port_used;                  /*!< \brief Current port bound */
 };
 
@@ -171,11 +171,11 @@ struct axiomnet_rdma_rx_hwring {
     struct axiomnet_rdma_queue *tx_rdma_queue;
     struct axiomnet_long_queue long_queue; /*!< \brief AXIOM software queue */
     /*!< \brief ports of this ring for LONG messages*/
-    struct axiomnet_sw_port long_ports[AXIOM_PORT_MAX];
+    struct axiomnet_sw_port long_ports[AXIOM_PORT_NUM];
     uint8_t port_used;                  /*!< \brief Current port bound */
     //struct axiomnet_rdma_queue sw_queue; /*!< \brief AXIOM software queue */
     /*!< \brief ports of this ring */
-    //struct axiomnet_sw_port ports[AXIOM_PORT_MAX];
+    //struct axiomnet_sw_port ports[AXIOM_PORT_NUM];
 };
 
 /*! \brief Structure to handle lookup table for LONG buffers */
@@ -222,7 +222,7 @@ struct axiomnet_drvdata {
     axiom_stats_t stats;                /*!< \brief NIC statistics */
 
     /* routing info */
-    axiom_if_id_t routing_table[AXIOM_NODES_MAX];/*!< \brief Routing table */
+    axiom_if_id_t routing_table[AXIOM_NODES_NUM];/*!< \brief Routing table */
     axiom_node_id_t node_id;                     /*!< \brief AXIOM Node ID */
 };
 

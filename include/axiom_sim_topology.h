@@ -32,7 +32,7 @@ typedef struct axiom_topology {
      * topology[NX][IY] = NZ  -> means node NX is connected on the interface IY
      *                           with node NZ
      */
-    uint8_t topology[AXIOM_NODES_MAX][AXIOM_INTERFACES_MAX];
+    uint8_t topology[AXIOM_NODES_NUM][AXIOM_INTERFACES_NUM];
     /*! \brief network topology: interfaces info
      *
      * Contains the node topology encoded in this way:
@@ -40,7 +40,7 @@ typedef struct axiom_topology {
      *                              IY with interface IZ on the remote node
      *                              written in topology[NX][IY]
      */
-    uint8_t if_topology[AXIOM_NODES_MAX][AXIOM_INTERFACES_MAX];
+    uint8_t if_topology[AXIOM_NODES_NUM][AXIOM_INTERFACES_NUM];
     int num_nodes;      /*!< \brief number of nodes in the network */
     int num_interfaces; /*!< \brief number of node interfaces */
 } axiom_topology_t;
@@ -60,20 +60,20 @@ axsw_if_topology_init(axiom_topology_t *topology, int num_nodes)
     uint8_t pair_node;
 
     for (node_index = 0; node_index < num_nodes; node_index++) {
-        for (if_index = 0; if_index < AXIOM_INTERFACES_MAX; if_index++) {
+        for (if_index = 0; if_index < AXIOM_INTERFACES_NUM; if_index++) {
             topology->if_topology[node_index][if_index] = AXIOM_NULL_NODE;
         }
     }
 
     for (node_index = 0; node_index < num_nodes; node_index++) {
 
-        for (if_index = 0; if_index < AXIOM_INTERFACES_MAX; if_index++) {
+        for (if_index = 0; if_index < AXIOM_INTERFACES_NUM; if_index++) {
 
             pair_node = topology->topology[node_index][if_index];
             if (pair_node == AXIOM_NULL_NODE)
                 continue;
 
-            for (i = 0; i < AXIOM_INTERFACES_MAX; i++) {
+            for (i = 0; i < AXIOM_INTERFACES_NUM; i++) {
 
                 if ((topology->topology[pair_node][i] == node_index) &&
                     (topology->if_topology[pair_node][i] == AXIOM_NULL_NODE)) {

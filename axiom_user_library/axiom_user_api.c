@@ -389,7 +389,7 @@ axiom_next_hop(axiom_dev_t *dev, axiom_node_id_t dst_id,
     if (!AXIOM_RET_IS_OK(ret))
         return ret;
 
-    for (i = 0; i < AXIOM_INTERFACES_MAX; i++) {
+    for (i = 0; i < AXIOM_INTERFACES_NUM; i++) {
         if (enabled_mask & (uint8_t)(1 << i)) {
             *if_number = i;
             return AXIOM_RET_OK;
@@ -1658,11 +1658,11 @@ axiom_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
 int
 axiom_get_num_nodes(axiom_dev_t *dev)
 {
-    axiom_node_id_t i, node_id;
+    axiom_node_id_t node_id;
     uint8_t enabled_mask;
     axiom_err_t err;
     /* init to 1, because the local node is not set in the routing table */
-    int num_nodes = 1;
+    int num_nodes = 1, i;
 
     if (!dev || dev->fd_generic <= 0) {
         EPRINTF("axiom device is not opened - dev: %p", dev);
@@ -1672,7 +1672,7 @@ axiom_get_num_nodes(axiom_dev_t *dev)
     /* get local id */
     node_id = axiom_get_node_id(dev);
 
-    for (i = 0; i < AXIOM_NODES_MAX; i++) {
+    for (i = 0; i < AXIOM_NODES_NUM; i++) {
 
         /* we already count local node */
         if (i == node_id)
