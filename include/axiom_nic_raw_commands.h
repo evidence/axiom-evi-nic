@@ -77,6 +77,9 @@
 /*! \brief Allocator: release private and shared regions */
 #define AXIOM_CMD_ALLOC_RELEASE         26
 
+/*! \brief To start a network discovery */
+#define AXIOM_CMD_START_DISCOVERY       27
+
 /** \} */
 
 #endif /* !AXIOM_NIC_RAW_COMMANDS_h */
