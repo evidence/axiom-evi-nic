@@ -104,15 +104,21 @@ typedef union axiomreg_ifinfo {
 typedef union axiomreg_control {
     uint32_t raw;
     struct {
-        uint32_t reserved : 32;     /*!< \brief Reserved field */
+        uint32_t reserved : 30;     /*!< \brief Reserved field */
+        uint32_t xsmll_enable : 1;  /*!< \brief Enable/disable XSMLL */
+        uint32_t ack_enable : 1;    /*!< \brief Enable/disable ACK */
         uint32_t reset : 1;         /*!< \brief Reset all Aurora IPs */
-        uint32_t loopback : 32;     /*!< \brief Enable external loopback */
+        uint32_t loopback : 1;      /*!< \brief Enable external loopback */
     } field;
 } axiomreg_control_t;
 /*! \brief Enable external loopback */
 #define AXIOMREG_CONTROL_LOOPBACK               0x00000001
 /*! \brief Reset all Aurora IPs */
 #define AXIOMREG_CONTROL_RESET                  0x00000002
+/*! \brief Enable/disable ACK */
+#define AXIOMREG_CONTROL_ACK_ENABLE             0x00000004
+/*! \brief Enable/disable XSMLL */
+#define AXIOMREG_CONTROL_XSMLL_ENABLE           0x00000008
 
 
 /*!

@@ -250,7 +250,7 @@ axiom_hw_read_ni_control(axiom_dev_t *dev)
 {
     uint32_t ret = 0x0;
 
-    //TODO: ret = ioread32(dev->regs.vregs + AXIOMREG_IO_CONTROL);
+    ret = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_CONTROL);
 
     return ret;
 }

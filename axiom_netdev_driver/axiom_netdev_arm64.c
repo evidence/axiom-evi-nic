@@ -18,6 +18,8 @@
 #include "axiom_xilinx.h"
 #include "axiom_nic_regs_arm64.h"
 
+extern int verbose;
+
 /*! \brief AXIOM arm device driver data */
 struct axiomnet_armdata {
     struct axiomnet_drvdata drvdata;    /*!< \brief AXIOM device driver data */
@@ -317,9 +319,12 @@ static int axiomnet_axi_init(struct axiomnet_armdata *armdata)
 
     /* Reset Aurora IPs */
     axi_reg_write32(&armdata->regs.axi.registers, AXIOMREG_IO_CONTROL,
-            AXIOMREG_CONTROL_RESET);
+            AXIOMREG_CONTROL_RESET | AXIOMREG_CONTROL_ACK_ENABLE);
     axi_reg_write32(&armdata->regs.axi.registers, AXIOMREG_IO_CONTROL,
-            0x0);
+            AXIOMREG_CONTROL_ACK_ENABLE);
+
+    IPRINTF(verbose, "control: 0x%x",
+            axi_reg_read32(&armdata->regs.axi.registers, AXIOMREG_IO_CONTROL));
 
 error:
     return err;
