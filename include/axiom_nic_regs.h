@@ -145,6 +145,8 @@ typedef union axiomreg_interrupt {
 /*! \brief ALL interrupts */
 #define AXIOMREG_IRQ_ALL                        0xFFFFFFFF
 
+/*! \brief AXIOM ROUTING LOOPBACK interface */
+#define AXIOMREG_ROUTING_LOOPBACK_IF            0x0
 /*! \brief AXIOM ROUTING NULL interface */
 #define AXIOMREG_ROUTING_NULL_IF                0xFF
 

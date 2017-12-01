@@ -329,7 +329,9 @@ axiom_hw_get_routing(axiom_dev_t *dev, axiom_node_id_t node_id,
 axiom_err_t
 axiom_hw_get_if_number(axiom_dev_t *dev, axiom_if_id_t *if_number)
 {
-    *if_number = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFNUMBER);
+    /* Return the number of physical interface plus 1 (loopback) */
+    *if_number =
+        axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFNUMBER) + 1;
 
     return AXIOM_RET_OK;
 }
@@ -342,16 +344,18 @@ axiom_hw_get_if_info(axiom_dev_t *dev, axiom_if_id_t if_number,
     uint32_t ftr = 0;
 
     switch(if_number) {
-    case 0:
-        ftr = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFINFO_1);
+    case 0: /* Interface 0 is the loopback IF, return 0x0 features */
         break;
     case 1:
-        ftr = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFINFO_2);
+        ftr = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFINFO_1);
         break;
     case 2:
-        ftr = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFINFO_3);
+        ftr = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFINFO_2);
         break;
     case 3:
+        ftr = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFINFO_3);
+        break;
+    case 4:
         ftr = axi_reg_read32(&dev->regs.axi.registers, AXIOMREG_IO_IFINFO_4);
         break;
     default:
