@@ -203,8 +203,8 @@ static int axiomnet_fifo_init(struct axiomnet_armdata *armdata,
 
     axi_fifo_reset(fifo);
 
-    DPRINTF("TX vacancy %u", axi_fifo_tx_vacancy(fifo));
-    DPRINTF("RX occupancy %u",axi_fifo_rx_occupancy(fifo));
+    IPRINTF(verbose, "TX vacancy %u", axi_fifo_tx_vacancy(fifo));
+    IPRINTF(verbose, "RX occupancy %u",axi_fifo_rx_occupancy(fifo));
 
 error:
     return err;

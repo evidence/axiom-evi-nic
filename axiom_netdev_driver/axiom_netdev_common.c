@@ -16,6 +16,12 @@ MODULE_AUTHOR("Evidence SRL");
 MODULE_DESCRIPTION("Axiom Network Device Driver");
 MODULE_VERSION("v0.15");
 
+/*! \brief enable workaround when cache is disabled on the RDMA zone */
+#define AXIOM_CACHE_WORKAROUND
+
+/*! \brief enable cache on the RDMA zone */
+//#define AXIOM_RDMA_ENABLE_CACHE
+
 /*! \brief verbose module parameter */
 int verbose = 0;
 module_param(verbose, int, 0644);
@@ -38,8 +44,7 @@ static int axiomnet_alloc_chrdev(struct axiomnet_drvdata *drvdata,
 static void axiomnet_destroy_chrdev(struct axiomnet_drvdata *drvdata,
         struct axiomnet_chrdev *chrdev);
 
-#define AXIOM_CACHE_WORKAROUND
-#ifdef AXIOM_CACHE_WORKAROUND
+#if defined(AXIOM_CACHE_WORKAROUND) && !defined(AXIOM_RDMA_ENABLE_CACHE)
 /*
  * With no-cached memory regions the memcpy() generates a fault if the buffers
  * are not aligned to 8 bytes.
@@ -135,10 +140,10 @@ static inline unsigned long axiom_copy_to_user(void __user *to,
 
     return ret;
 }
-#else /* !AXIOM_CACHE_WORKAROUND */
+#else   /* !AXIOM_CACHE_WORKAROUND || AXIOM_RDMA_ENABLE_CACHE */
 #define axiom_copy_from_user		copy_from_user
 #define axiom_copy_to_user		copy_to_user
-#endif /* AXIOM_CACHE_WORKAROUND */
+#endif  /* AXIOM_CACHE_WORKAROUND && !AXIOM_RDMA_ENABLE_CACHE */
 
 /************************ AxiomNet Device Driver ******************************/
 
@@ -1606,7 +1611,11 @@ static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
         goto err;
     }
 
+#ifdef AXIOM_RDMA_ENABLE_CACHE
+    drvdata->long_vaddr = ioremap_cache(drvdata->long_paddr, drvdata->long_size);
+#else /* !AXIOM_RDMA_ENABLE_CACHE */
     drvdata->long_vaddr = ioremap(drvdata->long_paddr, drvdata->long_size);
+#endif /* AXIOM_RDMA_ENABLE_CACHE */
     drvdata->long_rx_vaddr = drvdata->long_vaddr;
     drvdata->long_tx_vaddr = drvdata->long_rx_vaddr +
         (AXIOMREG_LEN_LONG_BUF * AXIOM_LONG_PAYLOAD_MAX_SIZE);
@@ -2505,7 +2514,9 @@ static int axiomnet_mmap(struct file *filep, struct vm_area_struct *vma)
         goto err;
     }
 
+#ifndef AXIOM_RDMA_ENABLE_CACHE
     vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+#endif /* AXIOM_RDMA_ENABLE_CACHE */
     err = remap_pfn_range(vma, vma->vm_start,
             (drvdata->rdma_paddr >> PAGE_SHIFT) + vma->vm_pgoff, size,
             vma->vm_page_prot);
