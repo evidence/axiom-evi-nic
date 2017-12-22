@@ -22,20 +22,16 @@ MODULE_VERSION("v0.15");
 /*! \brief enable cache on the RDMA zone */
 //#define AXIOM_RDMA_ENABLE_CACHE
 
+/*! \brief default usec to sleep when retry to TX a long packet */
+#define AXIOM_RETRY_DELAY_USEC_DEF              200
+
+/*! \brief default watchdog period in msec */
+#define AXIOM_WATCHDOG_PERIOD_MSEC_DEF          100
+
 /*! \brief verbose module parameter */
 int verbose = 0;
 module_param(verbose, int, 0644);
 MODULE_PARM_DESC(verbose, "versbose level (0=none,...,16=all)");
-
-/*! \brief delay (usec) module parameter */
-int retry_udelay = 200;
-module_param(retry_udelay, int, 0644);
-MODULE_PARM_DESC(retry_udelay, "usec to sleep when retry to TX a long packet");
-
-/*! \brief period (msec) of watchdog */
-int watchdog_period = 100;
-module_param(watchdog_period, int, 0644);
-MODULE_PARM_DESC(watchdog_period, "watchdog period in msec");
 
 struct axiomnet_chrdev chrdev;
 
@@ -840,11 +836,12 @@ inline static void axiom_rdma_rx_dequeue(struct axiomnet_rdma_rx_hwring *rx_ring
 
                 mutex_lock(&tx_ring->rdma_port.mutex);
 
-                if (retry_udelay != 0) {
+                if (drvdata->sysfs_param.retry_delay_usec != 0) {
                     /*
                      * sleep with lock acquired, to slow down the senders
                      */
-                    usleep_range(retry_udelay, retry_udelay + 10);
+                    usleep_range(drvdata->sysfs_param.retry_delay_usec,
+                            drvdata->sysfs_param.retry_delay_usec + 10);
                 }
 
                 while (!axiom_hw_rdma_tx_avail(drvdata->dev_api)) {
@@ -1323,7 +1320,9 @@ static void axiomnet_rdma_rx_worker(void *data)
 
 inline static bool axiomnet_watchdog_work_todo(void *data)
 {
-    if (watchdog_period == 0)
+    struct axiomnet_drvdata *drvdata = (struct axiomnet_drvdata *) data;
+
+    if (drvdata->sysfs_param.watchdog_period_msec == 0)
         return false;
 
     return true;
@@ -1349,7 +1348,7 @@ static void axiomnet_watchdog_worker(void *data)
         wake_up(&(drvdata->rdma_tx_ring.rdma_port.wait_queue));
     }
 
-    msleep(watchdog_period);
+    msleep(drvdata->sysfs_param.watchdog_period_msec);
 }
 
 /***************************** Init functions *********************************/
@@ -1697,18 +1696,29 @@ int axiomnet_probe(struct axiomnet_drvdata *drvdata,
         return err;
     }
 
+    /* init sysfs parameters */
+    err = axiom_sysfs_init(AXIOMNET_DEV_NAME, &drvdata->sysfs_param, drvdata);
+    if (err) {
+        EPRINTF("could not init sysfs params\n");
+        goto free_cdev;
+    }
+
+    /* set default values */
+    drvdata->sysfs_param.watchdog_period_msec = AXIOM_RETRY_DELAY_USEC_DEF;
+    drvdata->sysfs_param.retry_delay_usec = AXIOM_WATCHDOG_PERIOD_MSEC_DEF;
+
     /* init RAW TX ring */
     err = axiomnet_raw_tx_hwring_init(drvdata, &drvdata->raw_tx_ring);
     if (err) {
         EPRINTF("could not init raw TX ring\n");
-        goto free_cdev;
+        goto free_sysfs;
     }
 
     /* init RDMA TX ring */
     err = axiomnet_rdma_tx_hwring_init(drvdata, &drvdata->rdma_tx_ring);
     if (err) {
         EPRINTF("could not init RDMA TX ring\n");
-        goto free_cdev;
+        goto free_sysfs;
     }
 
     /* init RAW RX ring */
@@ -1774,6 +1784,8 @@ free_rx_ring:
     axiomnet_raw_rx_hwring_release(drvdata, &drvdata->raw_rx_ring);
 free_tx_ring:
     axiomnet_rdma_tx_hwring_release(drvdata, &drvdata->rdma_tx_ring);
+free_sysfs:
+    axiom_sysfs_uninit(&drvdata->sysfs_param);
 free_cdev:
     axiomnet_destroy_chrdev(drvdata, &chrdev);
 
@@ -1797,6 +1809,7 @@ int axiomnet_remove(struct axiomnet_drvdata *drvdata)
     axiomnet_raw_rx_hwring_release(drvdata, &drvdata->raw_rx_ring);
     axiomnet_rdma_tx_hwring_release(drvdata, &drvdata->rdma_tx_ring);
 
+    axiom_sysfs_uninit(&drvdata->sysfs_param);
     axiomnet_destroy_chrdev(drvdata, &chrdev);
     DPRINTF("end");
     return 0;

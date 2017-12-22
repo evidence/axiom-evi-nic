@@ -38,6 +38,7 @@
 #include "axiom_kernel_api.h"
 #include "axiom_netdev_common.h"
 #include "axiom_kthread.h"
+#include "axiom_netdev_sysfs.h"
 
 /*! \brief AXIOM char device minor */
 #define AXIOMNET_DEV_MINOR      0
@@ -220,6 +221,8 @@ struct axiomnet_drvdata {
 
     /* statistics */
     axiom_stats_t stats;                /*!< \brief NIC statistics */
+
+    struct axiomnet_sysfs sysfs_param;  /*!< \brief sysfs data */
 
     /* routing info */
     axiom_if_id_t routing_table[AXIOM_NODES_NUM];/*!< \brief Routing table */
