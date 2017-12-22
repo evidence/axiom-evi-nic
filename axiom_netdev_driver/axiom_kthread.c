@@ -57,6 +57,12 @@ axiom_kthread_wakeup(struct axiom_kthread *ctx)
     wake_up(&ctx->wq);
 }
 
+pid_t
+axiom_kthread_getpid(struct axiom_kthread *ctx)
+{
+    return ctx->pid;
+}
+
 int
 axiom_kthread_init(struct axiom_kthread *ctx, axkt_worker_fn_t worker_fn,
         axkt_work_todo_fn_t work_todo_fn, void *worker_data, char *name)
@@ -79,6 +85,7 @@ axiom_kthread_init(struct axiom_kthread *ctx, axkt_worker_fn_t worker_fn,
     ctx->work_todo_fn = work_todo_fn;
     ctx->worker_data = worker_data;
     atomic_set(&ctx->scheduled, 0);
+    ctx->pid = pid_nr(task_pid(ctx->task));
 
     /* start the kthread */
     wake_up_process(ctx->task);

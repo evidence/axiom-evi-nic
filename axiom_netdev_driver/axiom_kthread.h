@@ -27,6 +27,8 @@ struct axiom_kthread {
     axkt_work_todo_fn_t work_todo_fn;   /*!< \brief Work todo function to call
                                           to check if there is work todo */
     void *worker_data;                  /*!< \brief Worker private data */
+
+    pid_t pid;                          /*!< \brief PID of this kthread */
 };
 
 
@@ -62,4 +64,13 @@ axiom_kthread_uninit(struct axiom_kthread *ctx);
 void
 axiom_kthread_wakeup(struct axiom_kthread *ctx);
 
+/*!
+ * \brief Get the PID of the AXIOM kernel thread.
+ *
+ * \param ctx           AXIOM kernel thread data context
+ *
+ * \return PID of the AXIOM kernel thread.
+ */
+pid_t
+axiom_kthread_getpid(struct axiom_kthread *ctx);
 #endif /* AXIOM_KTHREAD_H */
