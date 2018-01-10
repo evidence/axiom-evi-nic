@@ -25,7 +25,7 @@ install: default
 	  INSTALL_MOD_PATH=$(DESTDIR) \
 	  modules_install
 
-clean distclean:
+clean distclean mrproper:
 	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c .tmp_versions
 	rm -rf Module.symvers modules.order
 
