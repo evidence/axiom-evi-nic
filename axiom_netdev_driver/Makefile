@@ -5,25 +5,25 @@ include $(MKFILE_DIR)/../common.mk
 
 obj-m := axiom_netdev.o
 axiom_netdev-objs := axiom_netdev_common.o axiom_kthread.o axiom_netdev_sysfs.o
-ifeq ($(ARCH), arm64)
-ifeq ($(KERN),seco)
+ifeq ($(MODE),aarch64)
 axiom_netdev-objs += axiom_netdev_arm64.o axiom_kernel_api_arm64.o
-else
-axiom_netdev-objs += axiom_netdev_qemuarm64.o axiom_kernel_api_qemuarm64.o
-endif
 else
 axiom_netdev-objs += axiom_netdev_x86.o
 endif
 
+CFLAGS:=
 
 ccflags-y += -Wall $(DFLAGS) -I${AXIOM_NIC_INCLUDE}
 ccflags-y += $(AXIOM_KERNEL_CFLAGS)
 
 default::
-	$(MAKE) $(CROSS_COMPILE) -C $(KERNELDIR) M=$(PWD) modules
+	$(MAKE) $(CROSS_COMPILE) -C $(KERNEL_DIR) M=$(MKFILE_DIR) \
+	  modules
 
 install: default
-	$(FAKEROOT) $(MAKE) $(CROSS_COMPILE) -C $(KERNELDIR) M=$(PWD) INSTALL_MOD_PATH=$(TARGET_INST_DIR) modules_install
+	$(MAKE) $(CROSS_COMPILE) -C $(KERNEL_DIR) M=$(MKFILE_DIR) \
+	  INSTALL_MOD_PATH=$(DESTDIR) \
+	  modules_install
 
 clean distclean:
 	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c .tmp_versions

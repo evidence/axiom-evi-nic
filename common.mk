@@ -1,13 +1,38 @@
 
+# configure parameters
+
+COMMKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+include $(COMMKFILE_DIR)/configure-params.mk
+ifndef MODE
+MODE:=$(_MODE)
+endif
+ifndef DISABLE_INSTR
+DISABLE_INSTR=$(_DISABLE_INSTR)
+endif
+ifndef DFLAGS
+DFLAGS:=$(_DFLAGS)
+endif
+ifndef ROOTFSTMP
+ROOTFSTMP:=$(_ROOTFSTMP)
+endif
+ifndef PREFIX
+PREFIX=$(_PREFIX)
+endif
+ifndef DESTDIR
+DESTDIR=$(_DESTDIR)
+endif
+ifeq ($(MODE),x86)
+ifndef KVERSION
+KVERSION:=$(_KVERSION)
+endif
+endif
+
 #
-# default architecture
+# utility
 #
 
-ifeq ($(FS),x86)
-undefine CCARCH
-else
-CCARCH := aarch64
-endif
+# number of build host cores
+BUILDCPUS := $(shell getconf _NPROCESSORS_ONLN)
 
 #
 # version numbers
@@ -20,97 +45,20 @@ SUBLEVEL := $(shell echo $(VERSION) | sed -r -e 's/([0-9]*\.){2}([0-9]*).*/\2/' 
 VERSION := $(MAJOR).$(MINOR).$(SUBLEVEL)
 
 #
-# variuos output directories
+# tools
 #
 
-COMMKFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-OUTPUT_DIR := ${COMMKFILE_DIR}/../output
-ifeq ($(FS),seco)
-TARGET_DIR := $(realpath ${ROOTFS})
-SYSROOT_DIR := $(realpath ${ROOTFS})
-HOST_DIR := $(realpath ${LINARO}/host)
+ifeq ($(MODE),aarch64)
+CCPREFIX:=$(LINARO)/host/bin/aarch64-linux-gnu-
+CFLAGS+=--sysroot=$(ROOTFSTMP)
+LDFLAGS+=--sysroot=$(ROOTFSTMP)
 else
-ifeq ($(FS),x86)
-TARGET_DIR := /
-SYSROOT_DIR := /
-HOST_DIR := /
-else
-TARGET_DIR := $(realpath ${OUTPUT_DIR}/target)
-SYSROOT_DIR := $(realpath ${OUTPUT_DIR}/staging)
-HOST_DIR := $(realpath ${OUTPUT_DIR}/host)
-endif
-endif
-
-SYSROOT_INST_DIR ?= $(SYSROOT_DIR)
-TARGET_INST_DIR ?= $(TARGET_DIR)
-
-# fakeroot
-
-FAKEROOT :=
-ifeq ($(FS),seco)
-ifndef FAKEROOTKEY
-FAKEROOT := fakeroot -i $(ROOTFS).faked -s $(ROOTFS).faked
-endif
-endif
-
-#
-# internal directory structure & tools
-#
-
-AXIOM_NIC_INCLUDE := $(COMMKFILE_DIR)/include
-AXIOM_NIC_DRIVER := $(COMMKFILE_DIR)/axiom_netdev_driver
-# to find the header files of the axiom-evi-allocator-drv kernel module
-AXIOM_KERNEL_CFLAGS := -I$(realpath $(SYSROOT_DIR)/usr/include/linux)
-
-ifdef CCARCH
-#
-# defined CCARCH
-#
-ifeq ($(KERN),seco)
-    CCPREFIX := ${HOST_DIR}/usr/bin/$(CCARCH)-linux-gnu-
-else
-    CCPREFIX := ${HOST_DIR}/usr/bin/$(CCARCH)-linux-
-endif
-
-ifeq ($(KERN),seco)
-    KERNELDIR := $(AXIOMBSP)/build/linux/kernel/link-to-kernel-build
-    CROSS_COMPILE := ARCH=arm64 CROSS_COMPILE=$(PETALINUX)/tools/linux-i386/aarch64-linux-gnu/bin/aarch64-linux-gnu-
-    AXIOM_KERNEL_CFLAGS := -I$(realpath $(SYSROOT_DIR)/usr/include/linux)
-
-else
-    KERNELDIR := ${OUTPUT_DIR}/build/linux-custom
-ifeq ($(CCARCH), aarch64)
-    CROSS_COMPILE := ARCH=arm64 CROSS_COMPILE=$(CCPREFIX)
-else
-    CROSS_COMPILE := ARCH=$(CCARCH) CROSS_COMPILE=$(CCPREFIX)
-endif
-endif
-
-else
-#
-# undefined CCARCH
-#
-
-ifdef _KVERSION
-    KERNELVER :=  $(_KVERSION)
-else
-    KERNELVER :=  $(shell uname -r)
-endif
-
-    KERNELDIR := /lib/modules/$(KERNELVER)/build
-    CCPREFIX :=
-    CROSS_COMPILE :=
-
+CCPREFIX:=
 endif
 
 CC := ${CCPREFIX}gcc
 AR := ${CCPREFIX}ar
 RANLIB := ${CCPREFIX}ranlib
-
-ifndef DFLAGS
-#DFLAGS := -g -DPDEBUG
-DFLAGS := -g -O3
-endif
 
 #
 # source file dependencies management
@@ -125,3 +73,70 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $*.Td
 
 %.d: ;
 .PRECIOUS: %.d
+
+#
+# pkg-config configuration
+#
+
+#PKG-CONFIG_SILENCE:=--silence-errors
+
+ifeq ($(MODE),x86)
+PKG-CONFIG := \
+  PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1 \
+  PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 \
+  PKG_CONFIG_DIR= \
+  PKG_CONFIG_LIBDIR=$(ROOTFSTMP)/usr/lib/pkgconfig:$(ROOTFSTMP)/usr/local/lib/pkgconfig:$(ROOTFSTMP)/usr/share/pkgconfig \
+  PKG_CONFIG_SYSROOT_DIR=$(ROOTFSTMP) \
+  pkg-config \
+    $(PKG-CONFIG_SILENCE)
+else
+PKG-CONFIG := \
+  PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1 \
+  PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 \
+  PKG_CONFIG_DIR= \
+  PKG_CONFIG_LIBDIR=$(ROOTFSTMP)/usr/lib/pkgconfig:$(ROOTFSTMP)/usr/share/pkgconfig \
+  PKG_CONFIG_SYSROOT_DIR=$(ROOTFSTMP) \
+  pkg-config \
+    $(PKG-CONFIG_SILENCE)
+endif
+
+ifeq ($(shell $(PKG-CONFIG) axiom_user_api >/dev/null || echo fail),fail)
+    # GNU make bug 10593: an environment variale can not be
+    # inject into sub-shell (only in sub-make)
+    # so a default for PKG_CONFIG_PATH can not be set into a makefile
+    # (and used by sub-shell)
+    $(warning axiom_user_api.pc is not found (PKG_CONFIG_SYSROOT_DIR is '$(ROOTFSTMP)'))
+endif
+
+# PKG-CFLAGS equivalent to "pkg-config --cflags ${1}"
+PKG-CFLAGS = $(shell $(PKG-CONFIG) --cflags ${1})
+# PKG-LDFLAGS equivalent to "pkg-config --libs-only-other --libs-only-L ${1}"
+PKG-LDFLAGS = $(shell $(PKG-CONFIG) --libs-only-other --libs-only-L ${1})
+# PKG-LDLIBS equvalent to "pkg-config --libs-only-l ${1}"
+PKG-LDLIBS = $(shell $(PKG-CONFIG) --libs-only-l ${1})
+
+#
+# internal directory structure
+#
+
+AXIOM_NIC_INCLUDE := $(COMMKFILE_DIR)/include
+AXIOM_NIC_DRIVER := $(COMMKFILE_DIR)/axiom_netdev_driver
+
+#
+# kernel compilation stuff
+#
+
+ifeq ($(MODE),x86)
+ifdef KVERSION
+    KERNELVER :=  $(KVERSION)
+else
+    KERNELVER :=  $(shell uname -r)
+endif
+    CROSS_COMPILE:=
+    KERNELDIR:=/lib/modules/$(KERNELVER)/build
+else
+    CROSS_COMPILE:=ARCH=arm64 CROSS_COMPILE=$(PETALINUX)/tools/linux-i386/aarch64-linux-gnu/bin/aarch64-linux-gnu-
+    KERNEL_DIR:=$(AXIOMBSP)/build/linux/kernel/link-to-kernel-build
+endif
+
+AXIOM_KERNEL_CFLAGS := -I$(realpath $(ROOTFSTMP)/usr/include/linux)

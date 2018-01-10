@@ -2,12 +2,16 @@
 
 DEBIAN_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-ifeq ($(KERN),seco)
+ifndef LINARO
+$(warning LINARO environment variable not defined)
+endif
+
+ifeq ($(MODE),aarch64)
 #
 # seco
 #
 KERNELDIR := $(AXIOMBSP)/build/linux/kernel/link-to-kernel-build
-else ifeq ($(KERN),x86)
+else ifeq ($(MODE),x86)
 #
 # x86
 #
@@ -20,7 +24,7 @@ else
 #
 # other
 #
-KERNELDIR := $(OUTPUT_DIR)/build/linux-custom
+$(warning Unknown MODE='$(MODE)')
 endif
 
 KVERSION := $(shell cat $(KERNELDIR)/include/config/kernel.release)
@@ -42,7 +46,7 @@ binary-arch: make-changelog init-install init-control
 	dh_prep
 	dh_installdirs
 
-	$(MAKE) SYSROOT_INST_DIR=$(DEBIAN_DIR)/tmp TARGET_INST_DIR=$(DEBIAN_DIR)/tmp FROMDEB=1 install
+	$(MAKE) DESTDIR=$(DEBIAN_DIR)/tmp  install
 	rm -f $(DEBIAN_DIR)/tmp/lib/modules/*/modules.*
 
 	dh_install --fail-missing
@@ -97,7 +101,7 @@ binary-indep:
 
 clean: clean-changelog init-control
 	dh_testdir
-	make clean
+#	make clean
 	dh_clean
 
 #
