@@ -15,7 +15,7 @@ libs-install: libs
 
 install clean distclean mrproper:
 	for DIR in $(APPS_DIR); do { $(MAKE) -C $$DIR $@ || exit 1; }; done
-	if [ "$@" = "distclean" -o "$@" = "mrproper"]; then \
+	if [ "$@" = "distclean" -o "$@" = "mrproper" ]; then \
 		$(MAKE) NCONF=1 configure-clean ;\
 	fi
 
