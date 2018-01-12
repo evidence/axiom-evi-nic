@@ -49,7 +49,9 @@ binary-arch: make-changelog init-install init-control
 	$(MAKE) DESTDIR=$(DEBIAN_DIR)/tmp  install
 	rm -f $(DEBIAN_DIR)/tmp/lib/modules/*/modules.*
 
-	dh_install --fail-missing
+	dh_install --list-missing
+	rm -r -f $(DEBIAN_DIR)/libaxiom-user/usr/lib/pkgconfig
+
 	dh_installdocs
 	dh_installchangelogs
 	dh_installexamples
@@ -109,7 +111,7 @@ clean: clean-changelog init-control
 #
 
 init-install:
-ifeq ($(FS),x86)
+ifeq ($(MODE),x86)
 	ln -fs $(DEBIAN_DIR)/libaxiom-user.install.x86 $(DEBIAN_DIR)/libaxiom-user.install
 	ln -fs $(DEBIAN_DIR)/libaxiom-user-dev.install.x86 $(DEBIAN_DIR)/libaxiom-user-dev.install
 else

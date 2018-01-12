@@ -1,3 +1,2 @@
-/usr/lib/libaxiom_user_api.so*
-/usr/lib/instrumentation/libaxiom_user_api.so*
+/usr/lib/*
 /usr/bin/axiom_user_test
