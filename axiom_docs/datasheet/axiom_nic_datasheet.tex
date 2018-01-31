@@ -290,10 +290,12 @@
 	Description		\> Control register \\
 \end{regdescription}
 \begin{regdetails}
-        \hline reserved & 31:2 & rw & 0x0 & Reserved. Writes are ignored, read
+        \hline reserved & 31:4 & rw & 0x0 & Reserved. Writes are ignored, read
         data is zero.\\
-        \hline reserved & 1 & rw & 0x0 & Aurora Reset bit, used to reset all four Aurora IPs.\\
-        \hline reserved & 0 & rw & 0x0 & LOOPBACK bit, used to enable external loopback.\\
+        \hline XSMLL & 3 & rw & 0x0 & Enable/disable XSMLL.\\
+        \hline ACK & 2 & rw & 0x0 & Enable/disable ACK.\\
+        \hline RESET & 1 & rw & 0x0 & Reset all Aurora IPs.\\
+        \hline LOOPBACK & 0 & rw & 0x0 & Enable external loopback.\\
 \end{regdetails}
 
 
@@ -644,6 +646,8 @@
 	                        hardware.\\
 	                        \> The software can push new elements, writing
 	                        these registers\\
+	                        \> IMPORTANT: All addresses must be aligned to
+	                        16bytes (128bit)\\
 \end{regdescription}
 \begin{regdetails}
         \hline DST\_ADDR & 103:72 & wo & 0x0 & Destination memory address,
@@ -721,6 +725,8 @@
 	                        \> This array of registers represents the
 	                        address of buffers available\\
 	                        \> for receiving the LONG messages.\\
+	                        \> IMPORTANT: The address must be aligned to
+	                        16bytes (128bit)\\
 \end{regdescription}
 \begin{regdetails}
 	\hline FLAGS & 63:56 & rw & 0x0 & When the software read this buffer, it
@@ -728,6 +734,6 @@
 	\hline MSG\_ID & 55:48 & rw & 0x0 & The HW must put the MSG\_ID of
 	message that uses this buffer.\\
 	\hline SIZE & 47:32 & rw & 0x0 & Size of buffer \\
-	\hline ADDRESS & 31:0 & rw & 0x0 & Address of buffer \\
+	\hline ADDRESS & 31:0 & rw & 0x0 & Address of buffer aligned to 16bytes\\
 \end{regdetails}
 \end{document}
