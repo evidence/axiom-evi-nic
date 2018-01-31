@@ -28,6 +28,9 @@ MODULE_VERSION("v0.15");
 /*! \brief default watchdog period in msec */
 #define AXIOM_WATCHDOG_PERIOD_MSEC_DEF          100
 
+/*! \brief size of LONG buffer (must be aligned to 16 bytes) */
+#define AXIOM_LONG_PAYLOAD_BUF_SIZE             65536
+
 /*! \brief verbose module parameter */
 int verbose = 0;
 module_param(verbose, int, 0644);
@@ -509,7 +512,7 @@ inline static struct axiomnet_long_buf_lut *
 axiomnet_long_rdma2buf(struct axiomnet_drvdata *drvdata,
         axiom_addr_t rdma_addr)
 {
-    int buf_id = (rdma_addr - drvdata->rdma_size) / AXIOM_LONG_PAYLOAD_MAX_SIZE;
+    int buf_id = (rdma_addr - drvdata->rdma_size) / AXIOM_LONG_PAYLOAD_BUF_SIZE;
 
     if (unlikely(buf_id >= AXIOMREG_LEN_LONG_BUF || buf_id < 0))
         return NULL;
@@ -542,8 +545,24 @@ inline static int axiomnet_rdma_tx(struct file *filep,
 
     DPRINTF("start");
 
+    /* check if the destination node is reacheable */
     if (unlikely(drvdata->routing_table[header->tx.dst] == 0x0)) {
         return -ENXIO;
+    }
+
+    /* check RDMA address alignment */
+    if (unlikely(header->tx.src_addr & (AXIOM_RDMA_ADDRESS_ALIGNMENT - 1))) {
+        EPRINTF("Bad source address alignment: 0x%x "
+                "[required %d byte alignment]",
+                header->tx.src_addr, AXIOM_RDMA_ADDRESS_ALIGNMENT);
+        return -EFAULT;
+    }
+
+    if (unlikely(header->tx.dst_addr & (AXIOM_RDMA_ADDRESS_ALIGNMENT - 1))) {
+        EPRINTF("Bad destination address alignment: 0x%x "
+                "[required %d byte alignment]",
+                header->tx.dst_addr, AXIOM_RDMA_ADDRESS_ALIGNMENT);
+        return -EFAULT;
     }
 
     mutex_lock(&tx_ring->rdma_port.mutex);
@@ -1586,20 +1605,20 @@ static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
         ret = -EFAULT;
         goto err;
     }
-    IPRINTF(1, "RDMA APP physical addr: 0x%lx size:%zu", mem_app_base,
+    IPRINTF(1, "RDMA APP physical addr: 0x%lx size:0x%lx", mem_app_base,
             mem_app_size);
 
     if (axiom_mem_dev_get_nicspace(&mem_nic_base, &mem_nic_size)) {
         ret = -EFAULT;
         goto err;
     }
-    IPRINTF(1, "RDMA NIC physical addr: 0x%lx size:%zu", mem_nic_base,
+    IPRINTF(1, "RDMA NIC physical addr: 0x%lx size:0x%lx", mem_nic_base,
             mem_nic_size);
 
     drvdata->rdma_paddr = mem_app_base;
     drvdata->rdma_size = mem_app_size;
     drvdata->long_paddr = mem_nic_base;
-    drvdata->long_size = 2 * (AXIOMREG_LEN_LONG_BUF * AXIOM_LONG_PAYLOAD_MAX_SIZE);
+    drvdata->long_size = 2 * (AXIOMREG_LEN_LONG_BUF * AXIOM_LONG_PAYLOAD_BUF_SIZE);
     drvdata->dma_paddr = drvdata->rdma_paddr;
     drvdata->dma_size = drvdata->rdma_size + drvdata->long_size;
 
@@ -1617,12 +1636,15 @@ static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
 #endif /* AXIOM_RDMA_ENABLE_CACHE */
     drvdata->long_rx_vaddr = drvdata->long_vaddr;
     drvdata->long_tx_vaddr = drvdata->long_rx_vaddr +
-        (AXIOMREG_LEN_LONG_BUF * AXIOM_LONG_PAYLOAD_MAX_SIZE);
+        (AXIOMREG_LEN_LONG_BUF * AXIOM_LONG_PAYLOAD_BUF_SIZE);
 
     IPRINTF(1, "DMA private NIC mapped - vaddr 0x%p paddr 0x%llx size 0x%llx",
             drvdata->long_vaddr, drvdata->long_paddr, drvdata->long_size);
 
     axiom_hw_set_rdma_zone(drvdata->dev_api, drvdata->dma_paddr,
+            drvdata->dma_paddr + drvdata->dma_size - 1);
+
+    IPRINTF(1, "DMA zone - start 0x%llx end 0x%llx", drvdata->dma_paddr,
             drvdata->dma_paddr + drvdata->dma_size - 1);
 
     /* LONG RX buffers */
@@ -1632,10 +1654,10 @@ static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
 
         long_buf_lut->buf_id = i;
         long_buf_lut->long_buf_sw = drvdata->long_rx_vaddr +
-            (i * AXIOM_LONG_PAYLOAD_MAX_SIZE);
+            (i * AXIOM_LONG_PAYLOAD_BUF_SIZE);
 
         long_buf_lut->long_buf_hw.field.address = drvdata->rdma_size +
-            (i * AXIOM_LONG_PAYLOAD_MAX_SIZE);
+            (i * AXIOM_LONG_PAYLOAD_BUF_SIZE);
         long_buf_lut->long_buf_hw.field.size = AXIOM_LONG_PAYLOAD_MAX_SIZE;
         long_buf_lut->long_buf_hw.field.msg_id = 0xFF;
         long_buf_lut->long_buf_hw.field.flags = AXIOMREG_LONG_BUF_FREE;
@@ -1648,13 +1670,13 @@ static int axiomnet_rdma_init(struct axiomnet_drvdata *drvdata)
     for (i = 0; i < AXIOMREG_LEN_LONG_BUF; i++) {
         /* virtual address of RDMA where TX buffers are mapped */
         drvdata->rdma_tx_ring.long_queue.queue_desc[i].payload =
-            drvdata->long_tx_vaddr + (i * AXIOM_LONG_PAYLOAD_MAX_SIZE);
+            drvdata->long_tx_vaddr + (i * AXIOM_LONG_PAYLOAD_BUF_SIZE);
 
         /* offset in the RDMA zone */
         drvdata->rdma_tx_ring.long_queue.queue_desc[i].header.tx.src_addr =
             drvdata->rdma_size +
-            (AXIOMREG_LEN_LONG_BUF * AXIOM_LONG_PAYLOAD_MAX_SIZE) +
-            (i * AXIOM_LONG_PAYLOAD_MAX_SIZE);
+            (AXIOMREG_LEN_LONG_BUF * AXIOM_LONG_PAYLOAD_BUF_SIZE) +
+            (i * AXIOM_LONG_PAYLOAD_BUF_SIZE);
     }
 
     return 0;
