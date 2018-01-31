@@ -1,7 +1,7 @@
 /*!
  * \file axiom_netdev_x86.c
  *
- * \version     v0.15
+ * \version     v1.0
  * \date        2017-03-02
  *
  * This file contains the implementation of the Axiom NIC kernel module for x86

@@ -1,7 +1,7 @@
 /*!
  * \file axiom_nic_regs_qemuarm64.h
  *
- * \version     v0.15
+ * \version     v1.0
  * \date        2016-03-18
  *
  * This file contains the following AXIOM NIC registers informations for QEMU

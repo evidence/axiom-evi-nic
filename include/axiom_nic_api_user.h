@@ -1,7 +1,7 @@
 /*!
  * \file axiom_nic_api_user.h
  *
- * \version     v0.15
+ * \version     v1.0
  * \date        2016-03-14
  *
  * This file contains the AXIOM NIC API for the userspace
@@ -26,7 +26,7 @@
 #define AXIOM_ENV_ALLOC_APPID           "AXIOM_ALLOC_APPID"
 
 /*! \brief API version number string */
-#define AXIOM_API_VERSION_STR "v0.15"
+#define AXIOM_API_VERSION_STR "v1.0"
 
 /*!
  * \brief  axiom arguments for the axiom_open() function
