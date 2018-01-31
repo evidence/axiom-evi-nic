@@ -11,5 +11,3 @@ This repository contains the following folder:
     + contains the user-space library to use the Axiom NIC
  * include
     + contains the commom headers for Axiom NIC user/kernel code
- * axiom_switch
-    + contains an application used with QEMU to emulate the network topology

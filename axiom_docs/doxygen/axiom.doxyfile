@@ -787,7 +787,6 @@ INPUT                  = ../../include \
                          ../../../axiom-allocator \
                          ../../../axiom-evi-allocator-lib \
                          ../../../axiom-evi-allocator-drv \
-                         ../../axiom_switch \
                          ../../axiom_user_library \
                          ../../axiom_netdev_driver
 
