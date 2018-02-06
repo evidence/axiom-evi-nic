@@ -52,13 +52,13 @@
 /*! \brief Padding (bytes) in the rdma message */
 #define AXIOM_RDMA_PADDING                      3
 /*! \brief Max payload size (bytes) in the rdma message */
-#define AXIOM_RDMA_PAYLOAD_MAX_SIZE             524272
+#define AXIOM_RDMA_PAYLOAD_MAX_SIZE             524280
 /*! \brief Payload size field in the RDMA message is referred to 8-bytes
  *         granularity
  */
 #define AXIOM_RDMA_PAYLOAD_SIZE_ORDER           3
 /*! \brief RDMA address alignement requested */
-#define AXIOM_RDMA_ADDRESS_ALIGNMENT            16
+#define AXIOM_RDMA_ADDRESS_ALIGNMENT            8
 
 /*! \brief Max payload size in the long message */
 #define AXIOM_LONG_PAYLOAD_MAX_SIZE             65528
