@@ -1,7 +1,7 @@
 /*!
  * \file axiom_nic_regs.h
  *
- * \version     v1.0
+ * \version     v1.1
  * \date        2016-03-18
  *
  * This file contains the following AXIOM NIC registers informations:

@@ -4,7 +4,7 @@
 /*!
  * axiom_nic_register.pseudo.c
  *
- * \version     v1.0
+ * \version     v1.1
  * \date        2016-03-08
  *
  * This file contains the pseudo code of AXIOM NIC API HW

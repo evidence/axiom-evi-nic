@@ -1,7 +1,7 @@
 /*!
  * \file axiom_netdev_sysfs.h
  *
- * \version     v1.0
+ * \version     v1.1
  * \date        2017-12-21
  *
  * This file contains the implementation of the AXIOM sysfs.

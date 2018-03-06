@@ -1,7 +1,7 @@
 /*!
  * \file axiom_kernel_api.c
  *
- * \version     v1.0
+ * \version     v1.1
  * \date        2016-05-03
  *
  * This file contains the Axiom NIC hardware API implementation.

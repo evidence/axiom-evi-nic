@@ -1,7 +1,7 @@
 /*!
  * \file axiom_nic_init.h
  *
- * \version     v1.0
+ * \version     v1.1
  * \date        2016-04-13
  *
  * This file contains the AXIOM NIC types for axiom-init deamon

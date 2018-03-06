@@ -1,7 +1,7 @@
 /*!
  * \file axiom_switch_packets.h
  *
- * \version     v1.0
+ * \version     v1.1
  * \date        2016-03-15
  *
  * This file contains the AXIOM switch packets used only in the QEMU emulation.

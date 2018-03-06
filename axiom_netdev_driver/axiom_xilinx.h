@@ -1,7 +1,7 @@
 /*!
  * \file axiom_xilinx.h
  *
- * \version     v1.0
+ * \version     v1.1
  * \date        2017-06-30
  *
  * This file contains the AXIOM XILINX macros generated from Vivado.

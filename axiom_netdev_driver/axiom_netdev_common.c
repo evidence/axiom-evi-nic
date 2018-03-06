@@ -1,7 +1,7 @@
 /*!
  * \file axiom_netdev_module.c
  *
- * \version     v1.0
+ * \version     v1.1
  * \date        2016-05-03
  *
  * This file contains the implementation of the Axiom NIC kernel module.
@@ -14,7 +14,7 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Evidence SRL");
 MODULE_DESCRIPTION("Axiom Network Device Driver");
-MODULE_VERSION("v1.0");
+MODULE_VERSION("v1.1");
 
 /*! \brief enable workaround when cache is disabled on the RDMA zone */
 #define AXIOM_CACHE_WORKAROUND
