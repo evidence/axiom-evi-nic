@@ -253,30 +253,31 @@ static int axiomnet_axi_init(struct axiomnet_armdata *armdata)
     struct res_to_init {
         const char *name;
         void *res;
+        bool mandatory;
     };
 
 #define REG_NUM         1
     struct res_to_init reg_to_init[REG_NUM] = {
-        {"registers", &armdata->regs.axi.registers},
+        {"registers", &armdata->regs.axi.registers, true},
     };
 
 #define GPIO_NUM         1
     struct res_to_init gpio_to_init[GPIO_NUM] = {
-        {"gpio-debug", &armdata->regs.axi.debug},
+        {"gpio-debug", &armdata->regs.axi.debug, false},
     };
 
 #define FIFO_NUM        4
     struct res_to_init fifo_to_init[FIFO_NUM] = {
-        {"fifo-raw-tx", &armdata->regs.axi.fifo_raw_tx},
-        {"fifo-raw-rx", &armdata->regs.axi.fifo_raw_rx},
-        {"fifo-rdma-tx", &armdata->regs.axi.fifo_rdma_tx},
-        {"fifo-rdma-rx", &armdata->regs.axi.fifo_rdma_rx}
+        {"fifo-raw-tx", &armdata->regs.axi.fifo_raw_tx, true},
+        {"fifo-raw-rx", &armdata->regs.axi.fifo_raw_rx, true},
+        {"fifo-rdma-tx", &armdata->regs.axi.fifo_rdma_tx, true},
+        {"fifo-rdma-rx", &armdata->regs.axi.fifo_rdma_rx, true}
     };
 
 #define BRAM_NUM        2
     struct res_to_init bram_to_init[BRAM_NUM] = {
-        {"bram-long-buf", &armdata->regs.axi.long_buf},
-        {"bram-routing", &armdata->regs.axi.routing},
+        {"bram-long-buf", &armdata->regs.axi.long_buf, true},
+        {"bram-routing", &armdata->regs.axi.routing, true},
     };
 
     int i, err = 0;
@@ -285,7 +286,7 @@ static int axiomnet_axi_init(struct axiomnet_armdata *armdata)
     for (i = 0; i < REG_NUM; i++) {
         err = axiomnet_reg_init(armdata, reg_to_init[i].name,
                 reg_to_init[i].res);
-        if (err) {
+        if (err && reg_to_init[i].mandatory) {
             goto error;
         }
     }
@@ -294,7 +295,7 @@ static int axiomnet_axi_init(struct axiomnet_armdata *armdata)
     for (i = 0; i < GPIO_NUM; i++) {
         err = axiomnet_gpio_init(armdata, gpio_to_init[i].name,
                 gpio_to_init[i].res);
-        if (err) {
+        if (err && gpio_to_init[i].mandatory) {
             goto error;
         }
     }
@@ -303,7 +304,7 @@ static int axiomnet_axi_init(struct axiomnet_armdata *armdata)
     for (i = 0; i < FIFO_NUM; i++) {
         err = axiomnet_fifo_init(armdata, fifo_to_init[i].name,
                 fifo_to_init[i].res);
-        if (err) {
+        if (err && fifo_to_init[i].mandatory) {
             goto error;
         }
     }
@@ -312,7 +313,7 @@ static int axiomnet_axi_init(struct axiomnet_armdata *armdata)
     for (i = 0; i < BRAM_NUM; i++) {
         err = axiomnet_bram_init(armdata, bram_to_init[i].name,
                 bram_to_init[i].res);
-        if (err) {
+        if (err & bram_to_init[i].mandatory) {
             goto error;
         }
     }
@@ -325,6 +326,8 @@ static int axiomnet_axi_init(struct axiomnet_armdata *armdata)
 
     IPRINTF(verbose, "control: 0x%x",
             axi_reg_read32(&armdata->regs.axi.registers, AXIOMREG_IO_CONTROL));
+
+    return 0;
 
 error:
     return err;

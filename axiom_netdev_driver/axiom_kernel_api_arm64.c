@@ -470,8 +470,13 @@ axiom_print_fpga_debug(axiom_dev_t *dev)
 
     printk(KERN_ERR "axiom --- FPGA DEBUG start ---\n");
 
-    buf32 = axi_gpio_read32(&dev->regs.axi.debug);
-    printk(KERN_ERR "axiom - FPGA GPIO debug: 0x%02x\n", buf32);
+    /* The GPIO debug register can not be present in the FPGA */
+    if (dev->regs.axi.debug.base_addr == NULL) {
+        printk(KERN_ERR "axiom --- FPGA GPIO debug not found");
+    } else {
+        buf32 = axi_gpio_read32(&dev->regs.axi.debug);
+        printk(KERN_ERR "axiom - FPGA GPIO debug: 0x%02x\n", buf32);
+    }
 
     printk(KERN_ERR "axiom --- FPGA DEBUG end ---\n");
     return;
