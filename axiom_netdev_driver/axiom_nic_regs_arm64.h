@@ -61,8 +61,17 @@
 /*! \brief DMA_END register - 64 bit w/o */
 #define AXIOMREG_IO_DMA_END                     \
         XREGISTER_CONTROLLER_REGISTERS_ADDR_DMAEND_V_DATA
+/*! \brief AXI Signal for memory attributes r/w transaction - 32 bit w/o */
+#define AXIOMREG_IO_AXCACHE                    \
+        XREGISTER_CONTROLLER_REGISTERS_ADDR_AXCACHE_V_DATA
+/*! \brief AXI Signal for access permissions r/w transaction - 32 bit w/o */
+#define AXIOMREG_IO_AXPROT                      \
+        XREGISTER_CONTROLLER_REGISTERS_ADDR_AXPROT_V_DATA
 
-
+/*! \brief Enable cache coherency AXI transaction */
+#define AXIOMREG_AXCACHE_ENABLE                 0x0000000F
+/*! \brief Enable non-secure (Linux) AXI transaction */
+#define AXIOMREG_AXPROT_ENABLE                  0x00000002
 
 /* Interrupt registers */
 

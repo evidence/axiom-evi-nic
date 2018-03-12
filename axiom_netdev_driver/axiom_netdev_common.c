@@ -16,12 +16,6 @@ MODULE_AUTHOR("Evidence SRL");
 MODULE_DESCRIPTION("Axiom Network Device Driver");
 MODULE_VERSION("v1.1");
 
-/*! \brief enable workaround when cache is disabled on the RDMA zone */
-#define AXIOM_CACHE_WORKAROUND
-
-/*! \brief enable cache on the RDMA zone */
-//#define AXIOM_RDMA_ENABLE_CACHE
-
 /*! \brief default usec to sleep when retry to TX a long packet */
 #define AXIOM_RETRY_DELAY_USEC_DEF              200
 

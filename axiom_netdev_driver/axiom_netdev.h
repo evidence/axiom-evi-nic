@@ -40,6 +40,12 @@
 #include "axiom_kthread.h"
 #include "axiom_netdev_sysfs.h"
 
+/*! \brief enable workaround when cache is disabled on the RDMA zone */
+#define AXIOM_CACHE_WORKAROUND
+
+/*! \brief enable cache on the RDMA zone */
+//#define AXIOM_RDMA_ENABLE_CACHE
+
 /*! \brief AXIOM char device minor */
 #define AXIOMNET_DEV_MINOR      0
 #define AXIOMNET_DEV_RAW_MINOR  1

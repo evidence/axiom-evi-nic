@@ -324,6 +324,14 @@ static int axiomnet_axi_init(struct axiomnet_armdata *armdata)
     axi_reg_write32(&armdata->regs.axi.registers, AXIOMREG_IO_CONTROL,
             AXIOMREG_CONTROL_ACK_ENABLE);
 
+#ifdef AXIOM_RDMA_ENABLE_CACHE
+    /* Enable cache coherency */
+    axi_reg_write32(&armdata->regs.axi.registers, AXIOMREG_IO_AXCACHE,
+            AXIOMREG_AXCACHE_ENABLE);
+    axi_reg_write32(&armdata->regs.axi.registers, AXIOMREG_IO_AXPROT,
+            AXIOMREG_AXPROT_ENABLE);
+#endif
+
     IPRINTF(verbose, "control: 0x%x",
             axi_reg_read32(&armdata->regs.axi.registers, AXIOMREG_IO_CONTROL));
 
