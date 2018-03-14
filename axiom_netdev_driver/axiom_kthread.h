@@ -1,7 +1,7 @@
 /*!
  * \file axiom_kthread.h
  *
- * \version     v1.1
+ * \version     v1.2
  * \date        2016-06-15
  *
  * This file contains the structures and macros for the Axiom kernel kthread.

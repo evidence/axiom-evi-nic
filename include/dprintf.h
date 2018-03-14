@@ -1,7 +1,7 @@
 /*!
  * \file dprintf.h
  *
- * \version     v1.1
+ * \version     v1.2
  * \date        2016-04-29
  *
  * This file contains some functions to print debugging information

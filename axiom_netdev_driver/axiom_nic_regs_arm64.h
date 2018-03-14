@@ -1,7 +1,7 @@
 /*!
  * \file axiom_nic_regs_arm64.h
  *
- * \version     v1.1
+ * \version     v1.2
  * \date        2016-03-18
  *
  * This file contains the following AXIOM NIC registers informations for the

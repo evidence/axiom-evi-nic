@@ -1,7 +1,7 @@
 /*!
  * axiom_discovery_protocol.pseudo.c
  *
- * \version     v1.1
+ * \version     v1.2
  * \date        2016-03-08
  *
  * This file contains the pseudo code of AXIOM Discovery Protocol
