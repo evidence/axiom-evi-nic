@@ -1,5 +1,9 @@
-                   AXIOM NIC driver, library and docs
-===============================================================================
+# AXIOM NIC driver, library and docs
+
+----
+
+**NOTE: This repository is a submodule of axiom-evi project. Please clone the
+master project from https://github.com/evidence/axiom-evi**
 
 This repository contains the following folder:
 
